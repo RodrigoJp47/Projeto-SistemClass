@@ -1,0 +1,491 @@
+/* static/css/precificacao.css */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+
+
+.main-content {
+    /* Mantido o margin-left original de 290px para acomodar a sidebar */
+    margin-left: 270px;
+    padding: 20px;
+    width: calc(100% - 270px);
+    overflow-y: auto;
+}
+
+/* Estrutura principal da página */
+.pricing-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* Duas colunas de larguras iguais */
+    gap: 30px; /* Espaço entre as colunas */
+    align-items: start;
+}
+
+/* Card da calculadora (coluna esquerda) */
+.pricing-calculator,
+.price-breakdown {
+    background-color: #222;
+    padding: 25px;
+    border-radius: 8px;
+    border: 1px solid #444;
+}
+
+.pricing-calculator h3,
+.price-breakdown h3 {
+    margin-top: 0;
+    margin-bottom: 25px;
+    color: #fff;
+    border-bottom: 1px solid #444;
+    padding-bottom: 15px;
+}
+
+/* Estilo dos campos do formulário */
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+    color: #fcf9f9;
+    font-size: 12px;
+}
+
+.form-group input,
+.form-group select {
+    width: 100%;
+    padding: 12px;
+    background-color: #333;
+    border: 1px solid #555;
+    border-radius: 6px;
+    color: #fff;
+    font-size: 12px;
+}
+
+/* Estilo do input com R$ na frente */
+.input-group {
+    position: relative;
+}
+
+.input-group .input-group-text {
+    position: absolute;
+    top: 50%;
+    left: 12px;
+    transform: translateY(-50%);
+    color: #aaa;
+    pointer-events: none;
+}
+
+.input-group input {
+    padding-left: 40px;
+}
+
+
+/* Resultados (coluna direita) */
+.price-breakdown .result-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 1px solid #333;
+    font-size: 12px;
+}
+
+.price-breakdown .result-item span:first-child {
+    color: #ccc;
+}
+
+.price-breakdown .result-item span:last-child {
+    font-weight: bold;
+    color: #fff;
+}
+
+
+/* static/css/precificacao.css (Adicionar ao final) */
+
+.base-period-info {
+    font-size: 11px;
+    color: #888;
+    text-align: center;
+    margin-top: -15px;
+    margin-bottom: 20px;
+}
+
+.info-icon {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    background-color: #555;
+    color: #fff;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 18px;
+    font-size: 11px;
+    font-weight: bold;
+    cursor: pointer;
+    position: relative;
+    margin-left: 8px;
+}
+
+.info-icon .tooltip-text {
+    visibility: hidden;
+    width: 250px;
+    background-color: #111;
+    color: #fff;
+    text-align: center;
+    border-radius: 6px;
+    padding: 10px;
+    position: absolute;
+    z-index: 1;
+    bottom: 125%; /* Posiciona acima do ícone */
+    left: 50%;
+    margin-left: -125px; /* Metade da largura para centralizar */
+    opacity: 0;
+    transition: opacity 0.3s;
+    font-size: 12px;
+    font-weight: normal;
+    line-height: 1.4;
+}
+
+.info-icon:hover .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* Adicionar ao final de precificacao.css */
+
+/* Estilo para campos de input que são apenas de leitura */
+.form-group input:read-only {
+    background-color: #444; /* Fundo cinza escuro para campos bloqueados */
+    cursor: not-allowed; /* Muda o cursor para indicar que não é editável */
+}
+
+/* Adicionado para ajustar o espaçamento do título principal */
+.precificacao-page .main-content h1 {
+    margin-bottom: 25px; /* Adiciona um espaço abaixo do título */
+    margin-left: 5px;    /* Adiciona um pequeno espaço à esquerda */
+}
+
+/* Estilos para o container do gráfico e legenda */
+.chart-and-legend-container {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-top: 25px;
+    padding-top: 20px;
+    border-top: 1px solid #444;
+}
+
+.chart-legend {
+    flex-basis: 40%; /* A legenda ocupa 40% da largura */
+}
+
+.chart-legend ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.chart-legend li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    font-size: 10px;
+}
+
+.legend-color-box {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+    margin-right: 10px;
+    flex-shrink: 0;
+}
+
+.legend-label {
+    color: #ccc;
+    margin-right: auto; /* Empurra o valor para a direita */
+}
+
+.legend-value {
+    font-weight: bold;
+    color: #fff;
+}
+
+.chart-wrapper {
+    flex-grow: 1; /* O gráfico ocupa o espaço restante */
+    position: relative;
+    height: 150px; /* Altura fixa para o gráfico */
+}
+
+/* Estilos para o botão e container de Insights */
+
+.analise-btn {
+    background-color: #046b47;
+    color: rgb(241, 237, 237);
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.2s;
+}
+
+.analise-btn:hover {
+    background-color: #09a63b;
+}
+
+.analise-container {
+    background-color: #2c2c2c;
+    border: 1px solid #444;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 30px;
+}
+
+.analise-section {
+    margin-bottom: 20px;
+}
+
+.analise-section h4 {
+    color: #3498db;
+    border-bottom: 1px solid #444;
+    padding-bottom: 10px;
+    margin-top: 0;
+}
+
+.analise-section p, .analise-section li {
+    color: #faf2f2;
+    line-height: 2.0;
+    font-size: 12px;
+}
+
+.analise-section ul {
+    padding-left: 20px;
+}
+
+/* --- INÍCIO DOS AJUSTES DE ESTILO --- */
+
+/* 1. Ajusta o tamanho da fonte do botão "Insights" */
+.precificacao-page .analise-btn {
+    font-size: 12px; /* Você pode ajustar este valor, ex: 13px ou 15px */
+}
+
+
+/* --- INÍCIO DOS AJUSTES DE ESTILO --- */
+
+/* 1. Ajusta o tamanho da fonte do botão "Insights" */
+.precificacao-page .analise-btn {
+    font-size: 12px; /* Você pode ajustar este valor, ex: 13px ou 15px */
+}
+
+/* Destaque para o preço de venda final (VERSÃO UNIFICADA) */
+.final-price-display {
+    margin-top: 20px;
+    padding: 15px;
+    background-color: #0c4b33; /* <-- MEXA AQUI para a cor de fundo */
+    border-radius: 8px;       /* <-- MEXA AQUI para o arredondamento */
+    text-align: center;
+}
+
+.final-price-display p {
+    margin: 0;
+    color: #9fdec5;
+    font-size: 13px;          /* <-- MEXA AQUI para o tamanho do texto "Preço de Venda Sugerido" */
+}
+
+.final-price-display h2 {
+    margin: 5px 0 0 0;
+    color: #fff;
+    font-size: 16px;          /* <-- MEXA AQUI para o tamanho do valor (R$) */
+    font-weight: bold;
+}
+/* --- FIM DOS AJUSTES DE ESTILO --- */
+
+/* Estilos para a Tabela de Histórico */
+.history-table-container {
+    background-color: #222;
+    padding: 25px;
+    border-radius: 8px;
+    border: 1px solid #444;
+    margin-top: 30px;
+}
+
+.history-table-container h3 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #444;
+    padding-bottom: 15px;
+}
+
+.history-table-container table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+
+.history-table-container th, .history-table-container td {
+    padding: 10px 8px;
+    text-align: left;
+    border-bottom: 1px solid #444;
+}
+
+.history-table-container thead th {
+    background-color: #333;
+    font-weight: bold;
+    white-space: nowrap;
+}
+
+.history-table-container tbody tr:hover {
+    background-color: #2a2a2a;
+}
+
+.history-table-container td.final-price-cell {
+    font-weight: bold;
+    color: #0f0;
+}
+
+/* Estilos para o container dos botões de ação (ATUALIZADO) */
+.action-buttons-container {
+    display: flex;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.action-buttons-container button {
+    flex-grow: 1;
+    padding: 5px 5px; /* Diminui o preenchimento vertical */
+    font-size: 8px;    /* Diminui o tamanho da fonte */
+    font-weight: bold;
+    border: none;
+    border-radius: 6px; /* Bordas um pouco mais suaves */
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    text-transform: uppercase; /* Deixa o texto em maiúsculas */
+    letter-spacing: 0.5px;   /* Adiciona um leve espaçamento entre as letras */
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2); /* Adiciona uma sombra sutil */
+    line-height: 1.5; /* Garante que o texto não quebre de forma estranha */
+}
+
+/* Efeito ao passar o mouse */
+.action-buttons-container button:hover {
+    transform: translateY(-2px); /* Efeito de "levantar" o botão */
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3); /* Sombra mais forte no hover */
+}
+
+/* Botão Primário (Verde) */
+.btn-primary {
+    background-color: #28a745;
+    color: white;
+}
+.btn-primary:hover {
+    background-color: #218838;
+}
+
+/* Botão Secundário (Cinza) */
+.btn-secondary {
+    background-color: #6c757d;
+    color: white;
+}
+.btn-secondary:hover {
+    background-color: #5a6268;
+}
+/* Estilos para o formulário de filtro e paginação */
+
+.filter-form {
+    display: flex;
+    gap: 15px;
+    align-items: flex-end;
+}
+
+.filter-form .form-group {
+    margin-bottom: 0;
+}
+
+.pagination {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.pagination a {
+    color: #fff;
+    padding: 8px 12px;
+    text-decoration: none;
+    border: 1px solid #555;
+    margin: 0 4px;
+    border-radius: 4px;
+}
+
+.pagination a:hover {
+    background-color: #333;
+}
+
+.pagination .current {
+    color: #ccc;
+    font-size: 14px;
+}
+/* Estilo para o ícone de status na tabela de histórico */
+.status-icon {
+    display: inline-block;
+    margin-left: 8px;
+    font-size: 14px;
+    font-weight: bold;
+    padding: 2px 6px;
+    border-radius: 4px;
+    line-height: 1; /* Garante alinhamento vertical */
+}
+
+.status-icon.updated {
+    background-color: #28a745; /* Verde */
+    color: #fff;
+}
+
+
+/* ==========================================================================
+   RESPONSIVIDADE PARA A PÁGINA DE PRECIFICAÇÃO
+   ========================================================================== */
+
+@media screen and (max-width: 992px) {
+    
+    .pricing-container {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media screen and (max-width: 768px) {
+   
+
+    /* 1. Faz o gráfico e a legenda ficarem empilhados verticalmente */
+    .chart-and-legend-container {
+        flex-direction: column;
+        gap: 25px; /* Aumenta o espaço quando estão empilhados */
+    }
+
+    .chart-legend {
+        flex-basis: auto; /* Reseta a base de 40% */
+        width: 100%;     /* Ocupa a largura total */
+    }
+
+    .chart-wrapper {
+        height: 200px; /* Pode precisar de um pouco mais de altura */
+        width: 100%;
+    }
+
+    /* 2. Empilha os botões de salvar */
+    .action-buttons-container {
+        flex-direction: column;
+    }
+
+    /* 3. A CORREÇÃO PRINCIPAL: Faz a tabela de histórico rolar horizontalmente */
+    .history-table-container .table-scroll-wrapper {
+        overflow-x: auto; /* Adiciona a barra de rolagem horizontal */
+        padding-bottom: 10px; /* Espaço para a barra de rolagem não colar no fundo */
+    }
+
+    /* Força a tabela a ter uma largura mínima para ativar a rolagem */
+    .history-table-container table {
+        min-width: 800px;
+    }
+}

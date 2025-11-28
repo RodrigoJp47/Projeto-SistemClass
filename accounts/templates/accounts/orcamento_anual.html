@@ -1,0 +1,352 @@
+{% load static %}
+{% load humanize %}
+{% load l10n %}
+{% load custom_filters %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orçamento Anual</title>
+    <link rel="stylesheet" href="{% static 'css/global.css' %}">
+    <link rel="stylesheet" href="{% static 'css/themes.css' %}">
+    <link rel="stylesheet" href="{% static 'css/sidebar.css' %}">
+    <link rel="stylesheet" href="{% static 'css/orcamento.css' %}">
+    <link rel="stylesheet" href="{% static 'css/layout-responsive.css' %}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="orcamento-page">
+    
+    {% include 'accounts/_sidebar.html' %}
+
+    <div class="main-content">
+        {% include 'accounts/partials/bpo_banner.html' %}
+        <button id="menu-toggle">&#9776;</button>
+        <h1>Planejamento Orçamentário Anual</h1>
+
+        <div class="orcamento-form-container">
+            <h3>Adicionar / Editar Orçamento</h3>
+            <form method="post" id="orcamento-form">
+                {% csrf_token %}
+                <div class="form-grid">
+                    <div class="form-group">{{ form.mes_ano.label_tag }}{{ form.mes_ano }}</div>
+                    <div class="form-group">{{ form.category.label_tag }}{{ form.category }}</div>
+                    <div class="form-group">{{ form.valor_orcado.label_tag }}{{ form.valor_orcado }}</div>
+                    <div class="form-group form-buttons">
+                        <button type="submit">Salvar Orçamento</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div class="orcamento-table-container">
+            <div class="table-header">
+                <h3>Orçamento de Despesas - {{ ano_selecionado|unlocalize }}</h3>
+                <form method="get" class="filter-form">
+                    <label for="ano-select">Visualizar Ano:</label>
+                    <select name="ano" id="ano-select" onchange="this.form.submit()">
+                        {% for ano in anos_disponiveis %}
+                        <option value="{{ ano }}" {% if ano == ano_selecionado %}selected{% endif %}>{{ ano|unlocalize }}</option>
+                        {% endfor %}
+                    </select>
+                </form>
+            </div>
+            
+            <div class="table-scroll-wrapper">
+                <table>
+                    <thead>
+                        <tr class="month-header">
+                            <th class="category-col" rowspan="2">Categoria</th>
+                            {% for mes in meses %}<th colspan="2">{{ mes }}</th>{% endfor %}
+                            <th colspan="2">Total Ano</th>
+                        </tr>
+                        <tr class="type-header">
+                            {% for i in "0123456789ab" %} {# 12 iterações #}
+                            <th>Planejado</th>
+                            <th>Realizado</th>
+                            {% endfor %}
+                            <th>Planejado</th>
+                            <th>Realizado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for category_name, data in expense_budget_data.items %}
+                        <tr>
+                            <td class="category-name-cell">{{ category_name }}</td>
+                            {% for mes in meses %}
+                                <td class="planejado-col">R$ {{ data.orcado_mensal|Get_item:forloop.counter0|floatformat:2|intcomma }}</td>
+                                <td class="realizado-col {% if data.realizado_mensal|Get_item:forloop.counter0 > data.orcado_mensal|Get_item:forloop.counter0 and data.orcado_mensal|Get_item:forloop.counter0 > 0 %}over-budget{% endif %}">
+                                    R$ {{ data.realizado_mensal|Get_item:forloop.counter0|floatformat:2|intcomma }}
+                                </td>
+                            {% endfor %}
+                            <td class="total-planejado-col">R$ {{ data.total_orcado_ano|floatformat:2|intcomma }}</td>
+                            <td class="total-realizado-col">R$ {{ data.total_realizado_ano|floatformat:2|intcomma }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="26">Nenhuma categoria de despesa encontrada.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td class="category-name-cell">TOTAIS DESPESAS</td>
+                            {% for i in "0123456789ab" %}
+                                <td class="planejado-col">R$ {{ totais_despesas.orcado|Get_item:forloop.counter0|floatformat:2|intcomma }}</td>
+                                <td class="realizado-col">R$ {{ totais_despesas.realizado|Get_item:forloop.counter0|floatformat:2|intcomma }}</td>
+                            {% endfor %}
+                            <td class="total-planejado-col">R$ {{ totais_despesas.total_orcado_ano|floatformat:2|intcomma }}</td>
+                            <td class="total-realizado-col">R$ {{ totais_despesas.total_realizado_ano|floatformat:2|intcomma }}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+            <div class="legend">
+                <span class="legend-item planejado">Planejado</span>
+                <span class="legend-item realizado">Realizado</span>
+            </div>
+            <div class="chart-container">
+                <canvas id="despesasChart"></canvas>
+            </div>
+        </div>
+
+        <div class="orcamento-table-container">
+            <div class="table-header"><h3>Orçamento de Receitas - {{ ano_selecionado|unlocalize }}</h3></div>
+            <div class="table-scroll-wrapper">
+                <table>
+                    <thead>
+                        <tr class="month-header">
+                            <th class="category-col" rowspan="2">Categoria</th>
+                            {% for mes in meses %}<th colspan="2">{{ mes }}</th>{% endfor %}
+                            <th colspan="2">Total Ano</th>
+                        </tr>
+                        <tr class="type-header">
+                            {% for i in "0123456789ab" %}
+                            <th>Planejado</th>
+                            <th>Realizado</th>
+                            {% endfor %}
+                            <th>Planejado</th>
+                            <th>Realizado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for category_name, data in revenue_budget_data.items %}
+                        <tr>
+                            <td class="category-name-cell">{{ category_name }}</td>
+                            {% for mes in meses %}
+                                <td class="planejado-col">R$ {{ data.orcado_mensal|Get_item:forloop.counter0|floatformat:2|intcomma }}</td>
+                                <td class="realizado-col {% if data.realizado_mensal|Get_item:forloop.counter0 > data.orcado_mensal|Get_item:forloop.counter0 and data.orcado_mensal|Get_item:forloop.counter0 > 0 %}over-budget{% endif %}">
+                                    R$ {{ data.realizado_mensal|Get_item:forloop.counter0|floatformat:2|intcomma }}
+                                </td>
+                            {% endfor %}
+                            <td class="total-planejado-col">R$ {{ data.total_orcado_ano|floatformat:2|intcomma }}</td>
+                            <td class="total-realizado-col">R$ {{ data.total_realizado_ano|floatformat:2|intcomma }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="26">Nenhuma categoria de receita encontrada.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td class="category-name-cell">TOTAIS RECEITAS</td>
+                            {% for i in "0123456789ab" %}
+                                <td class="planejado-col">R$ {{ totais_receitas.orcado|Get_item:forloop.counter0|floatformat:2|intcomma }}</td>
+                                <td class="realizado-col">R$ {{ totais_receitas.realizado|Get_item:forloop.counter0|floatformat:2|intcomma }}</td>
+                            {% endfor %}
+                            <td class="total-planejado-col">R$ {{ totais_receitas.total_orcado_ano|floatformat:2|intcomma }}</td>
+                            <td class="total-realizado-col">R$ {{ totais_receitas.total_realizado_ano|floatformat:2|intcomma }}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+             <div class="legend">
+                <span class="legend-item planejado">Planejado</span>
+                <span class="legend-item realizado">Realizado</span>
+             </div>
+             <div class="chart-container">
+                <canvas id="receitasChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script src="{% static 'js/theme.js' %}"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Lógica do menu hambúrguer e submenus (essencial para a navegação)
+        const menuToggleButton = document.getElementById('menu-toggle');
+        const sidebar = document.querySelector('.sidebar');
+        if (menuToggleButton && sidebar) {
+            menuToggleButton.addEventListener('click', function() {
+                sidebar.classList.toggle('mobile-open');
+            });
+        }
+        function setupSubmenuToggle(toggleId, submenuId) {
+            const toggleButton = document.getElementById(toggleId);
+            const submenu = document.getElementById(submenuId);
+            if (toggleButton && submenu) {
+                toggleButton.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    submenu.style.display = submenu.style.display === 'block' ? 'none' : 'block';
+                });
+            }
+        }
+        setupSubmenuToggle('financeiro-toggle', 'financeiro-submenu');
+        setupSubmenuToggle('comercial-toggle', 'comercial-submenu');
+        setupSubmenuToggle('configuracoes-toggle', 'configuracoes-submenu');
+        const activeLink = document.querySelector('.sidebar .submenu a.active');
+        if (activeLink) {
+            const parentSubmenu = activeLink.closest('.submenu');
+            if (parentSubmenu) {
+                parentSubmenu.style.display = 'block';
+            }
+        }
+
+        // Lógica da máscara de moeda para o campo de valor orçado
+        const valorOrcadoInput = document.getElementById('id_valor_orcado');
+        if (valorOrcadoInput) {
+            valorOrcadoInput.type = 'text';
+            valorOrcadoInput.setAttribute('inputmode', 'decimal');
+
+            const formatPriceInput = (inputElement) => {
+                let value = inputElement.value.replace(/\D/g, '');
+                if (value === '') {
+                    inputElement.value = '';
+                    return;
+                }
+                const numberValue = parseFloat(value) / 100;
+                inputElement.value = numberValue.toLocaleString('pt-BR', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                });
+            };
+
+            valorOrcadoInput.addEventListener('input', (e) => formatPriceInput(e.target));
+            formatPriceInput(valorOrcadoInput);
+
+            const orcamentoForm = document.getElementById('orcamento-form');
+            orcamentoForm.addEventListener('submit', () => {
+                if (valorOrcadoInput.value) {
+                    // Pega o valor formatado, ex: "13.000,00"
+                    const formattedValue = valorOrcadoInput.value;
+                    // Remove apenas os pontos de milhar, resultado: "13000,00"
+                    const valueWithoutDots = formattedValue.replace(/\./g, '');
+                    // Envia "13000,00" para o backend, que saberá como tratar
+                    valorOrcadoInput.value = valueWithoutDots;
+                }
+            });
+        }
+        // =====================================================================
+        // INÍCIO DO CÓDIGO DO GRÁFICO (AGORA DENTRO DO MESMO SCRIPT)
+        // =====================================================================
+
+        // --- CORREÇÃO 1: Serialização dos dados ---
+        // Usamos um loop do Django para criar um array de NÚMEROS, e não de objetos Decimal.
+        const meses = {{ meses|safe }};
+        const despesasData = {
+            planejado: [{% for v in totais_despesas.orcado %}{{ v|unlocalize|default:0 }},{% endfor %}],
+            realizado: [{% for v in totais_despesas.realizado %}{{ v|unlocalize|default:0 }},{% endfor %}]
+        };
+        const receitasData = {
+            planejado: [{% for v in totais_receitas.orcado %}{{ v|unlocalize|default:0 }},{% endfor %}],
+            realizado: [{% for v in totais_receitas.realizado %}{{ v|unlocalize|default:0 }},{% endfor %}]
+        };
+
+        
+
+        // Função para criar o gráfico (para não repetir código)
+        function createBudgetChart(canvasId, chartData, chartLabel) {
+            const ctx = document.getElementById(canvasId);
+            if (!ctx) return;
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: meses,
+                    datasets: [
+                        {
+                            label: 'Planejado',
+                            data: chartData.planejado,
+                            backgroundColor: 'rgba(52, 152, 219, 0.7)', // Azul
+                            borderColor: '#3498db',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Realizado',
+                            data: chartData.realizado,
+                            backgroundColor: 'rgba(231, 76, 60, 0.7)', // Vermelho
+                            borderColor: '#e74c3c',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false, // Permite que o gráfico use a altura do .chart-container
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: `Comparativo Mensal: ${chartLabel}`,
+                            font: { size: 16 },
+                            color: '#3498db' // Cor azul fixa
+                        },
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                color: '#3498db' // Cor azul fixa
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.y !== null) {
+                                        // Formata o valor como moeda BRL
+                                        label += new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(context.parsed.y);
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                color: '#3498db', // Cor azul fixa
+                                // Formata o eixo Y como moeda
+                                callback: function(value, index, values) {
+                                    return 'R$ ' + value.toLocaleString('pt-BR');
+                                }
+                            },
+                            grid: {
+                                
+                            }
+                        },
+                        x: { // <-- CORREÇÃO: Adiciona a configuração do eixo X
+                            ticks: {
+                                color: '#3498db' // Cor azul fixa
+                            },
+                            grid: {
+                                
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 1. Criar o gráfico de Despesas
+        createBudgetChart('despesasChart', despesasData, 'Despesas');
+
+        // 2. Criar o gráfico de Receitas
+        createBudgetChart('receitasChart', receitasData, 'Receitas');
+
+        // =====================================================================
+        // FIM DO CÓDIGO DO GRÁFICO
+        // =====================================================================
+    });
+    </script>
+    
+</body>
+</html>

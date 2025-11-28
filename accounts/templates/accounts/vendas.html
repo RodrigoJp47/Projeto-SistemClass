@@ -1,0 +1,970 @@
+{% load static %}
+{% load humanize %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nova Venda</title>
+    <link rel="stylesheet" href="{% static 'css/global.css' %}">
+    <link rel="stylesheet" href="{% static 'css/vendas.css' %}">
+    <link rel="stylesheet" href="{% static 'css/themes.css' %}">
+    <link rel="stylesheet" href="{% static 'css/sidebar.css' %}">
+</head>
+<body class="vendas-page">
+    
+    {% include 'accounts/_sidebar.html' %}
+
+    <div class="main-content">
+        {% include 'accounts/partials/bpo_banner.html' %}
+        <button id="menu-toggle">&#9776;</button>
+        <h1>Painel de Vendas</h1>
+        <div class="section-container">
+            <h3>Nova Venda</h3>
+            <div class="grid-2" style="grid-template-columns: 3fr 2fr 1.5fr 0.5fr; align-items: flex-end; gap: 10px;">
+                <div class="form-group">
+                    <label for="cliente-select">Cliente</label>
+                    <div style="display: flex; gap: 10px;">
+                        <select id="cliente-select" style="flex-grow: 1;" required>
+                            <option value="">Selecione um cliente</option>
+                            {% for cliente in clientes %}
+                            <option value="{{ cliente.id }}"
+                                data-cpf_cnpj="{{ cliente.cpf_cnpj|default:'' }}"
+                                data-email="{{ cliente.email|default:'' }}"
+                                data-telefone="{{ cliente.telefone|default:'' }}"
+                                data-endereco="{{ cliente.endereco|default:'' }}">
+                                {{ cliente.nome }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <button type="button" id="novo-cliente-btn" style="padding: 0 15px;">Novo</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="vendedor-select">Vendedor</label>
+                    <select id="vendedor-select">
+                        <option value="">Sem vendedor</option>
+                        {% for vendedor in vendedores %}
+                        <option value="{{ vendedor.id }}">{{ vendedor.nome }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group autocomplete-container">
+                    <label for="cidade-venda">Cidade da Venda</label>
+                    <input type="text" id="cidade-venda" required placeholder="Ex: Juiz de Fora" autocomplete="off">
+                    <div id="cidade-results" class="autocomplete-results"></div>
+                </div>
+                <div class="form-group">
+                    <label for="estado-venda">Estado (UF)</label>
+                    <input type="text" id="estado-venda" maxlength="2" required placeholder="Ex: MG" style="text-transform: uppercase;">
+                </div>
+            </div>
+            <div class="grid-3" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 15px;">
+                <div class="form-group">
+                    <label for="cliente-cpf-display">CPF/CNPJ (Cliente)</label>
+                    <input type="text" id="cliente-cpf-display" readonly disabled>
+                </div>
+                <div class="form-group">
+                    <label for="cliente-email-display">E-mail (Cliente)</label>
+                    <input type="email" id="cliente-email-display" readonly disabled>
+                </div>
+                <div class="form-group">
+                    <label for="cliente-telefone-display">Telefone (Cliente)</label>
+                    <input type="tel" id="cliente-telefone-display" readonly disabled>
+                </div>
+            </div>
+            <div class="form-group" style="margin-top: 15px;">
+                <label for="cliente-endereco-display">Endereço (Cliente)</label>
+                <input type="text" id="cliente-endereco-display" readonly disabled>
+            </div>
+
+            <div class="grid-2" style="display: grid; grid-template-columns: 1fr 3fr; gap: 10px; margin-top: 15px; align-items: flex-end;">
+                <div class="form-group">
+                    <label for="cep-venda">CEP (Entrega)</label>
+                    <input type="text" id="cep-venda" placeholder="Digite o CEP para buscar">
+                </div>
+                <div class="form-group">
+                    <label for="endereco-venda">Endereço (Entrega)</label>
+                    <input type="text" id="endereco-venda" placeholder="Ex: Rua, Número, Bairro">
+                </div>
+            </div>
+            <hr style="border-color: var(--border-color); margin: 20px 0;">
+            <div class="grid-3">
+                <div class="form-group">
+                    <label for="produto-search">Buscar Produto/Serviço (por Nome ou Código)</label>
+                    <input type="text" id="produto-search" placeholder="Digite o nome ou código">
+                </div>
+                <div class="form-group">
+                    <label for="produto-qty">Quantidade</label>
+                    <input type="number" id="produto-qty" value="1" min="1">
+                </div>
+                <div class="form-group">
+                    <label>&nbsp;</label>
+                    <button id="add-produto-btn" style="padding: 10px; margin-top:0;">Adicionar Item</button>
+                </div>
+            </div>
+            <div class="section-container">
+                <h4>Itens da Venda</h4>
+                <table>
+                    <thead>
+                        <tr><th>Produto</th><th style="width: 150px;">Qtd.</th><th style="width: 120px;">Preço Unit.</th><th style="width: 120px;">Desconto</th><th style="width: 120px;">Subtotal</th><th style="width: 50px;"></th></tr>
+                    </thead>
+                    <tbody id="itens-venda-tbody"></tbody>
+                </table>
+            </div>
+            <div class="grid-2">
+                <div class="totals-section">
+                    <h4>Resumo</h4>
+                    <div>Total Bruto: <span id="total-bruto">R$ 0,00</span></div>
+                    <div>Descontos: <span id="desconto-total">R$ 0,00</span></div>
+                    <div class="total-liquido">Total Líquido: <span id="total-liquido">R$ 0,00</span></div>
+                </div>
+                <div>
+                    <h4>Pagamento</h4>
+                    <div class="grid-3" style="align-items: flex-end; grid-template-columns: 2fr 1fr auto; gap: 10px;">
+                        <div class="form-group">
+                            <label for="payment-method">Forma de Pagamento</label>
+                            <select id="payment-method">
+                                {% for key, value in payment_methods %}
+                                <option value="{{ key }}">{{ value }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="form-group" id="parcelas-container" style="display: none;">
+                            <label for="parcelas-input">Parcelas</label>
+                            <input type="number" id="parcelas-input" value="1" min="1" class="form-control">
+                        </div>
+
+                        <button id="add-payment-btn" style="padding: 10px; margin: 0;">Adicionar Pagamento</button>
+                    </div>
+                    <div class="form-group" style="margin-top: 15px;">
+                        <label for="due-date">Data de Vencimento da Fatura</label>
+                        <input type="date" id="due-date">
+                    </div>
+                    <table id="pagamentos-table" style="font-size: 0.9em;">
+                        <thead><tr><th>Forma</th><th>Valor</th><th></th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+            <button id="finalizar-venda-btn" class="finalizar-venda-btn">FINALIZAR VENDA</button>
+        </div>
+
+        <div class="section-container">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <h3>Vendas Realizadas</h3>
+            </div>
+            <form method="get" class="filter-form">
+                <div class="form-group"><label for="start_date_vendas">Data Inicial</label><input type="date" name="start_date" id="start_date_vendas" value="{{ start_date|default:'' }}"></div>
+                <div class="form-group"><label for="end_date_vendas">Data Final</label><input type="date" name="end_date" id="end_date_vendas" value="{{ end_date|default:'' }}"></div>
+                <button type="submit" style="margin-top: 0; padding: 10px 15px;">Filtrar Vendas</button>
+                <button type="submit" name="export_excel" value="true" class="btn btn-primary">Exportar Excel</button>
+            </form>
+
+            <form method="POST" class="delete-form" data-form-type="vendas">
+                {% csrf_token %}
+                <button type="submit" name="delete_selected_sales" class="delete-btn" style="margin-bottom: 15px;">Excluir Vendas Selecionadas</button>
+                <form method="POST" class="delete-form" data-form-type="vendas">
+                {% csrf_token %}
+                
+                <table>
+                    <thead>
+                        <tr>
+                            <th><input type="checkbox" class="select-all" data-target-class="sale-check"></th>
+                            <th>#ID</th>
+                            <th>Cliente</th>
+                            <th>Vendedor</th>
+                            <th>Data</th>
+                            <th>Itens da Venda</th>
+                            <th>Valor Líquido</th>
+                            <th>Status</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for venda in vendas %}
+                        <tr>
+                            <td><input type="checkbox" class="sale-check" name="sale_ids" value="{{ venda.id }}"></td>
+                            <td>{{ venda.id }}</td>
+                            <td>{{ venda.cliente.nome }}</td>
+                            <td>{{ venda.vendedor.nome|default:"-" }}</td>
+                            <td>{{ venda.data_venda|date:"d/m/Y H:i" }}</td>
+                            <td>
+                                <ul style="margin: 0; padding-left: 15px;">
+                                {% for item in venda.itens.all %}
+                                    <li>{{ item.quantidade|floatformat:"0" }}x {{ item.produto.nome }} (...)</li>
+                                {% endfor %}
+                                </ul>
+                            </td>
+                            <td>R$ {{ venda.valor_total_liquido|intcomma }}</td>
+                            <td>{{ venda.get_status_display }}</td>
+
+                            <td class="actions-cell" style="white-space: nowrap;">
+                                {% if not venda.nota_fiscal and venda.status == 'FINALIZADA' %}
+                                    <a href="{% url 'emitir_nota' venda.pk %}" class="action-btn btn-nfe">Emitir NF-e</a>
+                                {% endif %}
+                                {% if venda.status != 'SUBSTITUIDA' and venda.status != 'CANCELADA' %} {# Não permite editar substituídas/canceladas #}
+                                <button type="button" class="action-btn edit-sale-btn edit-btn" data-id="{{ venda.pk }}">Editar</button>
+                                {% endif %}
+                                <button type="submit" class="action-btn btn-delete delete-btn" name="action_delete_sale" value="{{ venda.pk }}" onclick="return confirm('Tem certeza que deseja excluir esta venda? O estoque será restaurado.');">Excluir</button>
+                            </td>
+                            </tr>
+                        {% empty %}
+                        <tr><td colspan="9">Nenhuma venda encontrada...</td></tr> {# <-- Atualize o colspan #}
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr class="total-row">
+                            <td colspan="6">Total do Período:</td>
+                            <td>R$ {{ total_valor_liquido_periodo|floatformat:2|intcomma }}</td>
+                            <td colspan="2"></td> {# <-- Atualize o colspan #}
+                        </tr>
+                    </tfoot>
+                </table>
+            </form>
+            </form>
+            <div class="pagination">
+                {% if vendas.has_other_pages %}
+                    {% if vendas.has_previous %}
+                        <a href="?page=1&start_date={{ start_date|default:'' }}&end_date={{ end_date|default:'' }}">&laquo; Primeira</a>
+                        <a href="?page={{ vendas.previous_page_number }}&start_date={{ start_date|default:'' }}&end_date={{ end_date|default:'' }}">Anterior</a>
+                    {% endif %}
+                    <span class="current">Página {{ vendas.number }} de {{ vendas.paginator.num_pages }}.</span>
+                    {% if vendas.has_next %}
+                        <a href="?page={{ vendas.next_page_number }}&start_date={{ start_date|default:'' }}&end_date={{ end_date|default:'' }}">Próxima</a>
+                        <a href="?page={{ vendas.paginator.num_pages }}&start_date={{ start_date|default:'' }}&end_date={{ end_date|default:'' }}">Última &raquo;</a>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div id="cliente-modal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <span class="close-btn">&times;</span>
+            <h3>Cadastrar Novo Cliente (Dados Fiscais)</h3>
+            <form id="cliente-rapido-form">
+                {% csrf_token %}
+                
+                <div class="grid-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div class="form-group">
+                        <label for="id_nome_modal">Nome Completo / Razão Social</label>
+                        <input type="text" name="nome" required id="id_nome_modal">
+                    </div>
+                    <div class="form-group">
+                        <label for="id_cpf_cnpj_modal">CPF/CNPJ</label>
+                        <input type="text" name="cpf_cnpj" required id="id_cpf_cnpj_modal">
+                    </div>
+                </div>
+
+                <div class="grid-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
+                    <div class="form-group">
+                        <label for="id_email_modal">E-mail</label>
+                        <input type="email" name="email" id="id_email_modal">
+                    </div>
+                    <div class="form-group">
+                        <label for="id_telefone_modal">Telefone</label>
+                        <input type="text" name="telefone" id="id_telefone_modal">
+                    </div>
+                </div>
+
+                <hr style="margin: 15px 0; border-color: #eee;">
+                <h4 style="margin-bottom: 10px; font-size: 0.9em; color: #666;">Endereço Fiscal</h4>
+
+                <div class="form-group">
+                    <label for="id_cep_modal">CEP</label>
+                    <div style="display: flex; gap: 5px;">
+                        <input type="text" name="cep" id="id_cep_modal" placeholder="00000-000" maxlength="9">
+                        <button type="button" id="buscar-cep-modal-btn" style="padding: 0 10px; margin: 0;">🔍</button>
+                    </div>
+                </div>
+
+                <div class="grid-2" style="display: grid; grid-template-columns: 3fr 1fr; gap: 10px; margin-top: 10px;">
+                    <div class="form-group">
+                        <label for="id_logradouro_modal">Logradouro (Rua, Av.)</label>
+                        <input type="text" name="logradouro" id="id_logradouro_modal" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="id_numero_modal">Número</label>
+                        <input type="text" name="numero" id="id_numero_modal" required>
+                    </div>
+                </div>
+
+                <div class="grid-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
+                    <div class="form-group">
+                        <label for="id_bairro_modal">Bairro</label>
+                        <input type="text" name="bairro" id="id_bairro_modal" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="id_cidade_modal">Cidade</label>
+                        <input type="text" name="cidade" id="id_cidade_modal" required>
+                    </div>
+                </div>
+
+                <div class="grid-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
+                    <div class="form-group">
+                        <label for="id_uf_modal">Estado (UF)</label>
+                        <input type="text" name="uf" id="id_uf_modal" maxlength="2" style="text-transform: uppercase;" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="id_codigo_municipio_modal">Cód. Município (IBGE)</label>
+                        <input type="text" name="codigo_municipio" id="id_codigo_municipio_modal" placeholder="Ex: 3118601" required>
+                        <small style="font-size: 0.7em; color: #888;">Preenchido auto. pelo CEP</small>
+                    </div>
+                </div>
+                <button type="submit" style="width: 100%; margin-top: 20px;">Salvar Cliente</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="{% static 'js/theme.js' %}"></script>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const menuToggleButton = document.getElementById('menu-toggle');
+        const sidebar = document.querySelector('.sidebar');
+        // ▼▼▼ ADICIONE O BLOCO DE CÓDIGO ABAIXO AQUI ▼▼▼
+        // Lógica para o checkbox "Selecionar Todos"
+        document.querySelectorAll('.select-all').forEach(selectAllCheckbox => {
+            selectAllCheckbox.addEventListener('click', function() {
+                // Pega a classe dos checkboxes alvo a partir do atributo data-target-class
+                const targetClass = this.dataset.targetClass;
+                if (!targetClass) return;
+
+                // Encontra todos os checkboxes que devem ser controlados
+                const checkboxesToSelect = document.querySelectorAll('.' + targetClass);
+
+                // Marca ou desmarca todos os checkboxes alvo de acordo com o estado do "select-all"
+                checkboxesToSelect.forEach(checkbox => {
+                    checkbox.checked = this.checked;
+                });
+            });
+        });
+        // ▲▲▲ FIM DO BLOCO ▲▲▲
+
+        if (menuToggleButton && sidebar) {
+            menuToggleButton.addEventListener('click', function() {
+                sidebar.classList.toggle('mobile-open');
+            });
+        }
+        // =================================================================
+        // DADOS INICIAIS E VARIÁVEIS GLOBAIS
+        // =================================================================
+        const produtos = JSON.parse('{{ produtos_json|escapejs }}');
+        let itensVenda = [];
+        let pagamentos = [];
+        let produtoSelecionado = null;
+        let totalLiquido = 0;
+        let totalBruto = 0;   
+        let descontoTotal = 0;
+        
+        // ▼▼▼ ADICIONE A FUNÇÃO ABAIXO NESTE LOCAL ▼▼▼
+        function formatCurrency(value) {
+            const numberValue = Number(value);
+            if (isNaN(numberValue)) {
+                return 'R$ 0,00'; // Valor padrão em caso de erro
+            }
+            // Formata o número para o padrão brasileiro (BRL)
+            return new Intl.NumberFormat('pt-BR', {
+                style: 'currency',
+                currency: 'BRL'
+            }).format(numberValue);
+        }
+        // ▲▲▲ FIM DA FUNÇÃO A SER ADICIONADA ▲▲▲
+
+        // Elementos do DOM
+        const clienteSelect = document.getElementById('cliente-select');
+        const vendedorSelect = document.getElementById('vendedor-select');
+        const produtoSearchInput = document.getElementById('produto-search');
+        const produtoQtyInput = document.getElementById('produto-qty');
+        const addItemBtn = document.getElementById('add-produto-btn');
+        const itensTbody = document.getElementById('itens-venda-tbody');
+        const finalizarVendaBtn = document.getElementById('finalizar-venda-btn');
+        const cidadeInput = document.getElementById('cidade-venda');
+        const estadoInput = document.getElementById('estado-venda');
+        // --- ADICIONE ESTE BLOCO ---
+        // 1. Lógica para preencher dados do cliente ao selecionar no dropdown
+        const clienteCpfInput = document.getElementById('cliente-cpf-display');
+        const clienteEmailInput = document.getElementById('cliente-email-display');
+        const clienteTelefoneInput = document.getElementById('cliente-telefone-display');
+        const clienteEnderecoInput = document.getElementById('cliente-endereco-display');
+
+        clienteSelect.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            if (selectedOption.value) {
+                clienteCpfInput.value = selectedOption.dataset.cpf_cnpj;
+                clienteEmailInput.value = selectedOption.dataset.email;
+                clienteTelefoneInput.value = selectedOption.dataset.telefone;
+                clienteEnderecoInput.value = selectedOption.dataset.endereco;
+            } else {
+                // Limpa os campos se "Selecione um cliente" for escolhido
+                clienteCpfInput.value = '';
+                clienteEmailInput.value = '';
+                clienteTelefoneInput.value = '';
+                clienteEnderecoInput.value = '';
+            }
+        });
+        // --- FIM DO BLOCO 1 ---
+
+
+        // --- INÍCIO DO BLOCO 2 (CORRIGIDO) ---
+        // 2. Lógica para buscar CEP (API ViaCEP)
+        const cepInput = document.getElementById('cep-venda');
+        const enderecoInput = document.getElementById('endereco-venda');
+        // As variáveis cidadeInput e estadoInput já foram definidas no topo do script
+
+        cepInput.addEventListener('blur', function() { // 'blur' é acionado quando você clica fora do campo
+            const cep = this.value.replace(/\D/g, ''); // Remove não-números
+            if (cep.length !== 8) return;
+
+            // Mostra um feedback
+            cepInput.value = 'Buscando...';
+
+            fetch(`https://viacep.com.br/ws/${cep}/json/`)
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.erro) {
+                        // Preenche os campos de Endereço, Cidade e Estado
+                        enderecoInput.value = `${data.logradouro}, ${data.bairro}`;
+                        cidadeInput.value = data.localidade;
+                        estadoInput.value = data.uf;
+                        cepInput.value = cep; // Restaura o CEP formatado
+                    } else {
+                        alert('CEP não encontrado.');
+                        enderecoInput.value = '';
+                        cidadeInput.value = '';
+                        estadoInput.value = '';
+                        cepInput.value = cep; // Restaura o CEP digitDO
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro ao buscar CEP:', error);
+                    alert('Não foi possível buscar o CEP.');
+                    cepInput.value = cep; // Restaura o CEP
+                });
+        });
+
+        // Lógica de Busca de CEP para o MODAL DE CLIENTE
+        const cepModalInput = document.getElementById('id_cep_modal');
+        const btnBuscarCepModal = document.getElementById('buscar-cep-modal-btn');
+
+        if (cepModalInput && btnBuscarCepModal) {
+            btnBuscarCepModal.addEventListener('click', function() {
+                const cep = cepModalInput.value.replace(/\D/g, '');
+                if (cep.length !== 8) { alert("CEP inválido"); return; }
+
+                fetch(`https://viacep.com.br/ws/${cep}/json/`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (!data.erro) {
+                            document.getElementById('id_logradouro_modal').value = data.logradouro;
+                            document.getElementById('id_bairro_modal').value = data.bairro;
+                            document.getElementById('id_cidade_modal').value = data.localidade;
+                            document.getElementById('id_uf_modal').value = data.uf;
+                            // O ViaCEP devolve o campo 'ibge', nós jogamos ele no campo oculto
+                            document.getElementById('id_codigo_municipio_modal').value = data.ibge;
+                            document.getElementById('id_numero_modal').focus(); // Joga o foco para o número
+                        } else {
+                            alert("CEP não encontrado!");
+                        }
+                    })
+                    .catch(err => console.error("Erro CEP:", err));
+            });
+        }
+        // --- FIM DO BLOCO 2 (CORRIGIDO) ---
+        // ▼▼▼ ADICIONE ESTE BLOCO PARA CONTROLAR O CAMPO PARCELAS ▼▼▼
+        const paymentMethodSelect = document.getElementById('payment-method');
+        const parcelasContainer = document.getElementById('parcelas-container');
+        const parcelasInput = document.getElementById('parcelas-input');
+
+        paymentMethodSelect.addEventListener('change', function() {
+            if (this.value === 'BOLETO') {
+                parcelasContainer.style.display = 'block';
+            } else {
+                parcelasContainer.style.display = 'none';
+                parcelasInput.value = '1'; // Reseta para 1x se mudar a forma de pagamento
+            }
+        });
+        // ▲▲▲ FIM DO BLOCO ▲▲▲
+        const dueDateInput = document.getElementById('due-date');
+
+        
+
+        // Elementos para busca de produto
+        const searchResultsContainer = document.createElement('div');
+        searchResultsContainer.style.position = 'relative';
+        produtoSearchInput.parentNode.appendChild(searchResultsContainer);
+
+        // =================================================================
+        // LÓGICA DO MENU E MODAL (CORRIGIDO)
+        // =================================================================
+
+        // 1. Define a função que controla o "abre e fecha"
+        function setupSubmenuToggle(toggleId, submenuId) {
+            const toggleButton = document.getElementById(toggleId);
+            const submenu = document.getElementById(submenuId);
+            if (toggleButton && submenu) {
+                toggleButton.addEventListener('click', function(event) {
+                    event.preventDefault(); // Impede que a página pule para o topo
+                    // Alterna a visibilidade do submenu
+                    submenu.style.display = submenu.style.display === 'block' ? 'none' : 'block';
+                });
+            }
+        }
+
+        // 2. Aplica a função aos dois menus
+        setupSubmenuToggle('financeiro-toggle', 'financeiro-submenu');
+        setupSubmenuToggle('comercial-toggle', 'comercial-submenu');
+        setupSubmenuToggle('configuracoes-toggle', 'configuracoes-submenu');
+
+        // 3. Garante que o menu da página ativa comece aberto
+        const activeLink = document.querySelector('.sidebar .submenu a.active');
+        if (activeLink) {
+            const parentSubmenu = activeLink.closest('.submenu');
+            if (parentSubmenu) {
+                parentSubmenu.style.display = 'block';
+            }
+        }
+        
+        // Deletar selecionados
+        document.querySelectorAll('.delete-form').forEach(form => {
+            form.addEventListener('submit', function(event) {
+                if (!confirm('Tem certeza que deseja excluir os itens selecionados?')) {
+                    event.preventDefault();
+                }
+            });
+        });
+
+        // Modal de Cliente
+        const clienteModal = document.getElementById('cliente-modal');
+        const novoClienteBtn = document.getElementById('novo-cliente-btn');
+        const closeModalBtn = clienteModal.querySelector('.close-btn');
+        const clienteForm = document.getElementById('cliente-rapido-form');
+
+        novoClienteBtn.addEventListener('click', () => { clienteModal.style.display = 'block'; });
+        closeModalBtn.addEventListener('click', () => { clienteModal.style.display = 'none'; });
+        window.addEventListener('click', (event) => { if (event.target == clienteModal) { clienteModal.style.display = 'none'; } });
+
+        clienteForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            const formData = new FormData(this);
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            fetch("{% url 'cadastrar_cliente_rapido' %}", {
+                method: 'POST', body: formData, headers: {'X-CSRFToken': csrfToken}
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // 1. Adiciona os dados do cliente ao <option>
+                    const newOption = new Option(data.cliente.nome, data.cliente.id, true, true);
+                    newOption.dataset.cpf_cnpj = data.cliente.cpf_cnpj;
+                    newOption.dataset.email = data.cliente.email;
+                    newOption.dataset.telefone = data.cliente.telefone;
+                    newOption.dataset.endereco = data.cliente.endereco;
+                    
+                    clienteSelect.appendChild(newOption);
+                    clienteSelect.value = data.cliente.id; // Seleciona o cliente recém-criado
+
+                    // 2. Preenche os campos de display na página principal
+                    clienteCpfInput.value = data.cliente.cpf_cnpj;
+                    clienteEmailInput.value = data.cliente.email;
+                    clienteTelefoneInput.value = data.cliente.telefone;
+                    clienteEnderecoInput.value = data.cliente.endereco;
+
+                    alert('Cliente cadastrado com sucesso!');
+                    clienteModal.style.display = 'none';
+                    this.reset();
+                } else { 
+                    // Mostra erros de validação se houver
+                    let error_message = 'Erro ao cadastrar cliente.';
+                    if (data.errors) {
+                        error_message += '\n' + JSON.stringify(data.errors);
+                    }
+                    alert(error_message); 
+                }
+            });
+        });
+
+        // =================================================================
+        // INÍCIO DA NOVA LÓGICA DA PÁGINA DE VENDAS
+        // =================================================================
+
+        // --- 1. FUNÇÕES DE ATUALIZAÇÃO E RENDERIZAÇÃO ---
+
+        // Função para renderizar a tabela de itens
+        function renderizarItens() {
+            itensTbody.innerHTML = '';
+            itensVenda.forEach((item, index) => {
+                const subtotal = (item.quantidade * item.preco) - item.desconto;
+                const row = `
+                    <tr class="item-row" data-index="${index}">
+                        <td>${item.nome}</td>
+                        <td class="quantity-control">
+                            <button type="button" class="qty-change" data-action="decrease">-</button>
+                            <input type="number" class="item-qty" value="${item.quantidade}" min="1" style="width: 60px;">
+                            <button type="button" class="qty-change" data-action="increase">+</button>
+                        </td>
+                        <td>${formatCurrency(item.preco)}</td>
+                        <td>R$ <input type="number" class="item-discount" value="${item.desconto.toFixed(2)}" step="0.01" style="width: 80px;"></td>
+                        <td>${formatCurrency(subtotal)}</td>
+                        <td><button type="button" class="delete-item-btn" style="background: #c00; color: #fff; border: none; cursor: pointer; padding: 5px 10px;">X</button></td>
+                    </tr>`;
+                itensTbody.insertAdjacentHTML('beforeend', row);
+            });
+            atualizarTotais();
+        }
+
+        // Função para atualizar os totais da venda
+        function atualizarTotais() {
+            totalBruto = 0;
+            descontoTotal = 0;
+            itensVenda.forEach(item => {
+                totalBruto += item.quantidade * item.preco;
+                descontoTotal += item.desconto;
+            });
+            totalLiquido = totalBruto - descontoTotal;
+
+            document.getElementById('total-bruto').innerText = formatCurrency(totalBruto);
+            document.getElementById('desconto-total').innerText = formatCurrency(descontoTotal);
+            document.getElementById('total-liquido').innerText = formatCurrency(totalLiquido);
+        }
+
+        // --- 2. LÓGICA DE BUSCA E ADIÇÃO DE PRODUTOS ---
+
+        // Busca de produtos (CORRIGIDO para usar a lista local)
+        produtoSearchInput.addEventListener('input', () => {
+            const query = produtoSearchInput.value.toLowerCase();
+            searchResultsContainer.innerHTML = '';
+            produtoSelecionado = null;
+
+            if (query.length < 2) return;
+
+            const filteredProdutos = produtos.filter(p => p.nome.toLowerCase().includes(query) || p.codigo.toLowerCase().includes(query));
+            
+            let resultsHtml = '<ul class="product-search-results">';
+            filteredProdutos.slice(0, 10).forEach(produto => {
+                resultsHtml += `<li data-produto-id="${produto.id}" class="search-result-item" style="padding: 10px; cursor: pointer;">${produto.nome} (Estoque: ${produto.estoque})</li>`;
+            });
+            resultsHtml += '</ul>';
+            searchResultsContainer.innerHTML = resultsHtml;
+        });
+
+        // Clicar em um resultado da busca
+        searchResultsContainer.addEventListener('click', function(event) {
+            if (event.target && event.target.matches('li.search-result-item')) {
+                const produtoId = parseInt(event.target.getAttribute('data-produto-id'));
+                produtoSelecionado = produtos.find(p => p.id === produtoId);
+                produtoSearchInput.value = produtoSelecionado.nome;
+                searchResultsContainer.innerHTML = '';
+            }
+        });
+
+        // Botão "Adicionar Item"
+        addItemBtn.addEventListener('click', () => {
+            if (!produtoSelecionado) {
+                alert('Por favor, selecione um produto da lista.');
+                return;
+            }
+            const quantidade = parseInt(produtoQtyInput.value);
+            if (isNaN(quantidade) || quantidade <= 0) {
+                alert('Por favor, insira uma quantidade válida.');
+                return;
+            }
+            if (produtoSelecionado.tipo === 'PRODUTO' && quantidade > produtoSelecionado.estoque) {
+                alert(`Estoque insuficiente para ${produtoSelecionado.nome}. Disponível: ${produtoSelecionado.estoque}`);
+                return;
+            }
+            
+            const itemExistente = itensVenda.find(item => item.id === produtoSelecionado.id);
+            if(itemExistente){
+                itemExistente.quantidade += quantidade;
+            } else {
+                 itensVenda.push({
+                    id: produtoSelecionado.id,
+                    nome: produtoSelecionado.nome,
+                    quantidade: quantidade,
+                    preco: parseFloat(produtoSelecionado.preco),
+                    desconto: 0.00
+                });
+            }
+           
+            renderizarItens();
+            produtoSearchInput.value = '';
+            produtoQtyInput.value = '1';
+            produtoSelecionado = null;
+        });
+
+
+        // --- 3. LÓGICA DA TABELA DE ITENS (Alterar Qtd, Desconto, Remover) ---
+
+        itensTbody.addEventListener('change', function(event) {
+            const target = event.target;
+            const index = target.closest('.item-row').dataset.index;
+
+            if (target.classList.contains('item-qty')) {
+                itensVenda[index].quantidade = parseInt(target.value);
+            }
+            if (target.classList.contains('item-discount')) {
+                itensVenda[index].desconto = parseFloat(target.value) || 0;
+            }
+            renderizarItens();
+        });
+
+        itensTbody.addEventListener('click', function(event) {
+            const target = event.target;
+            const index = target.closest('.item-row').dataset.index;
+
+            if (target.classList.contains('delete-item-btn')) {
+                itensVenda.splice(index, 1);
+                renderizarItens();
+            }
+            if (target.classList.contains('qty-change')) {
+                const action = target.dataset.action;
+                if (action === 'increase') {
+                    itensVenda[index].quantidade++;
+                } else if (action === 'decrease' && itensVenda[index].quantidade > 1) {
+                    itensVenda[index].quantidade--;
+                }
+                renderizarItens();
+            }
+        });
+
+        // --- 4. LÓGICA DE PAGAMENTOS (Adicionar e Remover) ---
+        
+        document.getElementById('add-payment-btn').addEventListener('click', () => {
+            const forma = document.getElementById('payment-method').value;
+
+            if (totalLiquido <= 0) {
+                alert('Não é possível adicionar um pagamento com valor zero ou negativo.');
+                return;
+            }
+
+            // Lógica Simplificada: Define um único pagamento com o valor total líquido.
+            // Se você clicar de novo com outra forma de pgto, ele substituirá a anterior.
+            pagamentos = []; 
+            pagamentos.push({ forma: forma, valor: totalLiquido });
+            
+            alert(`Pagamento de ${formatCurrency(totalLiquido)} na forma "${forma}" foi adicionado.`);
+            renderizarPagamentos();
+        });
+
+        // Renderizar tabela de pagamentos
+        function renderizarPagamentos() {
+            const tbody = document.getElementById('pagamentos-table').querySelector('tbody');
+            tbody.innerHTML = '';
+            pagamentos.forEach((pag, index) => {
+                const row = `
+                    <tr data-index="${index}">
+                        <td>${pag.forma}</td>
+                        <td>${formatCurrency(pag.valor)}</td>
+                        <td><button type="button" class="delete-payment-btn" style="background: #c00; color: #fff; border:none; cursor: pointer; padding: 2px 8px;">X</button></td>
+                    </tr>`;
+                tbody.insertAdjacentHTML('beforeend', row);
+            });
+        }
+
+        // Remover pagamento
+        document.getElementById('pagamentos-table').addEventListener('click', function(event){
+            if(event.target.classList.contains('delete-payment-btn')){
+                const index = event.target.closest('tr').dataset.index;
+                pagamentos.splice(index, 1);
+                renderizarPagamentos();
+            }
+        });
+
+        // Em vendas.html, dentro do <script>, substitua o evento de clique de #finalizar-venda-btn
+
+        finalizarVendaBtn.addEventListener('click', () => {
+            // Validações
+            const clienteInput = document.getElementById('cliente-select');
+            const cidadeInput = document.getElementById('cidade-venda');
+            const estadoInput = document.getElementById('estado-venda');
+
+            if (!clienteInput.value) { alert('Selecione um cliente.'); return; }
+            if (!cidadeInput.value) { alert('Preencha a Cidade da Venda.'); return; }
+            if (!estadoInput.value) { alert('Preencha o Estado (UF) da Venda.'); return; }
+            if (itensVenda.length === 0) { alert('Adicione pelo menos um item à venda.'); return; }
+            if (pagamentos.length === 0) { alert('Adicione pelo menos uma forma de pagamento.'); return; }
+            if (!dueDateInput.value) { alert('Selecione uma data de vencimento para a fatura.'); return; }
+
+            
+            const totalPago = pagamentos.reduce((acc, pag) => acc + pag.valor, 0);
+
+            if (Math.abs(totalLiquido - totalPago) > 0.01) {
+                alert('O valor total dos pagamentos não corresponde ao total líquido da venda.');
+                return;
+            }
+
+            // Monta o objeto de dados para enviar (COM OS NOVOS CAMPOS)
+            const vendaData = {
+                cliente: clienteSelect.value,
+                vendedor: vendedorSelect.value || null,
+                cidade: cidadeInput.value,
+                estado: estadoInput.value.toUpperCase(),
+                itens: itensVenda,
+                pagamentos: pagamentos,
+                due_date: dueDateInput.value,
+                parcelas: parseInt(document.getElementById('parcelas-input').value) || 1,
+                total_bruto: totalBruto,
+                desconto_total: descontoTotal,
+                total_liquido: totalLiquido,
+                // --- LINHA ADICIONADA PARA CORRIGIR A DUPLICAÇÃO ---
+                editing_sale_id: editingSaleId
+        };
+
+            const csrfToken = document.querySelector('form.delete-form [name=csrfmiddlewaretoken]').value;
+
+            // Envia para o servidor (sem alterações aqui)
+            fetch("{% url 'vendas' %}", {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+                body: JSON.stringify(vendaData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert('Venda finalizada com sucesso!');
+                    window.location.href = data.redirect_url;
+                } else {
+                    alert(`Erro ao finalizar a venda: ${data.message}`);
+                }
+            })
+            .catch(error => {
+                console.error('Erro:', error);
+                alert('Ocorreu um erro de comunicação com o servidor.');
+            });
+        });
+        // --- INÍCIO DA LÓGICA DE AUTOCOMPLETE DE CIDADE (VERSÃO CORRIGIDA) ---
+        
+        const cidadeResultsContainer = document.getElementById('cidade-results');
+        let searchTimeout;
+
+        cidadeInput.addEventListener('input', function() {
+            const query = cidadeInput.value;
+            // Limpa e esconde os resultados ao digitar
+            cidadeResultsContainer.innerHTML = ''; 
+            cidadeResultsContainer.style.display = 'none';
+
+            if (query.length < 3) {
+                return;
+            }
+
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                fetch(`/search-cities/?term=${query}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.length > 0) {
+                            // ALTERAÇÃO: Mostra o container SÓ SE houver resultados
+                            cidadeResultsContainer.style.display = 'block'; 
+                            data.forEach(item => {
+                                const div = document.createElement('div');
+                                div.className = 'autocomplete-item';
+                                div.textContent = item.label;
+                                div.addEventListener('click', function() {
+                                    cidadeInput.value = item.value;
+                                    estadoInput.value = item.estado;
+                                    // ALTERAÇÃO: Esconde o container após selecionar
+                                    cidadeResultsContainer.innerHTML = '';
+                                    cidadeResultsContainer.style.display = 'none';
+                                });
+                                cidadeResultsContainer.appendChild(div);
+                            });
+                        }
+                    });
+            }, 300);
+        });
+
+        // Fecha a lista de sugestões se clicar fora
+        document.addEventListener('click', function(e) {
+            if (!cidadeInput.contains(e.target)) {
+                // ALTERAÇÃO: Esconde o container ao clicar fora
+                cidadeResultsContainer.innerHTML = '';
+                cidadeResultsContainer.style.display = 'none';
+            }
+        });
+        // --- FIM DA LÓGICA DE AUTOCOMPLETE ---
+        // --- ADICIONE O BLOCO ABAIXO ---
+        // LÓGICA PARA O BOTÃO "EDITAR" VENDA
+        let editingSaleId = null; // Guarda o ID da venda sendo editada
+
+        document.querySelectorAll('.edit-sale-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const saleId = this.dataset.id;
+                
+                // Mostra um feedback de carregamento
+                this.textContent = 'Carregando...';
+                this.disabled = true;
+
+                // Busca os dados da venda via AJAX
+                fetch(`?fetch_sale_data=${saleId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            const saleData = data.sale_data;
+
+                            // Preenche os campos principais
+                            clienteSelect.value = saleData.cliente_id;
+                            vendedorSelect.value = saleData.vendedor_id || '';
+                            document.getElementById('cidade-venda').value = saleData.cidade || '';
+                            document.getElementById('estado-venda').value = saleData.estado || '';
+                            
+                            // Limpa pagamentos e itens antigos do formulário
+                            itensVenda = [];
+                            pagamentos = [];
+                            renderizarPagamentos(); // Limpa tabela de pagamentos
+
+                            // Preenche a lista de itens
+                            itensVenda = saleData.itens.map(item => ({
+                                id: item.id,
+                                nome: item.nome,
+                                quantidade: item.quantidade,
+                                preco: item.preco,
+                                desconto: item.desconto,
+                                estoque: item.estoque, // Importante para validações futuras
+                                tipo: item.tipo
+                            }));
+                            renderizarItens(); // Desenha a tabela de itens e atualiza totais
+
+                            // Guarda o ID da venda original para enviar no POST
+                            editingSaleId = saleData.venda_id;
+
+                            // Altera o texto do botão finalizar para indicar edição
+                            finalizarVendaBtn.textContent = 'SALVAR VENDA EDITADA';
+
+                            // Rola a página para o topo (para o formulário)
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                            // --- BLOCO CORRIGIDO ---
+                            // Preenche os campos de display do cliente
+                            if (saleData.cliente_details) {
+                                document.getElementById('cliente-cpf-display').value = saleData.cliente_details.cpf_cnpj;
+                                document.getElementById('cliente-email-display').value = saleData.cliente_details.email;
+                                document.getElementById('cliente-telefone-display').value = saleData.cliente_details.telefone;
+                                document.getElementById('cliente-endereco-display').value = saleData.cliente_details.endereco;
+                            }
+                            // --- FIM DO BLOCO CORRIGIDO ---
+
+                        } else {
+                            alert(`Erro ao carregar dados da venda: ${data.message}`);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Erro ao buscar dados da venda:', error);
+                        alert('Erro de comunicação ao buscar dados da venda.');
+                    })
+                    .finally(() => {
+                        // Restaura o botão Editar
+                        this.textContent = 'Editar';
+                        this.disabled = false;
+                    });
+            });
+        });
+
+        
+        
+
+    });
+    </script>
+</body>
+</html>

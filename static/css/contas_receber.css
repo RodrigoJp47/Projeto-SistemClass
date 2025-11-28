@@ -1,0 +1,435 @@
+/* ========================================================== */
+/* CSS COMPLETO E OTIMIZADO PARA CONTAS A RECEBER             */
+/* ========================================================== */
+
+/* -------------------------------------------------------------------------- */
+/* RECOMENDAÇÃO: ESTILOS GLOBAIS DA APLICAÇÃO (TEMA ESCURO)                   */
+/* Se este visual for para o site inteiro, considere mover estas regras      */
+/* para o seu arquivo `global.css`.                                         */
+/* -------------------------------------------------------------------------- */
+body {
+    font-family: Arial, sans-serif;
+    
+    min-height: 100vh;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+/* ========================================================================== */
+/* LAYOUT E COMPONENTES PRINCIPAIS                                            */
+/* ========================================================================== */
+
+.main-content {
+    /* Mantido o margin-left original de 290px para acomodar a sidebar */
+    margin-left: 250px;
+    padding: 20px;
+    width: calc(100% - 250px);
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.header-container {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+/* Garante que o tamanho do título seja controlado pelo global.css */
+.header-container h2 {
+    margin: 0;
+}
+
+/* Adiciona margem entre o título e o botão "Voltar" */
+.header-container .btn {
+    margin-left: 30px;
+}
+
+/* ========================================================================== */
+/* FORMULÁRIOS E FILTROS                                                      */
+/* ========================================================================== */
+
+.form-container, .filter-container {
+    background-color: #222;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.form-container input, .form-container select, .form-container textarea,
+.filter-container input[type="text"],
+.filter-container select, .filter-container input[type="date"] {
+    width: 100%;
+    padding: 10px;
+    margin: 5px 0 15px 0;
+    border: none;
+    border-radius: 4px;
+    background-color: #333;
+    color: #fff;
+}
+
+/* Adiciona margem entre os botões "Salvar" e "Salvar e Receber" */
+.form-container .btn + .btn {
+    margin-left: 15px;
+}
+
+/* ========================================================================== */
+/* CABEÇALHO DE AÇÕES (EXPORTAR, EXCLUIR EM MASSA)                            */
+/* ========================================================================== */
+
+.actions-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+/* ▼▼▼ ADICIONE TODO ESTE BLOCO DE CÓDIGO ABAIXO ▼▼▼ */
+.export-buttons {
+    display: flex;
+    align-items: center;
+    gap: 10px; /* Cria o espaçamento de 10 pixels entre os botões. */
+}
+/* --- FIM DO BLOCO A SER ADICIONADO --- */
+
+/* ========================================================================== */
+/* TABELA DE DADOS E MENU DE AÇÕES                                            */
+/* ========================================================================== */
+
+.table-container {
+    background-color: #222;
+    padding: 20px;
+    border-radius: 8px;
+    width: 100%;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+th, td {
+    padding: 12px 5px;
+    text-align: left;
+    border-bottom: 1px solid #444;
+    vertical-align: middle;
+    word-wrap: break-word;
+}
+
+
+th {
+    background-color: #333;
+    
+}
+/* ========================================================== */
+/* LARGURA DAS COLUNAS (CONTAS A RECEBER) - AJUSTADAS         */
+/* ========================================================== */
+
+.table-container th:nth-child(1) { width: 3%; }   /* Checkbox */
+.table-container th:nth-child(2) { width: 11%; }  /* Nome */
+.table-container th:nth-child(3) { width: 12%; }  /* Descrição */
+.table-container th:nth-child(4) { width: 10%; }  /* Data Venc (mais espaço) */
+.table-container th:nth-child(5) { width: 9%; }   /* Valor */
+.table-container th:nth-child(6) { width: 10%; }  /* Categoria */
+.table-container th:nth-child(7) { width: 8%; }   /* Conta Bancária */
+.table-container th:nth-child(8) { width: 8%; }   /* Área-DRE */
+.table-container th:nth-child(9) { width: 9%; }   /* Forma Pag (mais espaço) */
+.table-container th:nth-child(10) { width: 8%; }  /* Ocorrência */
+.table-container th:nth-child(11) { width: 6%; }  /* Status */
+.table-container th:nth-child(12) { width: 6%; }  /* Ações */
+
+td.action-menu {
+    position: relative;
+    text-align: center;
+}
+
+.action-menu .menu-icon {
+    width: 30px;
+    height: 30px;
+    background-color: rgb(16, 107, 16);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #000;
+    font-size: 16px;
+    margin: 0 auto; /* Centraliza o ícone dentro da célula */
+}
+
+.action-menu.active .dropdown {
+    display: block;
+}
+
+.action-menu .dropdown {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: 35px;
+    background-color: #333;
+    min-width: 0;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.4);
+    z-index: 1000;
+    border-radius: 4px;
+}
+
+.action-menu .dropdown a,
+.action-menu .dropdown form {
+    display: block;
+    color: #fff;
+    text-decoration: none;
+}
+
+.action-menu .dropdown a,
+.action-menu .dropdown button {
+    padding: 8px;
+    font-size: 18px;
+    text-align: center;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.action-menu .dropdown button {
+    background: none;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+    display: block;
+}
+
+.action-menu .dropdown a:hover,
+.action-menu .dropdown form:hover { /* Aplica hover no form para pegar o botão dentro */
+    background-color: #0f0;
+    color: #000;
+}
+
+.action-menu .dropdown form:hover button {
+    color: #000; /* Garante que o ícone do botão mude de cor no hover do form */
+}
+
+.action-menu .dropdown button.delete-btn { color: #f00; }
+.action-menu .dropdown form:hover button.delete-btn { background-color: #f00; color: #fff; }
+
+.action-menu .dropdown button.undo-btn { color: #0d6efd; }
+.action-menu .dropdown form:hover button.undo-btn { background-color: #0d6efd; color: #fff; }
+
+/* ========================================================================== */
+/* ESTILOS DOS BOTÕES GLOBAIS                                                 */
+/* ========================================================================== */
+
+/* Estilo base para todos os botões */
+.btn {
+    display: inline-block;
+    padding: 5px 10px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    color: #000;
+    text-decoration: none;
+    text-align: center;
+    font-size: 12px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+/* Estilo para botões primários (Salvar, Filtrar, Voltar, Exportar) */
+.btn-primary {
+    background-color: rgb(23, 103, 23); /* Verde */
+    color: #fff; /* Texto preto */
+    border-color: rgb(17, 107, 17);
+}
+
+.btn-primary:hover {
+    background-color: #0c0; /* Verde mais escuro no hover */
+    border-color: #0c0;
+}
+
+/* Estilo para botões de perigo (Excluir) */
+.btn-danger {
+    background-color: #dc3545; /* Vermelho */
+    color: #fff; /* Texto branco */
+    border-color: #dc3545;
+}
+
+.btn-danger:hover {
+    background-color: #c82333; /* Vermelho mais escuro no hover */
+    border-color: #bd2130;
+}
+
+
+.total-row { font-size: 1.1em; }
+.pagination { margin-top: 20px; text-align: center; }
+.pagination a { text-decoration: none; padding: 8px 12px; border: 1px solid #444; margin: 0 4px; border-radius: 4px; }
+
+
+/* Em contas_receber.css, adicione ao final */
+
+/* ==========================================================================
+   SOBRESCRITA DE ESTILO DO SIDEBAR PARA ESTA PÁGINA
+   ========================================================================== */
+body.contas-receber-page .sidebar {
+    top: 0;
+    left: 0;
+    bottom: 0;
+    border-radius: 0;
+}
+
+/* Em static/css/contas_receber.css, adicione no final do arquivo */
+
+/* ▼▼▼ ADICIONE TODO O BLOCO DE CÓDIGO ABAIXO ▼▼▼ */
+/* ==========================================================================
+   ESTILOS PARA O BOTÃO DE INFORMAÇÃO DA IMPORTAÇÃO
+   ========================================================================== */
+.import-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.info-tooltip-container {
+    position: relative;
+    display: inline-block;
+}
+.info-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    background-color: #007bff;
+    color: #fff;
+    border-radius: 50%;
+    font-weight: bold;
+    font-family: 'Courier New', Courier, monospace;
+    cursor: help;
+    font-size: 16px;
+}
+.info-tooltip-container .tooltip-text {
+    visibility: hidden;
+    opacity: 0;
+    width: 350px;
+    background-color: #333;
+    color: #fff;
+    text-align: left;
+    border-radius: 6px;
+    padding: 10px;
+    position: absolute;
+    z-index: 1;
+    bottom: 125%;
+    left: 50%;
+    transform: translateX(-50%);
+    transition: opacity 0.3s;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    line-height: 1.6;
+}
+.info-tooltip-container .tooltip-text::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 5px;
+    border-style: solid;
+    border-color: #333 transparent transparent transparent;
+}
+.info-tooltip-container:hover .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+}
+.tooltip-text strong { color: #0f0; }
+.tooltip-text hr { border-color: #555; margin: 5px 0; }
+.tooltip-text ul { list-style-position: inside; padding-left: 5px; }
+.tooltip-text li { margin-bottom: 8px; }
+/* --- FIM DO BLOCO A SER ADICIONADO --- */
+/* ========================================================================== */
+/* ESTILOS RESPONSIVOS (PARA DISPOSITIVOS MÓVEIS)                             */
+/* ========================================================================== */
+
+@media screen and (max-width: 768px) {
+    /*
+       O que fica aqui: Regras que afetam APENAS elementos
+       específicos da página Contas a Receber. O layout geral
+       é controlado pelo arquivo layout-responsive.css.
+    */
+    
+    .filter-container form {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        align-items: stretch;
+    }
+
+    .actions-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 15px;
+    }
+
+    .actions-header .export-buttons {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+    }
+
+    .actions-header .export-buttons a {
+        flex-grow: 1;
+        text-align: center;
+    }
+
+    .actions-header .bulk-action,
+    .actions-header .bulk-action button {
+        width: 100%;
+    }
+    
+    /* --- Layout de "Card" para a tabela em telas pequenas --- */
+    .table-container thead {
+        display: none;
+    }
+
+    .table-container tr {
+        display: block;
+        background-color: #2c2c2c;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        border: 1px solid #444;
+        padding: 5px 0;
+    }
+
+    .table-container td {
+        display: block;
+        width: 100%;
+        text-align: right;
+        padding-left: 50%;
+        position: relative;
+        border-bottom: none;
+        padding-top: 8px;
+        padding-bottom: 8px;
+        color: #fff !important;
+    }
+
+    .table-container td:last-child {
+        border-bottom: none;
+    }
+
+    .table-container td:before {
+        content: attr(data-label);
+        position: absolute;
+        left: 10px;
+        width: calc(50% - 20px);
+        padding-right: 10px;
+        white-space: nowrap;
+        text-align: left;
+        font-weight: bold;
+        color: #0f0;
+    }
+
+    .table-container td.action-menu {
+        padding-right: 15px;
+    }
+
+    .table-container td.action-menu .menu-icon {
+        margin: 0 0 0 auto; /* Alinha o ícone à direita no modo mobile */
+    }
+}

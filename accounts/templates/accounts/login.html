@@ -1,0 +1,32 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - SistemClass</title> <link rel="stylesheet" href="{% static 'css/login.css' %}">
+</head>
+<body>
+    <div class="split-container">
+        <div class="logo-pane">
+            <img src="{% static 'images/logo_escuro.jpeg' %}" alt="Logo SistemClass"> </div>
+        
+        <div class="login-container">
+            <h2>SistemClass</h2>
+            <form method="post"> {% csrf_token %}
+                
+                <input type="hidden" name="next" value="{{ next }}"> 
+                <input type="text" name="username" placeholder="Usuário" required>
+                <input type="password" name="password" placeholder="Senha" required>
+                <button type="submit">Entrar</button>
+                <div class="extra-links" style="text-align: center; margin-top: 15px;">
+                    <a href="{% url 'register' %}">Ainda não tem uma conta? Cadastre-se</a>
+                </div>
+                {% if error %}
+                    <p class="error">{{ error }}</p>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+</body>
+</html>

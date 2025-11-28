@@ -1,0 +1,81 @@
+/* ==========================================================================
+   ARQUIVO CENTRAL DE ESTILOS RESPONSIVOS (PARA TELAS ATÉ 768px)
+   ========================================================================== */
+
+@media screen and (max-width: 768px) {
+
+    /* --- Regra Global do Body --- */
+    /* Remove o layout flex do desktop para permitir rolagem normal da página. */
+    body {
+        display: block;
+    }
+
+    /* --- Visibilidade dos Botões de Menu --- */
+    /* Mostra o botão hambúrguer e esconde o de recolher do desktop. */
+    #menu-toggle {
+        display: block;
+    }
+    #desktop-toggle-btn {
+        display: none;
+    }
+
+    /* --- Comportamento do Conteúdo Principal --- */
+    /* Faz o conteúdo ocupar 100% da tela, removendo a margem do menu. */
+    .main-content {
+        margin-left: 0 !important;
+        width: 100% !important;
+        padding: 15px;
+    }
+
+    /* --- Animação e Posição do Menu Mobile --- */
+    .sidebar {
+        height: 100%;
+        width: 260px;
+        transform: translateX(-100%); /* Esconde o menu para a esquerda por padrão. */
+        transition: transform 0.3s ease-in-out;
+        border-right: 1px solid #444;
+    }
+
+    /* Mostra o menu ao clicar no hambúrguer. */
+    .sidebar.mobile-open {
+        transform: translateX(0);
+    }
+
+    /* --- CORREÇÕES DE CONFLITO (Desktop Recolhido vs. Mobile) --- */
+    /* Estas regras garantem que o layout mobile funcione perfeitamente,
+       mesmo se o menu estava recolhido no desktop. */
+
+    /* 1. Garante que o conteúdo ocupe 100% da tela */
+    .main-content.sidebar-collapsed {
+        margin-left: 0 !important;
+        width: 100% !important;
+    }
+
+    /* 2. Garante que o menu, quando aberto no mobile, tenha a aparência correta */
+    .sidebar.sidebar-collapsed {
+        width: 260px;
+    }
+    .sidebar.sidebar-collapsed .text,
+    .sidebar.sidebar-collapsed .has-submenu > a::after,
+    .sidebar.sidebar-collapsed h2 {
+        display: inline;
+        opacity: 1;
+    }
+    .sidebar.sidebar-collapsed h2 {
+        display: block;
+    }
+
+    /* --- Ajustes de Layout Comuns (Ex: filtros da Home) --- */
+    .overview,
+    .filter-container,
+    #filter-form,
+    #custom-date {
+        flex-direction: column; /* Empilha os itens verticalmente */
+        align-items: stretch;   /* Faz os itens ocuparem a largura total */
+    }
+
+    .main-header {
+        text-align: center;
+        justify-content: center;
+    }
+}

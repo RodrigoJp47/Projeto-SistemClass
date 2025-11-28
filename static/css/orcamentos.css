@@ -1,0 +1,484 @@
+/* static/css/orcamentos.css */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+
+
+
+.main-content {
+    /* Mantido o margin-left original de 290px para acomodar a sidebar */
+    margin-left: 270px;
+    padding: 20px;
+    width: calc(100% - 270px);
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+/* --- Container Principal e Formulário de Criação --- */
+.orcamento-form-container,
+.orcamento-table-container {
+    background-color: #222;
+    padding: 25px;
+    border-radius: 8px;
+    border: 1px solid #444;
+    margin-bottom: 30px;
+}
+
+.orcamento-form-container h3,
+.orcamento-table-container h3 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #444;
+    padding-bottom: 15px;
+}
+
+.form-grid-orcamento {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    align-items: flex-end;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 10px;
+    background-color: #333;
+    border: 1px solid #555;
+    border-radius: 5px;
+    color: #fff;
+    font-size: 14px;
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+/* --- Tabela de Itens do Orçamento (durante a criação) --- */
+.orcamento-item-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+.orcamento-item-table th, .orcamento-item-table td {
+    padding: 8px;
+    text-align: left;
+    border-bottom: 1px solid #444;
+}
+.orcamento-item-table th {
+    font-size: 12px;
+    text-transform: uppercase;
+}
+.orcamento-item-table .delete-item-btn {
+    background-color: #c00; color: #fff; border: none; border-radius: 4px; padding: 4px 8px; cursor: pointer;
+}
+
+.total-container {
+    text-align: right;
+    margin-top: 20px;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+/* --- Tabela de Histórico de Orçamentos --- */
+.table-scroll-wrapper {
+    overflow-x: auto;
+}
+
+.orcamento-table-container table {
+    width: 100%;
+    min-width: 900px; /* Garante que a tabela tenha rolagem em telas pequenas */
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.orcamento-table-container th, .orcamento-table-container td {
+    padding: 12px 10px;
+    text-align: left;
+    border-bottom: 1px solid #444;
+    white-space: nowrap;
+}
+.orcamento-table-container thead th {
+    background-color: #333;
+}
+
+/* Status Badges */
+.status-badge {
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-weight: bold;
+    font-size: 11px;
+    text-transform: uppercase;
+    color: #fff;
+}
+.status-PENDENTE { background-color: #ffc107; color: #000; }
+.status-ACEITO { background-color: #28a745; }
+.status-NEGADO { background-color: #dc3545; }
+
+/* Botões de Ação na Tabela */
+.actions-cell {
+    white-space: nowrap;
+}
+
+.action-btn {
+    display: inline-block;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: bold;
+    text-decoration: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-right: 5px;
+    transition: background-color 0.2s;
+    color: #fff;
+    border: none;
+}
+.btn-convert { background-color: #17a2b8; }
+.btn-convert:hover { background-color: #138496; }
+.btn-delete { background-color: #6c757d; }
+.btn-delete:hover { background-color: #5a6268; }
+
+/* Cores padrão (Dark Mode) para Aceitar/Negar */
+.btn-accept {
+    background-color: #198754; /* Verde */
+    color: #fff; /* Garante texto branco */
+}
+.btn-accept:hover {
+    background-color: #157347;
+}
+
+.btn-deny {
+    background-color: #bb2d3b; /* Vermelho */
+    color: #fff; /* Garante texto branco */
+}
+.btn-deny:hover {
+    background-color: #a52834;
+}
+
+/* Adicionado para ajustar o espaçamento do título principal */
+.orcamentos-page .main-content h1 {
+    margin-bottom: 25px; /* Adiciona um espaço abaixo do título */
+    margin-left: 5px;    /* Adiciona um pequeno espaço à esquerda */
+}
+
+/* === ADICIONE ESTE BLOCO ABAIXO === */
+/* Estilo para o botão Editar (Dark Mode) */
+.btn-edit {
+    background-color: #ffc107; /* Amarelo */
+    color: #000; /* Texto preto para contraste com amarelo */
+}
+.btn-edit:hover {
+    background-color: #e0a800; /* Amarelo mais escuro */
+}
+/* === FIM DO BLOCO === */
+
+.btn-delete { background-color: #6c757d; } /* Cinza (Excluir/Cancelar) */
+.btn-delete:hover { background-color: #5a6268; }
+
+/* ... (resto do arquivo) ... */
+
+/* Ajuste opcional para garantir espaçamento uniforme se necessário */
+.action-btn i {
+    vertical-align: middle; /* Alinha melhor o ícone verticalmente */
+    /* font-size: 1.1em; */ /* Ajuste o tamanho se desejar */
+}
+
+/* --- Estilos para a caixa de resultados da busca de produtos --- */
+.product-search-results {
+    position: absolute;
+    background-color: #333;
+    border: 1px solid #555;
+    border-top: none;
+    border-radius: 0 0 5px 5px;
+    z-index: 100;
+    width: 100%;
+    max-height: 200px;
+    overflow-y: auto;
+    padding: 0; /* Garante que não haja espaçamento interno */
+    margin: 0;  /* Garante que não haja margem externa */
+}
+
+.search-result-item {
+    padding: 10px;
+    cursor: pointer;
+    color: #fff;
+    list-style: none; /* Garante que não apareçam bolinhas na lista */
+}
+
+.search-result-item:hover {
+    background-color: #444;
+}
+
+/* --- Estilos para o formulário de filtro do histórico --- */
+
+.orcamento-table-container .filter-form {
+    display: flex;          /* Alinha os campos lado a lado */
+    flex-wrap: wrap;        /* Permite que os campos quebrem para a linha de baixo se não couberem */
+    gap: 20px;              /* Espaço entre cada campo de filtro */
+    align-items: flex-end;  /* Alinha os campos pela base (ótimo para o botão) */
+    margin-bottom: 25px;    /* Adiciona a margem entre os filtros e a tabela */
+}
+
+/* Garante que a label e o input do filtro tenham um bom espaçamento */
+.orcamento-table-container .filter-form .form-group {
+    flex-grow: 1; /* Permite que os campos cresçam para ocupar o espaço */
+    margin-bottom: 0;
+}
+
+/* Estilo específico para o botão de filtrar */
+.orcamento-table-container .filter-form button {
+    padding: 10px 20px;
+    height: 40px; /* Garante a mesma altura dos inputs */
+}
+
+/* --- Estilos para o Ícone de Observações e Tooltip --- */
+
+.info-icon.observation-icon {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    background-color: #555; /* Cor padrão (tema escuro) */
+    color: #fff;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 18px;
+    font-size: 12px;
+    font-weight: bold;
+    cursor: help; /* Muda o cursor para indicar ajuda */
+    position: relative; /* Necessário para posicionar o tooltip */
+    margin-right: 10px; /* Espaço entre o ícone e os botões */
+    vertical-align: middle; /* Alinha o ícone com os botões */
+}
+
+.info-icon.observation-icon .tooltip-text {
+    visibility: hidden;
+    width: max-content; /* Largura se ajusta ao conteúdo */
+    max-width: 300px;  /* Largura máxima para não ficar gigante */
+    background-color: #111; /* Fundo do tooltip (tema escuro) */
+    color: #266bf5;
+    text-align: left; /* Alinha o texto à esquerda */
+    white-space: pre-wrap; /* Preserva quebras de linha e espaços */
+    border-radius: 6px;
+    padding: 10px;
+    position: absolute;
+    z-index: 10;
+    bottom: 130%; /* Posiciona acima do ícone */
+    left: 50%;
+    transform: translateX(-50%); /* Centraliza o tooltip */
+    opacity: 0;
+    transition: opacity 0.3s;
+    font-size: 12px;
+    font-weight: normal;
+    line-height: 1.4;
+    cursor: default; /* Cursor normal sobre o texto */
+}
+
+/* Mostra o tooltip no hover ou foco */
+.info-icon.observation-icon:hover .tooltip-text,
+.info-icon.observation-icon:focus .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* Em orcamentos.css, adicione ao final */
+.status-CONVERTIDO { background-color: #6f42c1; } /* Roxo */
+
+
+/* Estilo específico para o campo CPF/CNPJ readonly (Dark Mode) */
+#cliente-cpf-cnpj:read-only {
+    background-color: #444; /* Fundo cinza escuro */
+    color: #ccc;           /* Texto cinza claro */
+    cursor: not-allowed;  /* Indica que não é editável */
+}
+
+/* Cole este bloco no FINAL do seu arquivo static/css/orcamentos.css */
+
+/* ==========================================================================
+   ESTILOS PARA O MODAL DE CADASTRO RÁPIDO DE CLIENTE
+   (Copiado e adaptado de vendas.css)
+   ========================================================================== */
+
+.modal {
+    display: none; /* Escondido por padrão */
+    position: fixed; /* Fica fixo na tela, mesmo com rolagem */
+    z-index: 1000; /* Garante que fique sobre outros elementos */
+    left: 0;
+    top: 0;
+    width: 100%; /* Largura total */
+    height: 100%; /* Altura total */
+    overflow: auto; /* Permite rolagem se o conteúdo for grande */
+    background-color: rgba(0, 0, 0, 0.7); /* Fundo escuro semi-transparente */
+}
+
+.modal-content {
+    /* Usamos 'var()' com fallback para tentar usar variáveis de tema se existirem,
+       senão usa cores padrão do tema escuro */
+    background-color: var(--surface-color, #222); /* Fundo da caixa do modal */
+    color: var(--text-color, #fff); /* Cor do texto dentro do modal */
+    margin: 15% auto; /* Centraliza verticalmente (aprox.) e horizontalmente */
+    padding: 25px;
+    border: 1px solid var(--border-color, #444); /* Borda da caixa */
+    width: 80%; /* Largura responsiva */
+    max-width: 500px; /* Largura máxima em telas grandes */
+    border-radius: 8px; /* Cantos arredondados */
+    position: relative; /* Necessário para posicionar o botão de fechar */
+}
+
+/* Estilo para o título H3 dentro do modal */
+.modal-content h3 {
+    margin-top: 0; /* Remove margem superior padrão do H3 */
+    /* Você pode adicionar estilos de borda/padding se quiser igual ao H3 do form principal */
+     border-bottom: 1px solid var(--border-color, #444);
+     padding-bottom: 15px;
+     margin-bottom: 20px;
+}
+
+/* Estilo para o botão de fechar (o "X") */
+.close-btn {
+    color: #aaa; /* Cor cinza claro */
+    position: absolute; /* Posicionamento livre dentro do modal-content */
+    top: 10px;      /* Distância do topo */
+    right: 20px;     /* Distância da direita */
+    font-size: 28px; /* Tamanho do X */
+    font-weight: bold;
+    cursor: pointer; /* Muda o cursor para indicar que é clicável */
+}
+
+/* Efeito ao passar o mouse ou focar no botão de fechar */
+.close-btn:hover,
+.close-btn:focus {
+    color: var(--text-color, #fff); /* Muda a cor para a cor principal do texto */
+    text-decoration: none;
+    cursor: pointer;
+}
+
+/* Ajustes para o formulário dentro do modal (opcional, mas recomendado) */
+.modal-content .form-group {
+    margin-bottom: 15px; /* Espaçamento entre os campos */
+}
+
+.modal-content label {
+    display: block; /* Garante que a label fique acima do input */
+    margin-bottom: 5px;
+}
+
+.modal-content input[type="text"],
+.modal-content input[type="email"] {
+    width: 100%; /* Faz os inputs ocuparem toda a largura */
+    /* Os estilos de cor/fundo/borda devem ser herdados dos inputs gerais de orcamentos.css */
+}
+
+.modal-content button[type="submit"] {
+    width: 100%; /* Botão de salvar ocupa toda a largura */
+    padding: 10px; /* Adapte o padding se necessário */
+    margin-top: 10px; /* Espaço acima do botão */
+    /* Os estilos de cor/fundo do botão devem ser herdados dos botões gerais */
+}
+
+/* === INÍCIO: ESTILOS DA PAGINAÇÃO (DARK MODE) === */
+.pagination {
+    margin-top: 25px; /* Adiciona espaço acima da paginação */
+    text-align: center; /* Centraliza os links/texto */
+    padding-bottom: 15px; /* Espaço abaixo antes do fim da página */
+}
+
+/* Estilo para os links (Próxima, Última, Anterior, Primeira) */
+.pagination a {
+    display: inline-block; /* Permite aplicar padding e bordas */
+    padding: 8px 14px;
+    margin: 0 5px;
+    border: 1px solid #555; /* Borda cinza escura */
+    border-radius: 4px;
+    text-decoration: none; /* Remove sublinhado */
+    color: #ccc; /* Cor do texto cinza claro */
+    font-size: 14px;
+    transition: background-color 0.2s, border-color 0.2s; /* Efeito suave no hover */
+}
+
+/* Efeito ao passar o mouse sobre os links */
+.pagination a:hover {
+    background-color: #333; /* Fundo sutil no hover */
+    border-color: #777; /* Borda mais clara */
+    color: #fff; /* Texto branco */
+}
+
+/* Estilo para o texto "Página X de Y" */
+.pagination .current {
+    display: inline-block;
+    padding: 8px 14px;
+    margin: 0 5px;
+    color: #fff; /* Texto branco */
+    font-size: 14px;
+    /* Opcional: remover borda se preferir só o texto */
+    /* border: 1px solid transparent; */
+}
+/* === FIM: ESTILOS DA PAGINAÇÃO (DARK MODE) === */
+
+/* ==========================================================================
+   REGRAS DE RESPONSIVIDADE
+   ========================================================================== */
+
+@media screen and (max-width: 768px) {
+    .main-content {
+        width: 100%;      /* Define a largura total */
+        margin-left: 0;   /* Remove a margem da sidebar */
+        padding: 10px;    /* Opcional: um padding menor para telas pequenas */
+        overflow-x: hidden;
+        position: relative;
+    }
+    
+    /* 1. Faz o conteúdo principal ocupar toda a largura da tela */
+    .orcamentos-page {
+        margin-left: 0;
+        width: 100%;
+        padding: 15px;
+    }
+
+    /* 2. Faz o formulário de criação ficar em uma única coluna */
+    .form-grid-orcamento {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* 3. Empilha os campos do formulário de filtro */
+    .orcamento-table-container .filter-form {
+        flex-direction: column;
+        align-items: stretch; /* Faz os inputs ocuparem a largura total */
+    }
+
+    /* 4. A CORREÇÃO PRINCIPAL: Habilita a rolagem horizontal apenas para a tabela */
+    .orcamento-table-container .table-scroll-wrapper {
+        overflow-x: auto; /* Adiciona a barra de rolagem horizontal */
+        padding-bottom: 10px; /* Garante espaço para a barra de rolagem não colar no fundo */
+    }
+
+    /* 5. Força a tabela a ter uma largura mínima, ativando a barra de rolagem */
+    .orcamento-table-container .table-scroll-wrapper table {
+        min-width: 900px;
+    }
+
+    /* 6. Empilha os botões da paginação para melhor visualização */
+    .pagination {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .pagination a, .pagination .current {
+        width: 80%;
+        text-align: center;
+        margin: 0;
+    }
+    
+}

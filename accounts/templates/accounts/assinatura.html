@@ -1,0 +1,105 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Planos e Assinatura - SistemClass</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'css/global.css' %}">
+    <link rel="stylesheet" href="{% static 'css/sidebar.css' %}">
+    <link rel="stylesheet" href="{% static 'css/themes.css' %}">
+    <link rel="stylesheet" href="{% static 'css/planos.css' %}">
+</head>
+<body class="assinatura-page">
+    {% include 'accounts/_sidebar.html' %}
+
+    <div class="main-content">
+        <h1>Escolha o Plano Ideal para sua Empresa</h1>
+        <p class="subtitulo-planos">Selecione o plano que melhor se adapta ao seu momento e cresça conosco.</p>
+
+        <div class="pricing-grid">
+
+            <div class="plan-card {% if subscription.plan_name == 'Basico' %}active-plan{% endif %}">
+                <h3>Básico</h3>
+                <p class="plan-description">Para quem está começando a organizar as finanças.</p>
+                
+                <div class="price-tag">
+                    <span class="price">R$ 99,90</span>
+                    <span class="period">/mês</span>
+                </div>
+                
+                <p class="user-limit"><strong>1 Usuário</strong></p>
+
+                <ul class="features-list">
+                    <li><i class="fas fa-check"></i> Contas a Pagar e Receber</li>
+                    <li><i class="fas fa-check"></i> Importação de Extrato (OFX)</li>
+                    <li><i class="fas fa-check"></i> Dashboard Financeiro Completo</li>
+                    <li><i class="fas fa-times"></i> DRE e Fluxo de Caixa Avançado</li>
+                    <li><i class="fas fa-times"></i> Gestão de Vendas e Orçamentos</li>
+                    <li><i class="fas fa-times"></i> Limite de Funcionários</li>
+                </ul>
+
+                <a href="https://wa.me/5531993413530?text=Olá!%20Gostaria%20de%20saber%20mais%20sobre%20o%20Plano%20Básico." class="btn-whatsapp" target="_blank">
+                    <i class="fab fa-whatsapp"></i>
+                    <span>Falar com Consultor</span>
+                </a>
+            </div>
+
+            <div class="plan-card popular {% if subscription.plan_name == 'Profissional' %}active-plan{% endif %}">
+                <div class="popular-badge">Mais Popular</div>
+                <h3>Profissional</h3>
+                <p class="plan-description">Para empresas que precisam de controle total e dashboards.</p>
+                
+                <div class="price-tag">
+                    <span class="price">R$ 169,90</span>
+                    <span class="period">/mês</span>
+                </div>
+                
+                <p class="user-limit">Até <strong>5 Usuários</strong></p>
+
+                <ul class="features-list">
+                    <li><i class="fas fa-check"></i> <strong>Tudo do Básico+</strong></li>
+                    <li><i class="fas fa-check"></i> DRE e Fluxo de Caixa Avançado</li>
+                    <li><i class="fas fa-check"></i> Dashboards de KPIs e Vendas</li>
+                    <li><i class="fas fa-check"></i> Gestão de Vendas e Orçamentos</li>
+                    <li><i class="fas fa-check"></i> Cadastro de Clientes e Produtos</li>
+                    <li><i class="fas fa-times"></i> Gestão de Contratos</li>
+                </ul>
+                
+                <a href="https://wa.me/5531993413530?text=Olá!%20Gostaria%20de%20saber%20mais%20sobre%20o%20Plano%20Profissional." class="btn-whatsapp" target="_blank">
+                    <i class="fab fa-whatsapp"></i>
+                    <span>Falar com Consultor</span>
+                </a>
+            </div>
+
+            <div class="plan-card {% if subscription.plan_name == 'Empresarial' %}active-plan{% endif %}">
+                <h3>Empresarial / BPO</h3>
+                <p class="plan-description">Para gestão avançada, BPO Financeiro e multi-empresas.</p>
+                
+                <div class="price-tag">
+                    <span class="price">R$ 209,90</span>
+                    <span class="period">/mês</span>
+                </div>
+                
+                <p class="user-limit"><strong>10+ Usuários</strong></p>
+
+                <ul class="features-list">
+                    <li><i class="fas fa-check"></i> <strong>Tudo do Profissional+</strong></li>
+                    <li><i class="fas fa-check"></i> Gestão de Contratos</li>
+                    <li><i class="fas fa-check"></i> Precificação de Produtos/Serviços</li>
+                    <li><i class="fas fa-check"></i> Módulo Múltiplos CNPJ's (Gestão de Clientes)</li>
+                    <li><i class="fas fa-check"></i> Orçamento Anual Detalhado</li>
+                    <li><i class="fas fa-check"></i> Módulo de Valuation (Estimativa)</li>
+                </ul>
+                
+                <a href="https://wa.me/5531993413530?text=Olá!%20Gostaria%20de%20saber%20mais%20sobre%20o%20Plano%20Empresarial/BPO." class="btn-whatsapp" target="_blank">
+                    <i class="fab fa-whatsapp"></i>
+                    <span>Falar com Consultor</span>
+                </a>
+            </div>
+
+        </div> </div>
+    <script src="{% static 'js/theme.js' %}"></script>
+</body>
+</html>

@@ -1,0 +1,51 @@
+/* static/css/base.css */
+
+/* ==========================================================================
+   1. VARIÁVEIS GLOBAIS DE CORES E FONTES
+   ========================================================================== */
+:root {
+    --primary-color: #0f0;
+    --background-color: #000;
+    --surface-color: #222;
+    --text-color: #fff;
+    --text-color-dark: #000;
+    --border-color: #444;
+    --danger-color: #f00;
+}
+
+/* ==========================================================================
+   2. RESET BÁSICO E ESTILOS GLOBAIS DE TEXTO
+   ========================================================================== */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: var(--background-color);
+    color: var(--text-color);
+}
+
+/* ==========================================================================
+   3. COMPONENTES GLOBAIS (Ex: Botão Padrão)
+   ========================================================================== */
+.btn {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: var(--primary-color);
+    border: none;
+    border-radius: 4px;
+    color: var(--text-color-dark);
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 16px;
+    text-decoration: none;
+    text-align: center;
+    transition: background-color 0.2s;
+}
+
+.btn:hover {
+    background-color: #0c0;
+}

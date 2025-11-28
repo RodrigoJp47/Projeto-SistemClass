@@ -1,0 +1,2061 @@
+/* ==========================================================================
+   ARQUIVO: dashboard.css (Versão 2)
+   DESCRIÇÃO: Estilos para a página de dashboards.
+   FOCO: Preservar o layout original, remover redundâncias e integrar com globais.
+   ========================================================================== */
+
+/* ==========================================================================
+   1. ESTRUTURA E LAYOUT PRINCIPAL
+   - As regras de `*`, `html`, `body` e `.sidebar` foram removidas, pois já
+     existem em `global.css` e `sidebar.css`.
+   ========================================================================== */
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background-color: #fff;
+    color: #000;
+    display: flex;
+    min-height: 100vh;
+}
+
+
+
+.main-content {
+    /* Mantido o margin-left original de 290px para acomodar a sidebar */
+    margin-left: 270px;
+    padding: 20px;
+    width: calc(100% - 270px);
+    overflow-y: auto;
+}
+
+.section-divider {
+    border: 0;
+    height: 2px;
+    background-image: linear-gradient(to right, transparent, rgba(0, 0, 0, 0.75), transparent);
+    margin: 60px 0;
+}
+
+.section-title {
+    color: var(--color-text-primary);
+    font-size: var(--font-size-h1);
+    font-weight: bold;
+    margin-top: 40px;
+    margin-bottom: var(--spacing-md);
+    border-bottom: 2px solid var(--color-border);
+    padding-bottom: 10px;
+}
+
+/* ==========================================================================
+   2. CONTAINER DE FILTROS
+   ========================================================================== */
+.filter-container {
+    margin-bottom: var(--spacing-sm);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-wrap: wrap;
+}
+
+.filter-container label {
+    color: var(--color-text-primary);
+    font-size: var(--font-size-base);
+    margin-right: 5px;
+}
+
+.filter-container select,
+.filter-container input[type="date"],
+.filter-container button {
+    padding: 5px;
+    background-color: #333; /* Mantida cor escura para contraste com a página clara */
+    color: var(--color-text-light);
+    border: none;
+    border-radius: 4px;
+    font-size: var(--font-size-base);
+}
+
+.filter-container button {
+    background-color: #07501d;
+    color: #fff;
+    cursor: pointer;
+    padding: 5px 16px;
+    transition: background-color 0.2s;
+}
+
+.filter-container button:hover {
+    background-color: #07501d;
+}
+
+#custom-date {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* ==========================================================================
+   3. SEÇÃO: PAINEL CONSOLIDADO
+   ========================================================================== */
+.chart-container {
+    display: flex;
+    gap: var(--spacing-md);
+    margin-bottom: 30px;
+    position: relative;
+    height: 330px;
+}
+
+/* Em static/css/dashbord.css */
+
+/* ▼▼▼ SUBSTITUA O BLOCO ANTIGO ".chart-container .chart" POR ESTE ▼▼▼ */
+.chart-container .chart {
+    width: 66.0%;
+    background-color: #2D3748; /* <-- 1. COR DE FUNDO ESCURA (cinza-azulado) */
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius-md);
+    color: #E2E8F0;           /* <-- 2. COR DO TEXTO PADRÃO (branco-gelo) */
+}
+
+/* ▼▼▼ SUBSTITUA A REGRA ANTIGA DE "h3" POR ESTA ▼▼▼ */
+.chart-container h3,
+.chart-container .financeiro-label {
+    color: #E2E8F0; /* <-- 3. COR DO TÍTULO "Resumo do ano" (branco-gelo) */
+}
+
+.chart-container .text {
+    width: 34.0%;
+    background-color: #2D3748; /* Tom de cinza-azulado escuro */
+    padding: 15px 4px 20px 10px;
+    border-radius: var(--border-radius-md);
+    font-size: 12px; /* Fonte um pouco maior para legibilidade */
+    color: #E2E8F0;  /* Branco levemente acinzentado */
+    line-height: 0.6; /* Espaçamento entre as linhas */
+}
+
+.chart-container .text p {
+    margin: var(--spacing-sm) 5px;
+}
+
+
+.chart-container h3 {
+    margin: 0 0 var(--spacing-md) 0;
+    font-size: var(--font-size-h3);
+    text-align: center;
+}
+
+.lower-cards-wrapper {
+    max-width: 85%;
+    margin: 20px auto 40px auto;
+}
+
+.cards-container {
+    display: flex;
+    gap: var(--spacing-md);
+}
+
+.cards-container .card {
+    /* Esta classe .card é específica para este container, diferente do .card global */
+    flex: 1;
+    padding: 5px;
+    border-radius: var(--border-radius-md);
+    text-align: center;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    color: var(--color-text-light);
+    border: none; /* Sobrescreve a borda do .card global caso se aplique */
+    /* --- NOVAS PROPRIEDADES PARA AJUSTAR O TAMANHO --- */
+
+    /* Para controlar a ALTURA (tamanho vertical) */
+    min-height: 150px; /* Ex: Define uma altura mínima. Ajuste o valor como desejar. */
+
+    /* Para controlar a LARGURA (tamanho horizontal) */
+    max-width: 350px; /* Ex: Define uma largura máxima para cada card. */
+
+    /* Adicionado para centralizar o conteúdo verticalmente, caso a altura aumente */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+
+}
+
+.cards-container .card h3 {
+    margin-top: 0;
+    margin-bottom: 5px;
+    font-size: var(--font-size-h3);
+    font-weight: bold;
+}
+
+.cards-container .card hr {
+    border: 0;
+    border-top: 1px solid #444;
+    margin: 3px 0;
+}
+
+.cards-container .card .subtitle {
+    font-size: var(--font-size-base);
+    margin: 3px 0;
+}
+
+.cards-container .card .value {
+    font-size: var(--font-size-base);
+    font-weight: bold;
+}
+
+/* Adicione estas regras para o alinhamento lado a lado nos cards */
+.cards-container .card .card-content {
+    display: flex;
+    justify-content: space-around; /* Distribui os grupos de valores */
+    align-items: center;
+    width: 100%;
+    margin-top: 10px; /* Adiciona um pequeno espaço após a linha <hr> */
+}
+
+.cards-container .card .value-group {
+    text-align: center;
+}
+
+/* Adicione esta regra para corrigir o label "Financeiro" */
+.chart-container .financeiro-label {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    font-size: var(--font-size-h3);
+    font-weight: bold;
+    color: var(--color-text-light);
+}
+
+/* Novas cores em degradê para os cards */
+.cards-container .card.receivable { 
+    /* Azul Turquesa Degradê */
+    background-image: linear-gradient(to bottom right, #065c13, #71a276); 
+}
+.cards-container .card.payable { 
+    /* Vinho Degradê */
+    background-image: linear-gradient(to bottom right, #920b2d, #dc5b86); 
+}
+.cards-container .card.balance { 
+    /* Dourado Degradê */
+    background-image: linear-gradient(to bottom right, #b59c0e, #765708); 
+}
+/* Em dashbord.css, encontre e ajuste estas regras */
+
+
+
+/* ==========================================================================
+   4. SEÇÃO: FLUXO DE CAIXA
+   ========================================================================== */
+.new-cards-container {
+    display: flex;
+    gap: 10px;
+    margin-bottom: var(--spacing-md);
+}
+
+.new-card {
+    flex: 1;
+    padding: 15px; /* Aumentando um pouco o padding */
+    border-radius: var(--border-radius-md);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    background-color: #222; /* Fundo escuro padrão */
+    color: #fff; /* Texto branco padrão */
+    font-size: var(--font-size-base);
+}
+
+.new-card h3 {
+    font-size: var(--font-size-h3);
+    font-weight: bold;
+    margin-top: 0;
+    margin-bottom: 10px;
+    text-align: left;
+}
+
+.new-card p {
+    margin: 6px 0;
+    font-size: var(--font-size-base);
+}
+
+.new-card p span.value {
+    font-weight: bold;
+}
+
+.card-content-wrapper {
+    display: flex;
+    justify-content: space-between;
+    gap: 5px;
+}
+
+.cash-flow-container {
+    background-color: var(--color-background-ice);
+    padding: 10px;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    color: var(--color-text-primary);
+    margin-bottom: var(--spacing-md);
+}
+
+.cash-flow-container h3 {
+    font-size: var(--font-size-h3);
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+.cash-flow-container .chart-area {
+    height: 300px;
+    margin-bottom: 5px;
+}
+
+.cash-flow-container .mini-cards {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+.cash-flow-container .mini-card {
+    
+    padding: 8px;
+    background-color: #07501d;
+    color: var(--color-text-light);
+    text-align: center;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 11px; 
+}
+
+/* --- Container da linha inferior (Tabela e Gráficos de Categoria) --- */
+.fluxo-caixa-bottom-row {
+    display: flex;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+    align-items: stretch; /* Garante que todos os itens tenham a mesma altura */
+    height: 280px;
+}
+
+/* Estilos e proporções dos itens (Tabela e Gráficos) */
+.fluxo-caixa-bottom-row .chart-small,
+.fluxo-caixa-bottom-row .chart-half {
+    display: flex;
+    flex-direction: column;
+    min-width: 0; /* Correção essencial para o flexbox não estourar a tela */
+    margin-bottom: 0; /* Remove margin extra */
+}
+
+/* Proporções mantidas exatamente como no original para garantir o layout */
+.fluxo-caixa-bottom-row .chart-small { flex: 4; }
+.fluxo-caixa-bottom-row .chart-half { flex: 3; }
+
+/* Estilo do card da Tabela */
+.chart-small {
+    background-color: #ffffff;
+    padding: var(--spacing-sm);
+    border-radius: var(--border-radius-md);
+}
+
+.chart-small h3 {
+    margin: 0 0 10px 0;
+    font-size: var(--font-size-h3);
+    text-align: center;
+    color: var(--color-text-primary);
+}
+
+.data-table-wrapper {
+    max-height: 350px;
+    overflow-y: auto;
+    flex-grow: 1; /* Faz a área da tabela crescer para preencher o card */
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    color: var(--color-text-primary);
+}
+
+.data-table th, .data-table td {
+    padding: 8px;
+    font-size: 10px; /* Tamanho específico mantido */
+    text-align: left;
+    border-bottom: 1px solid #444;
+}
+
+.data-table th {
+    background-color: #2E86C1;
+    color: var(--color-text-light);
+}
+
+/* Estilo dos cards de Gráfico */
+.chart-half {
+    background-color: var(--color-background-ice);
+    padding: 3px;
+    border-radius: var(--border-radius-md);
+}
+
+.chart-half h3 {
+    margin: 0 0 5px 0;
+    font-size: var(--font-size-h5);
+    text-align: center;
+    color: var(--color-text-primary);
+}
+
+.chart-half .chart-container {
+    flex-grow: 1;
+    position: relative;
+    min-height: 90px;
+    max-height: 130px;
+}
+
+/* ==========================================================================
+   5. SEÇÃO: KPIs (INDICADORES CHAVE)
+   ========================================================================== */
+.dre-cards-container {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 30px;
+    flex-wrap: wrap; /* Permite que os cards quebrem a linha em telas menores */
+}
+
+.card-dre {
+    flex: 1;
+    min-width: 14%; /* Mantido para controle de quebra de linha */
+    background: #d6eec9;
+    border-radius: var(--border-radius-md);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    color: #333333;
+    display: flex; /* Adicionado para melhor alinhamento interno */
+    flex-direction: column;
+}
+
+.card-dre-header h3 {
+    margin: 0;
+    font-size: var(--font-size-h5);
+    text-align: center;
+    padding: 15px 10px 5px 10px;
+    color: #000000;
+}
+
+.card-dre-body {
+    padding: 0 15px 15px 15px;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1; /* Faz o corpo do card crescer */
+}
+
+.card-dre-value {
+    font-size: var(--font-size-h5);
+    font-weight: bold;
+    color: #000000;
+    text-align: center;
+    margin-bottom: var(--spacing-sm);
+}
+
+.card-dre-details {
+    flex-grow: 1; /* Empurra a margem para baixo */
+}
+
+.card-dre-details p {
+    margin: 8px 0;
+    font-size: 10px;
+    color: #555555;
+}
+
+.card-dre-margin {
+    margin-top: auto; /* Alinha no final do card */
+    padding-top: 10px;
+    border-top: 1px dashed #444;
+    text-align: center;
+    font-weight: bold;
+    color: #555555;
+    font-size: 9px; /* Tamanho específico mantido */
+}
+
+.insights-section {
+    display: flex;
+    gap: var(--spacing-md);
+    background-color: #fff;
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius-md);
+    margin-bottom: var(--spacing-md);
+    color: var(--color-text-secondary);
+    height: 380px;
+}
+
+.insights-menu {
+    width: 250px;
+    flex-shrink: 0;
+    border-right: 1px solid #444;
+    padding-right: var(--spacing-md);
+}
+
+.insights-menu h3 {
+    margin-top: 0;
+    font-size: var(--font-size-h3);
+}
+
+.insights-menu ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    color: #000000;
+}
+
+.insights-menu li {
+    padding: 12px 10px;
+    cursor: pointer;
+    border-radius: 5px;
+    margin-bottom: 5px;
+    font-size: 11px;
+}
+
+.insights-menu li.active {
+    background-color: rgb(176, 181, 198);
+    color: var(--color-background-dark);
+    font-weight: bold;
+}
+
+.insights-chart-container {
+    flex-grow: 1;
+    min-width: 0;
+    
+}
+
+/* ==========================================================================
+   6. SEÇÃO: ANÁLISE DE CONTAS
+   ========================================================================== */
+.action-toggle-container {
+    display: flex;
+    gap: 10px;
+}
+
+.action-toggle-button {
+    padding: 8px 18px;
+    color: var(--color-text-light);
+    text-decoration: none;
+    border-radius: 6px;
+    font-weight: bold;
+    font-size: var(--font-size-lg);
+    background-color: #444;
+}
+
+.action-toggle-button.pagar.active { background-color: #07501d; }
+.action-toggle-button.receber.active { background-color: #07501d; }
+
+.receivables-insights-container {
+    display: flex;
+    gap: 15px;
+    margin-bottom: var(--spacing-md);
+}
+
+.insight-card {
+    flex: 1;
+    background-color: #d6eec9;
+    color: var(--color-text-primary);
+    padding: var(--spacing-sm);
+    border-radius: var(--border-radius-md);
+    text-align: center;
+}
+
+.insight-card .title {
+    font-size: 12px;
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+.insight-card hr {
+    border: 0;
+    border-top: 1px solid #ccc;
+    margin: 8px 0;
+}
+
+.insight-card .value {
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.client-analysis-container {
+    display: flex;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+    background-color: var(--color-background-ice);
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius-md);
+    color: var(--color-text-primary);
+    
+}
+
+.client-analysis-container h3 {
+    font-size: var(--font-size-h2);
+}
+
+.chart-column-left {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.chart-column-right {
+    flex: 2;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+#client-search {
+    width: 100%;
+    padding: 8px;
+    margin-bottom: var(--spacing-sm);
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.doughnut-section {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+}
+
+.doughnut-chart-wrapper {
+    width: 180px;
+    height: 180px;
+    flex-shrink: 0;
+}
+
+.doughnut-text-wrapper p {
+    line-height: 1.5;
+    font-size: var(--font-size-base);
+}
+
+
+
+
+
+/* ==========================================================================
+   ESTILOS PARA A DRE E ANÁLISE (FIEL À PÁGINA DRE ORIGINAL)
+   ========================================================================== */
+.dre-section {
+    background-color: #333; /* Fundo escuro para a seção da tabela */
+    border-radius: 8px;
+    padding: 20px;
+    margin-top: 20px;
+}
+
+.dre-table {
+    width: 100%;
+    border-collapse: collapse;
+    color: #fff; /* Texto branco */
+}
+
+.dre-table th, .dre-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #444;
+}
+
+.dre-table thead th {
+    background-color: #1a1a1a;
+    color: #0f0; /* Texto verde */
+    font-size: 14px;
+}
+
+.dre-table tbody tr {
+    background-color: #333;
+}
+
+.dre-table tbody tr:nth-child(even) {
+    background-color: #2a2a2a;
+}
+
+.dre-table .total-row {
+    font-weight: bold;
+    color: #0f0; /* Texto verde para totais */
+}
+
+.dre-table .total-row td {
+    border-top: 2px solid #0f0;
+}
+
+.has-details { position: relative; cursor: pointer; }
+.tooltip {
+    display: none; position: absolute; bottom: 100%; left: 5px;
+    background-color: #1a1a1a; border: 1px solid #0f0; border-radius: 6px;
+    padding: 10px; z-index: 10; min-width: 250px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5); color: #fff;
+}
+.has-details.active .tooltip { display: block; }
+.tooltip-title {
+    font-weight: bold; color: #0f0; margin-bottom: 8px;
+    padding-bottom: 4px; border-bottom: 1px solid #444;
+}
+.tooltip ul { margin: 0; padding: 0; list-style: none; }
+.tooltip li { display: flex; justify-content: space-between; padding: 2px 0; font-size: 14px; }
+.tooltip li span:first-child { padding-right: 15px; }
+
+/* Estilos para a seção de Análise (também com fundo escuro) */
+.analise-container {
+    background-color: #2a2a2a;
+    border: 1px solid #444;
+    border-radius: 8px;
+    padding: 25px;
+    margin-top: 20px;
+    color: #e0e0e0;
+}
+.analise-section {
+    margin-bottom: 25px; padding-bottom: 25px; border-bottom: 1px solid #444;
+}
+.analise-container .analise-section:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+.analise-section h3 {
+    color: #0f0; font-size: 16px; margin-top: 0; margin-bottom: 15px;
+}
+.analise-section p { font-size: 14px; line-height: 1.7; }
+.positivo { color: #28a745; font-weight: bold; }
+.negativo { color: #dc3545; font-weight: bold; }
+.feedback-columns { display: flex; gap: 30px; }
+.feedback-columns > div { flex: 1; }
+.feedback-columns h4 { font-size: 15px; color: #fff; margin-bottom: 10px; }
+.feedback-columns ul { padding-left: 20px; margin: 0; }
+#pontos-positivos ul { list-style-type: '✓ '; }
+#pontos-negativos ul { list-style-type: '✗ '; }
+.feedback-columns li { padding-bottom: 8px; line-height: 1.5; }
+
+/* ==========================================================================
+   ESTILOS COMPLETOS PARA O BOTÃO E CONTAINER DA ANÁLISE DRE
+   ========================================================================== */
+
+/* 1. Estilização completa para o botão "Iniciar Análise" */
+.analise-btn {
+    display: block; /* Permite centralização com margem */
+    width: fit-content; /* Largura baseada no conteúdo */
+    margin: 40px auto; /* Margem de 30px em cima/em baixo e centralizado */
+    background-color: #07501d;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 25px;
+    font-size: 12px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.2s;
+}
+
+.analise-btn:hover {
+    background-color: #07501d;
+    transform: scale(1.05);
+}
+
+/* NOVO CÓDIGO - Cole este bloco no lugar do antigo em dashbord.css */
+.analise-container {
+    background-color: #F0F2F5; /* <-- FUNDO BRANCO GELO */
+    border: 1px solid #EAECEE;   /* Borda sutil para o novo fundo */
+    border-radius: 8px;
+    padding: 25px;
+    margin-top: 20px;
+    margin-bottom: 20px;
+    color: #333;                 /* <-- COR DO TEXTO PRINCIPAL (escuro) */
+}
+.analise-section {
+    margin-bottom: 25px;
+    padding-bottom: 25px;
+    border-bottom: 1px solid #ddd; /* Linha divisória mais clara */
+}
+.analise-container .analise-section:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+.analise-section h3 {
+    color: #07501d; /* <-- TÍTULOS EM VERDE ESCURO (para ler no fundo claro) */
+    font-size: 15px;
+    margin-top: 0;
+    margin-bottom: 15px;
+}
+.analise-section p {
+    font-size: 12px; /* <-- TAMANHO DA FONTE AJUSTADO (mude se precisar) */
+    line-height: 1.7;
+}
+/* As regras abaixo permanecem, mas funcionarão melhor com o novo fundo */
+.positivo { color: #28a745; font-weight: bold; }
+.negativo { color: #dc3545; font-weight: bold; }
+.feedback-columns { display: flex; gap: 30px; }
+.feedback-columns > div { flex: 1; }
+.feedback-columns h4 { font-size: 15px; color: #333; margin-bottom: 10px; }
+.feedback-columns ul { padding-left: 20px; margin: 0; }
+#pontos-positivos ul { list-style-type: '✓ '; }
+#pontos-negativos ul { list-style-type: '✗ '; }
+.feedback-columns li { padding-bottom: 8px; line-height: 1.5; }
+
+/* ==========================================================================
+   AJUSTES DE FONTE PARA OS CARDS DE FLUXO DE CAIXA
+   ========================================================================== */
+
+/* Título do card (Entradas, Saídas, etc) */
+.new-card h3 {
+    font-size: 14px; /* Tamanho do título */
+    
+}
+
+/* Valor principal (o primeiro e maior) */
+.new-card .card-main-values p:first-child span.value {
+    font-size: 14px; /* <-- FONTE MAIOR AQUI */
+    font-weight: bold;
+    color: #0f0; /* Cor de destaque verde */
+}
+
+/* Textos secundários (Provisão, Diferença, etc) */
+.new-card .card-main-values p {
+    font-size: 10px; /* <-- FONTE MENOR AQUI */
+    color: #ccc; /* Tom de cinza para diferenciar */
+}
+
+/* Valores secundários */
+.new-card .card-main-values p span.value {
+    font-weight: bold;
+    color: #fff; /* Cor branca para os valores menores */
+}
+
+/* Detalhes laterais (Melhor/Pior mês) */
+.new-card .card-side-details p {
+    font-size: 10px;
+    opacity: 0.7; /* Deixa o texto mais sutil */
+}
+
+/* Aumenta o espaçamento especificamente no card Ponto de Equilíbrio */
+#ponto-equilibrio-card .card-dre-details p {
+    margin: 16px 0; /* O padrão é 8px 0. Ajuste o valor 16px como preferir. */
+    line-height: 1.6; /* <-- Adicione esta linha para aumentar o espaço entre as linhas */
+}
+/* Em dashbord.css, adicione este bloco ao final do arquivo */
+
+/* ==========================================================================
+   ESTILOS PARA O SELETOR DE REGIME (CAIXA / COMPETÊNCIA)
+   ========================================================================== */
+
+/* 1. Container que alinha os botões */
+.regime-toggle-container {
+    display: flex;
+    justify-content: center; /* Centraliza os botões na tela */
+    gap: 15px; /* Espaço entre os botões */
+    margin-top: 10px; /* Espaço acima dos botões */
+    margin-bottom: 20px; /* Espaço abaixo, antes da tabela da DRE */
+}
+
+/* 2. Estilo padrão dos botões */
+.regime-toggle-button {
+    padding: 10px 20px;
+    border: 1px solid #444;
+    background-color: #222;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+}
+
+/* 3. Efeito ao passar o mouse sobre um botão */
+.regime-toggle-button:hover {
+    background-color: #333;
+    border-color: #555;
+}
+
+/* 4. Estilo do botão ATIVO (selecionado) */
+.regime-toggle-button.active {
+    background-color: #07501d; /* Verde característico do seu tema */
+    color: #fff; /* Texto preto para um bom contraste */
+    border-color: #07501d;
+    font-weight: bold;
+}
+/* Em dashbord.css, adicione este novo bloco de código */
+
+/* ==========================================================================
+   ESTILOS PARA AS LINHAS EXPANSÍVEIS DA DRE
+   ========================================================================== */
+
+/* 1. Deixa o texto da descrição com aparência clicável */
+.expandable-label {
+    cursor: pointer;
+    transition: color 0.2s;
+}
+.expandable-label:hover {
+    color: #0f0; /* Cor de destaque ao passar o mouse */
+}
+
+/* 2. Estilos da linha de detalhe */
+.dre-details-row {
+    display: none; /* COMEÇA OCULTA */
+}
+.dre-details-row.expanded {
+    display: table-row; /* MOSTRA A LINHA QUANDO TEM A CLASSE .expanded */
+}
+
+/* 3. Estilo do conteúdo dentro da linha expandida */
+.dre-details-row td {
+    background-color: #1c1c1c; /* Um tom de cinza ligeiramente diferente */
+    padding: 0 !important; /* Remove padding padrão da célula */
+}
+.details-content {
+    padding: 15px 30px; /* Espaçamento interno generoso */
+}
+.details-content h4 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    color: #ccc;
+    font-size: 14px;
+    border-bottom: 1px solid #444;
+    padding-bottom: 5px;
+}
+.details-content ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    max-height: 200px; /* Altura máxima com barra de rolagem */
+    overflow-y: auto;
+}
+.details-content li {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0;
+    font-size: 13px;
+    color: #ddd;
+}
+.details-content .detail-value {
+    font-weight: bold;
+}
+.details-content p {
+    color: #888;
+    font-style: italic;
+}
+/* ==========================================================================
+   CORREÇÃO PARA O TOOLTIP NA ÚLTIMA COLUNA DA DRE
+   ========================================================================== */
+
+/* Esta regra encontra o tooltip (.tooltip) que está APENAS
+  na última célula (td:last-child) de uma linha da tabela da DRE.
+*/
+.dre-table tr td:last-child .tooltip {
+    left: auto; /* Desativa o posicionamento padrão à esquerda */
+    right: 5px; /* Ativa um novo posicionamento alinhado à direita da célula */
+}
+/* Em dashbord.css, adicione ao final do arquivo */
+
+/* ==========================================================================
+   ESTILOS PARA O MEDIDOR DE VARIAÇÃO (RÉGUA COM SETA)
+   ========================================================================== */
+
+/* 1. Container geral e título */
+.variation-meter-container {
+    margin-top: 50px;
+    padding: 0 10px;
+}
+.meter-title {
+    font-size: 12px;
+    color: #ccc;
+    display: block;
+    text-align: center;
+    margin-bottom: 8px;
+}
+
+/* 2. Posicionamento da régua e da seta */
+.variation-meter {
+    position: relative; /* Essencial para a seta se posicionar corretamente */
+    height: 40px;
+}
+
+/* 3. A Régua com o degradê de cores */
+.meter-ruler {
+    width: 100%;
+    height: 10px;
+    border-radius: 5px;
+    /* O degradê vai do vermelho (esquerda), passa pelo amarelo (centro) e vai até o verde (direita) */
+    background: linear-gradient(to right, #dc3545, #ffc107, #28a745);
+    position: absolute;
+    bottom: 10px; /* Alinha na base */
+}
+
+/* 4. As etiquetas de porcentagem (-100%, 0%, +100%) */
+.meter-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: #888;
+    position: absolute;
+    bottom: -5px;
+    width: 100%;
+}
+
+/* 5. A Seta indicadora */
+.meter-arrow {
+    position: absolute;
+    bottom: 28px; /* Posição acima da régua */
+    width: 2px; /* Largura da "haste" da seta */
+    height: 15px;
+    background-color: #fff;
+    /* Posição inicial no centro (será ajustada pelo JavaScript) */
+    left: 50%; 
+    /* Ajuste fino para centralizar a haste */
+    transform: translateX(-50%); 
+    transition: left 0.5s ease-in-out; /* Animação suave */
+}
+
+/* Desenha o triângulo da ponta da seta usando um pseudo-elemento */
+.meter-arrow::after {
+    content: '';
+    position: absolute;
+    bottom: -5px; /* Conecta com a haste */
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 5px solid #fff; /* Cor da seta */
+}
+/* ==========================================================
+   AJUSTE DE FONTE PARA A TABELA DRE
+   ========================================================== */
+
+/* Altera a fonte do CABEÇALHO (Descrição, Total, A.V., etc.) */
+.dre-table thead th {
+    font-size: 12px; /* O valor original era 14px */
+}
+
+/* Altera a fonte do CORPO da tabela (os números e valores) */
+.dre-table tbody td {
+    font-size: 11px; /* O valor original era 12px */
+}
+
+/* Em dashbord.css, substitua o bloco de layout dos gráficos por este */
+
+/* ==========================================================================
+   ESTILOS PARA A LINHA DE GRÁFICOS DA DRE (50/25/25) - AJUSTADO
+   ========================================================================== */
+.chart-row-container {
+    max-height: 300px;
+    display: flex;
+    gap: 5px; /* <-- AJUSTADO: Espaçamento entre as colunas diminuído (era 20px) */
+    margin-bottom: 10px;
+    align-items: stretch; /* <-- IMPORTANTE: Garante que as colunas estiquem para a mesma altura */
+}
+
+/* Define a largura das colunas */
+.chart-column-50 {
+    width: 50%;
+}
+.chart-column-25 {
+    width: 25%;
+}
+
+/* As 3 regras abaixo são a chave para resolver o problema da altura.
+   Elas garantem que o card branco e o gráfico dentro dele
+   ocupem 100% da altura da coluna mais alta. */
+
+.chart-column-50,
+.chart-column-25 {
+    display: flex; /* Permite que o card filho (.chart-small) estique */
+}
+
+.chart-column-50 .chart-small,
+.chart-column-25 .chart-small {
+    width: 100%; /* Garante que o card ocupe toda a coluna */
+    display: flex;
+    flex-direction: column;
+}
+
+.chart-column-50 .chart-container,
+.chart-column-25 .chart-container {
+    flex-grow: 1; /* Faz a área do canvas do gráfico crescer para preencher o espaço vertical */
+}
+
+/* ==========================================================================
+   AJUSTES PARA O GRÁFICO DE ROSCA (RETIRADA DE SÓCIOS) - CORRIGIDO
+   ========================================================================== */
+
+/* Remove a centralização forçada e permite que o container expanda */
+.chart-column-25 .chart-container {
+    flex-grow: 1; /* Mantém a capacidade de crescer verticalmente */
+    position: relative;
+    display: flex; /* Adicionado para permitir o 'margin: auto' funcionar */
+}
+
+/* Permite que o gráfico cresça, mas com um limite, e o centraliza */
+.doughnut-wrapper {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    max-width: 200px;   /* Define um tamanho máximo para não ficar gigante */
+    max-height: 200px;  /* Mantém o gráfico com uma proporção quadrada */
+    margin: auto;       /* Centraliza o wrapper dentro do container flexível */
+}
+
+#analise {
+    margin-bottom: 2px;
+}
+
+/* Em dashbord.css, pode adicionar junto aos outros estilos da análise */
+
+#sugestoes-melhoria ul {
+    list-style-type: '💡 '; /* Usando um emoji de lâmpada como marcador */
+    padding-left: 20px;
+    margin: 0;
+}
+
+#sugestoes-melhoria li {
+    padding-bottom: 8px;
+    line-height: 1.5;
+}
+
+/* Em dashbord.css, adicione ao final do arquivo */
+
+/* ==========================================================================
+   ESTILOS PARA O LAYOUT DO GRÁFICO DE KPIs E CARD EXPLICATIVO (70/30)
+   ========================================================================== */
+
+/* 1. Transforma o container do gráfico em um layout flexível */
+.insights-chart-container {
+    display: flex;       /* ESSENCIAL: Alinha os itens lado a lado */
+    align-items: stretch;/* Garante que ambos tenham a mesma altura */
+    gap: 10px;           /* Espaço entre o gráfico e o novo card */
+}
+
+/* 2. Define a largura do wrapper do gráfico para 70% */
+.chart-wrapper-70 {
+    flex: 0 0 70%; /* Não cresce, não encolhe, base de 70% */
+    position: relative; /* Necessário para o Chart.js funcionar corretamente */
+    min-width: 0; /* <-- ADICIONE APENAS ESTA LINHA */
+}
+
+/* 3. Estiliza o novo card explicativo (ocupando os 30% restantes) */
+.kpi-card {
+    flex: 1; /* Ocupa o espaço restante */
+    background-color: #fff; /* Usando o branco gelo que você já tem */
+    border-radius: var(--border-radius-md);
+    padding: 20px;
+    border: 1px solid #e0e0e0;
+    display: flex;
+    flex-direction: column;
+}
+
+.kpi-card h3 {
+    color: #07501d; /* Verde escuro para o título */
+    margin-top: 0;
+    font-size: 13px;
+}
+
+.kpi-card hr {
+    border: 0;
+    border-top: 1px solid #ddd;
+    margin: 10px 0;
+
+}
+
+.kpi-card p {
+    margin-top: 30px;
+    font-size: 11px;
+    line-height: 1.6;
+    color: #333;
+    flex-grow: 1; /* Faz o parágrafo ocupar o espaço para alinhar o conteúdo */
+}
+
+/* Em static/css/dashbord.css */
+
+/* ==========================================================================
+   ESTILOS PARA OS CARDS DE INDICADORES (KPIs) - COM AZUL SUTIL
+   ========================================================================== */
+
+.new-kpi-container {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr); 
+    gap: 5px;
+    margin-bottom: 20px;
+    margin-top: 20px;
+}
+
+.kpi-card-item {
+    background-image: linear-gradient(to bottom right, #eef2f9, #d6e0f0); /* <-- FUNDO AZUL SUTIL */
+    border: 1px solid #dee2e6; /* Borda cinza-azulada clara */
+    border-radius: var(--border-radius-md);
+    padding: 5px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+}
+
+.kpi-title {
+    font-size: 12px;
+    font-weight: bold;
+    color: #212529; /* <-- TEXTO DO TÍTULO ESCURO */
+    margin-bottom: 10px;
+    height: 3.2em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.kpi-value {
+    font-size: 12px;
+    font-weight: bold;
+    color: #0d6efd; /* <-- AZUL PARA O VALOR DE DESTAQUE */
+    margin-bottom: 10px;
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.kpi-description {
+    font-size: 9px;
+    color: #6c757d; /* <-- CINZA PARA A DESCRIÇÃO */
+    line-height: 1.4;
+    height: 4em;
+}
+
+/* Estilo para os cards "Não aplicável" */
+.kpi-card-item.nao-aplicavel .kpi-value {
+    color: #6c757d; /* <-- CINZA PARA VALORES "NÃO APLICÁVEL" */
+    font-size: 12px;
+}
+
+/* Em dashbord.css, adicione ao final */
+
+.kpi-insights-wrapper {
+    /* Faz o container ocupar toda a largura abaixo do menu e gráfico */
+    flex-basis: 100%; 
+}
+
+/* ==========================================================================
+   ESTILOS PARA A SEÇÃO DE VALUATION
+   ========================================================================== */
+
+.valuation-section {
+    background-color: #F0F2F5; /* Fundo branco gelo */
+    border-radius: var(--border-radius-md);
+    padding: 25px;
+    margin-bottom: var(--spacing-md);
+    display: flex;
+    gap: 30px;
+    align-items: center;
+}
+
+.valuation-explanation {
+    flex-basis: 40%; /* Ocupa 40% do espaço */
+    color: #333;
+}
+
+.valuation-explanation h4 {
+    color: #07501d;
+    margin-top: 0;
+    margin-bottom: 10px;
+}
+
+.valuation-explanation p {
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.valuation-calculator {
+    flex-basis: 60%; /* Ocupa 60% do espaço */
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.valuation-item {
+    text-align: center;
+}
+
+.valuation-item span {
+    font-size: 14px;
+    color: #666;
+    display: block;
+    margin-bottom: 5px;
+}
+
+.valuation-item strong {
+    font-size: 22px;
+    color: #000;
+}
+
+.valuation-item.result strong {
+    color: #07501d; /* Verde escuro para o resultado */
+    font-size: 14px;
+}
+
+.valuation-item input {
+    width: 80px;
+    padding: 8px;
+    font-size: 22px;
+    text-align: center;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-weight: bold;
+}
+
+.valuation-operator {
+    font-size: 24px;
+    color: #999;
+}
+
+/* Em dashbord.css, adicione ao final */
+.valuation-sector-selector {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid #ddd;
+}
+.valuation-sector-selector label {
+    display: block;
+    font-size: 13px;
+    color: #333;
+    font-weight: 500;
+    margin-bottom: 8px;
+}
+.valuation-sector-selector select {
+    width: 100%;
+    padding: 8px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background-color: #fff;
+}
+
+/* Em dashbord.css, use este novo bloco de estilos */
+/* ==========================================================================
+   NOVOS ESTILOS PARA O LAYOUT DA SEÇÃO DFC (70/30)
+   ========================================================================== */
+
+.dfc-top-row {
+    display: flex;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+    align-items: stretch;
+}
+
+/* Coluna da esquerda com 70% da largura */
+.dfc-main-chart-70 {
+    flex-basis: 70%;
+    min-width: 0;
+}
+
+/* Coluna da direita com 30% da largura, que empilha os gráficos */
+.dfc-doughnut-charts-30 {
+    flex-basis: 30%;
+    min-width: 0;
+    display: flex;
+    flex-direction: column; /* ESSENCIAL: empilha os itens verticalmente */
+    gap: var(--spacing-md); /* Espaço entre os dois gráficos de rosca */
+}
+
+/* Garante que os containers internos ocupem toda a altura disponível */
+.dfc-main-chart-70 .cash-flow-container,
+.dfc-doughnut-charts-30 .chart-half {
+    flex: 1; /* Permite que o card cresça e ocupe o espaço disponível */
+    display: flex; /* Adicionado para garantir o alinhamento interno */
+    flex-direction: column;
+}
+
+/* Em dashbord.css, adicione ou substitua este bloco */
+
+/* ==========================================================================
+   ESTILOS PARA A LINHA INFERIOR DO DFC (TABELA 40% / GRÁFICO 60%)
+   ========================================================================== */
+
+.dfc-bottom-row {
+    display: flex; /* ESSENCIAL: Cria o layout lado a lado */
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+    align-items: stretch;
+}
+
+/* Define a largura da coluna da tabela como 40% */
+.dfc-table-container {
+    flex-basis: 40%;
+    min-width: 0; /* Impede que a coluna vaze da tela */
+}
+
+/* Define a largura da coluna do gráfico como 60% */
+.dfc-new-chart-container {
+    flex-basis: 60%;
+    min-width: 0; /* Impede que a coluna vaze da tela */
+}
+
+/* Garante que o card da tabela ocupe 100% da altura da coluna */
+.dfc-table-container .chart-small {
+    height: 100%;
+}
+
+/* Em dashbord.css, adicione ao final */
+
+/* ==========================================================================
+   AJUSTE DE ESPAÇAMENTO PARA A LISTA DE ANÁLISE DO DFC
+   ========================================================================== */
+
+/* Adiciona um espaçamento inferior em cada item das listas de análise do DFC */
+#dfc-analise-container .analise-section ul li {
+    padding-bottom: 12px;
+}
+
+
+
+/* Em dashbord.css, use este bloco para substituir os antigos da "Análise de Contas" */
+
+/* ==========================================================================
+   ESTILO FINAL E CORRIGIDO PARA A SEÇÃO "ANÁLISE DE CONTAS"
+   ========================================================================== */
+
+/* 1. Container principal que alinha as 3 colunas */
+.client-analysis-container {
+    display: flex;
+    gap: 15px;
+    align-items: stretch;
+    padding: 15px; /* Padding geral menor */
+    background-color: var(--color-background-ice);
+    border-radius: var(--border-radius-md);
+    min-height: 420px;
+}
+
+/* 2. Estilo base para cada uma das 3 colunas */
+.analysis-column {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    background-color: #FFFFFF; /* Fundo branco para os cards internos */
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+.analysis-column h3 {
+    font-size: 11px;
+    margin-bottom: 10px;
+    text-align: center;
+}
+.analysis-column .chart-wrapper {
+    flex-grow: 1;
+    position: relative;
+}
+
+/* 3. Estilo específico para a coluna do GRÁFICO DE ROSCA */
+.analysis-column:nth-child(3) {
+    justify-content: center; /* Centraliza o conteúdo verticalmente */
+}
+.analysis-column:nth-child(3) .chart-wrapper {
+    flex-grow: 0; /* Impede que o container do gráfico cresça demais */
+    height: 150px;  /* <-- DIMINUI A ALTURA MÁXIMA DO GRÁFICO DE ROSCA */
+}
+.doughnut-summary-text {
+    font-size: 11px;
+    text-align: center;
+    margin-bottom: 10px;
+    line-height: 1.5;
+}
+
+/* Em dashbord.css, adicione ao final */
+
+/* ==========================================================================
+   AJUSTE DE FONTES PARA A SEÇÃO DE VALUATION
+   ========================================================================== */
+
+/* 1. Título principal "Valuation (Estimativa)" */
+.valuation-section .section-title {
+    font-size: 1.5rem; /* Altere este valor. Ex: 1.2rem para menor */
+}
+
+/* 2. Subtítulo "Método: Múltiplo de EBITDA" */
+.valuation-explanation h4 {
+    font-size: 0.9rem; /* Altere este valor. Ex: 0.9rem para menor */
+}
+
+/* 3. Texto da explicação */
+.valuation-explanation p {
+    font-size: 12px; /* Altere este valor. Ex: 12px para menor */
+}
+
+/* 4. Texto do seletor de setor */
+.valuation-sector-selector label {
+    font-size: 12px; /* Altere este valor. Ex: 12px para menor */
+}
+
+/* 5. Textos pequenos do calculador (EBITDA, Múltiplo, Valuation Estimado) */
+.valuation-item span {
+    font-size: 12px; /* Altere este valor. Ex: 13px para menor */
+}
+
+/* 6. Valores grandes de EBITDA e Valuation Estimado */
+.valuation-item strong {
+    font-size: 14px; /* Altere este valor. Ex: 20px para menor */
+}
+
+/* 7. Valor do Múltiplo dentro do campo de input */
+.valuation-item input {
+    font-size: 14px; /* Altere este valor. Ex: 20px para menor */
+}
+
+/* Em dashbord.css, adicione ao final */
+
+/* Garante que o título "Insights" fique mais sutil */
+.chart-container .text h3 {
+    color: #A0AEC0; /* Cinza claro */
+    font-weight: 500;
+}
+
+/* Estiliza os valores em negrito (<strong>) com o tom do gráfico */
+.chart-container .text p strong {
+    color: #4FD1C5; /* Verde-azulado claro, para combinar com a onda */
+    font-weight: bold;
+}
+
+/* Ajusta a cor das setas de variação */
+.chart-container .text .variation span {
+    font-weight: bold;
+}
+
+/* Em dashbord.css, adicione ao final */
+
+/* ==========================================================================
+   AJUSTES FINAIS PARA A SEÇÃO PREVISÃO VS REALIZADO
+   ========================================================================== */
+
+/* 1. Define uma altura fixa de 400px para a linha inteira (tabela e gráfico) */
+.dfc-bottom-row {
+    height: 300px;
+}
+
+/* 2. Faz o container da tabela se preparar para a rolagem interna */
+.dfc-table-container .chart-small {
+    display: flex;
+    flex-direction: column;
+}
+
+/* 3. Ativa a barra de rolagem vertical na tabela quando o conteúdo for maior que o espaço */
+.dfc-table-container .data-table-wrapper {
+    flex-grow: 1; /* Faz o wrapper crescer para ocupar o espaço */
+    overflow-y: auto; /* Adiciona a barra de rolagem vertical apenas quando necessário */
+}
+
+/* 4. Estiliza a nova linha de total (rodapé da tabela) */
+.data-table tfoot {
+    background-color: #e9ecef; /* Fundo cinza claro */
+    font-weight: bold;
+    color: #07501d; /* Texto verde escuro */
+    position: sticky; /* Mantém o total visível no final da rolagem */
+    bottom: 0;
+}
+
+/* Em dashbord.css, adicione ao final */
+
+/* ==========================================================================
+   AJUSTE DE ALTURA PARA O GRÁFICO "RESUMO DO ANO"
+   ========================================================================== */
+.resumo-chart-area {
+    height: 250px; /* <-- Defina a altura desejada para o gráfico aqui */
+    position: relative;
+}
+
+/* ==========================================================================
+   ESTILOS PARA A NOVA SEÇÃO DE BENCHMARK NA ANÁLISE DRE
+   ========================================================================== */
+.benchmark-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    font-size: 13px;
+    color: #555;
+}
+
+.benchmark-item {
+    background-color: #e9ecef;
+    padding: 5px 10px;
+    border-radius: 5px;
+}
+
+/* ==========================================================================
+   NOVOS ESTILOS PARA A SEÇÃO PREVISÃO VS REALIZADO SEPARADA (VERSÃO CORRIGIDA)
+   ========================================================================== */
+.pvr-section {
+    display: flex;
+    flex-direction: column;
+    gap: 20px; /* Espaço entre a linha de receitas e a de despesas */
+    margin-bottom: 20px; /* Adiciona uma margem inferior na seção toda */
+}
+
+.pvr-row {
+    display: flex; /* ESSENCIAL: Coloca os filhos (as colunas) lado a lado */
+    flex-wrap: wrap; /* Permite quebrar a linha em telas muito pequenas */
+    gap: 20px;
+    align-items: stretch;
+    
+}
+
+/* SUBSTITUA A REGRA '.pvr-column' ANTIGA POR ESTAS TRÊS NOVAS REGRAS */
+.pvr-column {
+    /* A regra de largura específica foi removida da classe base */
+    flex-grow: 1;
+    min-width: 0;
+    display: flex;
+}
+
+/* Nova regra para a coluna da TABELA (40%) */
+.pvr-column-table {
+    flex-basis: calc(40% - 10px); /* 40% da largura, descontando metade do espaço */
+}
+
+/* Nova regra para a coluna do GRÁFICO (60%) */
+.pvr-column-graph {
+    flex-basis: calc(60% - 10px); /* 60% da largura, descontando metade do espaço */
+}
+
+.pvr-card {
+    background-color: #fff;
+    padding: 15px;
+    border-radius: var(--border-radius-md);
+    width: 100%; /* Faz o card preencher a coluna */
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.pvr-card h3 {
+    color: #333;
+    text-align: center;
+    font-size: 13px;
+    margin-bottom: 15px;
+    flex-shrink: 0; /* Impede que o título encolha */
+}
+
+.pvr-card .data-table-wrapper {
+    flex-grow: 1;
+    overflow-y: auto;
+}
+
+.pvr-chart-container {
+    flex-grow: 1;
+    position: relative;
+}
+
+/* ==========================================================================
+   COR CUSTOMIZADA PARA A TABELA DE DESPESAS PvsR
+   ========================================================================== */
+.pvr-row-despesas .data-table thead th {
+    background-color: #a1283b; /* Tom de vermelho escuro */
+}
+
+/* ==========================================================================
+   ESTILOS PARA A NOVA TABELA DE FLUXO DE CAIXA MENSAL
+   ========================================================================== */
+.fluxo-caixa-tabela-container {
+    margin-top: 20px;
+    margin-bottom: 30px;
+    background-color: #fff;
+    padding: 10px;
+    border-radius: var(--border-radius-md);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.fluxo-caixa-tabela-title {
+    text-align: center;
+    color: #333;
+    font-size: 14px;
+    margin-bottom: 20px;
+}
+
+.table-scroll-wrapper {
+    overflow-x: auto; /* Ativa a barra de rolagem horizontal */
+}
+
+.fluxo-caixa-tabela {
+    width: 100%;
+    border-collapse: collapse;
+    color: #333;
+    font-size: 11px;
+}
+
+.fluxo-caixa-tabela th,
+.fluxo-caixa-tabela td {
+    padding: 20px 10px;
+    text-align: right;
+    white-space: nowrap; /* Impede que o texto quebre a linha */
+}
+
+/* SUBSTITUA A REGRA ACIMA POR ESTAS DUAS NOVAS REGRAS */
+
+/* Estilo para a PRIMEIRA COLUNA (Métrica) - CÉLULAS DO CORPO (Entradas, Saídas, Saldo) */
+.fluxo-caixa-tabela tbody td:first-child {
+    text-align: left;
+    font-weight: bold;
+    position: sticky;
+    left: 0;
+    background-color: #fff; /* Mantém o fundo branco para sobrepor na rolagem */
+    width: 100px; /* <-- LARGURA DA COLUNA DIMINUÍDA (ajuste se necessário) */
+}
+
+/* Estilo para a PRIMEIRA COLUNA (Métrica) - CÉLULA DO CABEÇALHO */
+.fluxo-caixa-tabela thead th:first-child {
+    text-align: left;
+    font-weight: bold;
+    position: sticky;
+    left: 0;
+    z-index: 1; /* Garante que este cabeçalho fique sobre o conteúdo ao rolar */
+    width: 100px; /* <-- Mesma largura da coluna */
+    /* A cor de fundo azul será herdada da regra geral do thead, corrigindo o visual. */
+}
+
+.fluxo-caixa-tabela thead th {
+    background-color: #151579; /* Mesmo azul do cabeçalho de outras tabelas */
+    color: #fff; /* Garante que o texto do cabeçalho fique branco e legível */
+    border-bottom: 2px solid #2E86C1;
+}
+
+.fluxo-caixa-tabela tbody tr:not(.total-row) td {
+    border-bottom: 1px solid #e9ecef;
+}
+
+.fluxo-caixa-tabela .total-row td {
+    font-weight: bold;
+    border-top: 2px solid #dee2e6;
+}
+
+/* Cores para os valores */
+.fluxo-caixa-tabela .positivo {
+    color: #28a745;
+}
+.fluxo-caixa-tabela .negativo {
+    color: #dc3545;
+}
+
+
+/* ==========================================================================
+   ESTILOS PARA A NOVA SEÇÃO DE FLUXO DE CAIXA DESCONTADO (DCF)
+   ========================================================================== */
+.dcf-section {
+    margin-top: 50px;
+    margin-bottom: 20px;
+}
+.dcf-main-title {
+    color: #333;
+    text-align: center;
+    font-size: 14px;
+    margin-bottom: 20px;
+    margin-top: 20px;
+}
+.dcf-container {
+    display: flex;
+    gap: 20px;
+    background-color: #def0f7;
+    padding: 20px;
+    border-radius: var(--border-radius-md);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.dcf-inputs {
+    flex-basis: 40%;
+    border-right: 1px solid #e9ecef;
+    padding-right: 20px;
+}
+.dcf-results {
+    flex-basis: 60%;
+    display: flex;
+    flex-direction: column;
+}
+.dcf-inputs h4, .dcf-results h4 {
+    color: #333;
+    font-size: 14px;
+    margin-top: 0;
+    margin-bottom: 20px;
+}
+.input-group {
+    margin-bottom: 15px;
+}
+.input-group label {
+    display: block;
+    font-size: 12px;
+    font-weight: bold;
+    color: #555;
+    margin-bottom: 5px;
+}
+.input-group input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 14px;
+}
+.input-group input:disabled {
+    background-color: #e9ecef;
+    font-weight: bold;
+}
+.input-group small {
+    font-size: 11px;
+    color: #777;
+    margin-top: 4px;
+    display: block;
+}
+.dcf-results .table-scroll-wrapper {
+    flex-grow: 1; /* Faz a tabela ocupar o espaço disponível */
+}
+.dcf-final-value {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 2px solid #07501d;
+    text-align: right;
+}
+.dcf-final-value span {
+    display: block;
+    font-size: 13px;
+    color: #555;
+}
+.dcf-final-value strong {
+    font-size: 13px;
+    color: #07501d;
+}
+
+/* Em static/css/dre.css */
+
+.dre-details-row .details-content {
+  max-width: 750px; /* Define uma largura máxima para a caixa de detalhes */
+  padding: 15px 30px; /* Adiciona um respiro interno */
+}
+
+/* Em static/css/dashbord.css */
+
+/* ==========================================================================
+   ESTILOS PARA O MODAL DO LAUDO FINANCEIRO (VERSÃO COM MAIS ESPAÇAMENTO)
+   ========================================================================== */
+
+/* Fundo escuro que cobre a tela inteira (sem alteração) */
+.modal {
+    display: none; 
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.6);
+}
+
+/* A caixa de conteúdo do laudo (sem alteração) */
+.modal-content {
+    background-color: #fefefe;
+    color: #333;
+    margin: 5% auto;
+    padding: 25px;
+    border: 1px solid #888;
+    width: 80%;
+    max-width: 800px;
+    border-radius: 8px;
+    position: relative;
+    font-family: Arial, sans-serif;
+}
+
+/* Botão de fechar (o "X") (sem alteração) */
+.close-btn {
+    color: #aaa;
+    position: absolute;
+    top: 10px;
+    right: 20px;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+.close-btn:hover {
+    color: #000;
+}
+
+/* [AJUSTE] - Adicionamos um estilo para o título principal (H2) */
+.modal-content h2 {
+    text-align: center;
+    margin-bottom: 15px; /* Adiciona mais espaço abaixo do título */
+}
+
+/* [AJUSTE] - Aumentamos o espaçamento ACIMA de cada título de seção (H4) */
+#laudo-texto h4 {
+    color: #07501d;
+    margin-top: 35px; /* AUMENTADO: Mais espaço entre as seções */
+    margin-bottom: 10px;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 5px;
+}
+
+/* [AJUSTE] - Aumentamos o espaçamento ENTRE AS LINHAS (line-height) e entre os parágrafos */
+#laudo-texto p {
+    font-size: 12px;
+    line-height: 1.8;   /* AUMENTADO: Mais espaço entre as linhas do mesmo parágrafo */
+    margin-bottom: 15px;/* ADICIONADO: Espaço extra entre um parágrafo e outro (Ex: entre "Situação" e "Recomendação") */
+}
+
+/* Em static/css/dashbord.css */
+
+/* ==========================================================================
+   NOVOS AJUSTES PARA O CABEÇALHO DO LAUDO
+   ========================================================================== */
+
+/* Em static/css/dashbord.css */
+
+/* 1. SUBSTITUA A REGRA ANTIGA ".modal-content h2" POR ESTA */
+.modal-content h2 {
+    background-color: #0b4822;
+    color: #fff;
+    padding: 15px;
+    text-align: center;
+    margin: -25px -25px 0 -25px;
+    border-radius: 8px 8px 0 0;
+    font-size: 16px;      /* <- AJUSTE 1: Tamanho do título principal */
+    line-height: 1.6;     /* <- AJUSTE 2: Aumenta o espaçamento entre as linhas */
+}
+
+/* 2. ADICIONE ESTA NOVA REGRA PARA O TEXTO DO PERÍODO */
+.modal-content h2 small {
+    font-size: 12px;      /* <- AJUSTE 3: Tamanho do texto do período */
+    font-weight: normal;  /* Opcional: deixa o texto do período um pouco mais leve */
+}
+
+/* 2. Centraliza o SUBTÍTULO ("Análise Resumida e Recomendações") */
+#laudo-texto h3 {
+    text-align: left;
+    font-size: 14px;  
+    margin-top: 25px;    /* Você pode ajustar o tamanho da fonte se desejar */
+    margin-bottom: 25px;  /* Aumenta o espaço abaixo dele */
+}
+
+/* Em static/css/dashbord.css */
+
+/* ==========================================================================
+   AJUSTE DE FONTES PARA A SEÇÃO "ANÁLISE DE CONTAS"
+   ========================================================================== */
+
+/* 1. Altera a fonte dos títulos dos 5 CARDS DE INDICADORES */
+/* (Valor a Vencer, Atrasados, etc.) */
+.insight-card .title {
+    font-size: 13px; /* O valor original era 11px. Ajuste como desejar. */
+}
+
+/* 2. Altera a fonte dos títulos dos 3 GRÁFICOS */
+/* (Valor em aberto por cliente, etc.) */
+.analysis-column h3 {
+    font-size: 14px; /* O valor original era 11px. Ajuste como desejar. */
+}
+
+/* 3. Altera a fonte do TEXTO DESCRITIVO do gráfico de rosca */
+.doughnut-summary-text {
+    font-size: 13px; /* O valor original era 11px. Ajuste como desejar. */
+}
+
+
+
+/* ==========================================================================
+   AJUSTE FINAL PARA O CABEÇALHO DO CARD PONTO DE EQUILÍBRIO
+   ========================================================================== */
+
+/* 1. Controla o título principal "Ponto de Equilíbrio" */
+.card-dre-header h3 {
+    margin-bottom: 0px; /* Reduzimos a margem inferior padrão para ter mais controle */
+}
+
+/* 2. Estiliza o subtítulo "(Break-even point)" com margem positiva */
+.card-subtitle-en {
+    font-size: 11px;
+    font-weight: normal;
+    color: #555555;
+    display: block;
+    text-align: center;
+    
+    /* ▼▼▼ CORREÇÃO PRINCIPAL ESTÁ AQUI ▼▼▼ */
+    margin-top: 0px;   /* Usamos um valor POSITIVO para empurrar o texto para baixo */
+    /* ▲▲▲ FIM DA CORREÇÃO ▲▲▲ */
+
+    padding-bottom: 5px;
+}
+
+/* ==========================================================================
+   7. RESPONSIVIDADE (MOBILE) - VERSÃO CORRIGIDA E COMPLETA
+   ========================================================================== */
+@media screen and (max-width: 768px) {
+    
+    
+    .chart-container,
+    .cards-container,
+    .new-cards-container,
+    .insights-section,
+    .client-analysis-container,
+    .dre-cards-container,
+    .receivables-insights-container,
+    .doughnut-section,
+    .fluxo-caixa-bottom-row,
+    .chart-row-container,      /* <-- Regra que faltava */
+    .dfc-top-row,              /* <-- Regra que faltava */
+    .pvr-row,                  /* <-- Regra que faltava */
+    .valuation-section,        /* <-- Regra que faltava */
+    .dcf-container,            /* <-- Regra que faltava */
+    .kpi-insights-wrapper,     /* <-- Regra que faltava */
+    .insights-chart-container  /* <-- Regra que faltava */
+    {
+        flex-direction: column;
+        gap: 20px; /* Aumenta um pouco o espaço vertical entre os blocos */
+        height: auto; /* Remove alturas fixas para permitir que o conteúdo cresça */
+        max-height: none;
+    }
+
+    /* --- 2. AJUSTE DE LARGURA DAS COLUNAS INTERNAS --- */
+    /* Faz com que os itens dentro dos containers empilhados ocuparem 100% da largura. */
+    .chart-container .chart,
+    .chart-container .text,
+    .insights-section .insights-menu,
+    .chart-half,
+    .card-dre,
+    .insight-card,
+    .chart-column-50,          /* <-- Regra que faltava */
+    .chart-column-25,          /* <-- Regra que faltava */
+    .dfc-main-chart-70,        /* <-- Regra que faltava */
+    .dfc-doughnut-charts-30,   /* <-- Regra que faltava */
+    .pvr-column-table,         /* <-- Regra que faltava */
+    .pvr-column-graph,         /* <-- Regra que faltava */
+    .valuation-explanation,    /* <-- Regra que faltava */
+    .valuation-calculator      /* <-- Regra que faltava */
+    {
+        width: 100%;
+        flex-basis: auto; /* Reseta a base de largura do flexbox */
+    }
+
+    /* --- 3. AJUSTE ESPECÍFICO PARA A GRADE DE KPIs --- */
+    /* Muda o grid de 5 colunas para apenas 2 colunas no celular. */
+    .new-kpi-container {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    /* --- 4. REGRAS QUE VOCÊ JÁ TINHA (MANTIDAS E OTIMIZADAS) --- */
+    .insights-menu {
+        border-right: none;
+        border-bottom: 1px solid #444;
+        padding-right: 0;
+        padding-bottom: var(--spacing-sm);
+    }
+
+    .lower-cards-wrapper {
+        max-width: 100%;
+    }
+
+    .filter-container form,
+    #custom-date {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    /* Garante que a tabela da DRE possa ser rolada horizontalmente */
+    .dre-section {
+        overflow-x: auto;
+        padding: 10px;
+    }
+
+    /* Empilha as colunas de "Pontos Positivos/Negativos" da análise */
+    .feedback-columns {
+        flex-direction: column;
+    }
+
+    /* Ajuste para o modal do laudo não ficar tão largo no celular */
+    .modal-content {
+        width: 95%;
+    }
+}

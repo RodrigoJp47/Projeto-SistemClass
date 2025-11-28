@@ -1,0 +1,360 @@
+{% load static %}
+{% load humanize %}
+{% load l10n %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contas a Pagar - Gestão Financeira</title>
+    <link rel="stylesheet" href="{% static 'css/global.css' %}">
+    <link rel="stylesheet" href="{% static 'css/sidebar.css' %}">
+    <link rel="stylesheet" href="{% static 'css/themes.css' %}">
+    <link rel="stylesheet" href="{% static 'css/contas_pagar.css' %}">
+    <link rel="stylesheet" href="{% static 'css/layout-responsive.css' %}">
+    
+</head>
+<body class="contas-pagar-page">
+    
+    {% include 'accounts/_sidebar.html' %}
+    <div class="main-content">
+        {% include 'accounts/partials/bpo_banner.html' %}
+        <button id="menu-toggle">&#9776;</button>
+        <div class="header-container">
+            <h1>Contas a Pagar</h1>
+        </div>
+        {% if messages %}
+            <ul class="messages">
+                {% for message in messages %}
+                    <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+        <div class="form-container">
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                {% if form.instance.id %}
+                    <input type="hidden" name="account_id" value="{{ form.instance.id|unlocalize }}">
+                {% endif %}
+                {{ form.name.label_tag }} {{ form.name }}
+                {{ form.description.label_tag }} {{ form.description }}
+                <label for="id_due_date">Data de vencimento:</label>
+                <input type="date" name="due_date" id="id_due_date" {% if form.instance.due_date %}value="{{ form.instance.due_date|date:'Y-m-d' }}"{% endif %} required>
+                <label for="id_amount">Valor:</label>
+                <input type="text" name="amount" id="id_amount" {% if form.instance.amount %}value="{{ form.instance.amount|floatformat:2|intcomma }}"{% endif %} required>
+                {{ form.category.label_tag }} {{ form.category }}
+                {{ form.new_category.label_tag }} {{ form.new_category }}
+                {{ form.dre_area.label_tag }} {{ form.dre_area }}
+                {{ form.payment_method.label_tag }} {{ form.payment_method }}
+                {{ form.occurrence.label_tag }} {{ form.occurrence }}
+                {{ form.recurrence_count.label_tag }} {{ form.recurrence_count }}
+                {{ form.cost_type.label_tag }} {{ form.cost_type }}
+                {{ form.bank_account.label_tag }} {{ form.bank_account }}
+                {{ form.file.label_tag }} {{ form.file }}
+                <button type="submit" name="save" class="btn btn-primary">Salvar</button>
+                <button type="submit" name="save_and_pay" class="btn btn-primary">Salvar e Pagar</button>
+            </form>
+        </div>
+        
+        <div class="filter-container">
+            <form method="get">
+                <label for="status">Filtrar por status:</label>
+                <select name="status" id="status">
+                    <option value="all" {% if filter_status == 'all' %}selected{% endif %}>Todas</option>
+                    <option value="open" {% if filter_status == 'open' %}selected{% endif %}>Abertas</option>
+                    <option value="paid" {% if filter_status == 'paid' %}selected{% endif %}>Pagas</option>
+                </select>
+                <label for="bank">Filtrar por banco:</label>
+                <select name="bank" id="bank">
+                    <option value="" {% if bank_filter == '' %}selected{% endif %}>Todos os Bancos</option>
+                    {% for bank in user_banks %}
+                        <option value="{{ bank.id }}" {% if bank_filter == bank.id|stringformat:"s" %}selected{% endif %}>
+                            {{ bank.bank_name }}
+                        </option>
+                    {% endfor %}
+                </select>
+                <label for="start_date">Data inicial:</label>
+                <input type="date" name="start_date" id="start_date" value="{{ start_date|default_if_none:'' }}">
+                <label for="end_date">Data final:</label>
+                <input type="date" name="end_date" id="end_date" value="{{ end_date|default_if_none:'' }}">
+                <label for="search_query">Pesquisar:</label>
+                <input type="text" name="search_query" id="search_query" value="{{ search_query|default_if_none:'' }}" placeholder="Nome, descrição, categoria...">
+                <button type="submit" class="btn btn-primary">Filtrar</button>
+            </form>
+        </div> 
+        <form method="post" enctype="multipart/form-data" id="import-form">
+            {% csrf_token %}
+            <input type="file" name="excel_file" id="excel-upload-input" style="display: none;" accept=".xlsx, .xls">
+            <input type="hidden" name="action" value="import_excel">
+        </form>
+
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <input type="file" name="file" id="file-upload-input" style="display: none;">
+            <input type="hidden" name="attach_account_id" id="attach-account-id-input">
+
+            <div class="actions-header">
+                <div class="export-buttons">
+                    <a href="?export_pdf=1&status={{ filter_status }}&start_date={{ start_date|default_if_none:'' }}&end_date={{ end_date|default_if_none:'' }}" class="btn btn-primary">Exportar para PDF</a>
+                    <a href="?export_excel=1&status={{ filter_status }}&start_date={{ start_date|default_if_none:'' }}&end_date={{ end_date|default_if_none:'' }}" class="btn btn-primary">Exportar para Excel</a>
+                    <button type="button" id="import-excel-btn" class="btn btn-primary">Importar Planilha</button>
+                    <div class="info-tooltip-container">
+                        <span class="info-icon">i</span> <div class="tooltip-text"> <strong>Regras para Importação:</strong>
+                            <hr>
+                            <p>A planilha deve conter as 3 colunas obrigatórias. A ordem não importa.</p>
+                            <ul>
+                                <li><strong>OBRIGATÓRIO (Nome):</strong> Título da coluna deve ser 'Nome', 'Cliente' ou 'Fornecedor'.</li>
+                                <li><strong>OBRIGATÓRIO (Vencimento):</strong> Título deve ser 'Vencimento', 'Data do pagamento' ou 'Data do vencimento'.</li>
+                                <li><strong>OBRIGATÓRIO (Valor):</strong> Título deve ser 'Valor' ou 'Pagamento'.</li>
+                                <li><strong>Opcionais:</strong> 'Descrição', 'Categoria', 'Banco', 'Forma de pagamento', 'Custo'.</li>
+                            </ul>
+                            <p>Colunas extras na planilha serão ignoradas.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bulk-action">
+                    <button type="submit" name="delete_selected" class="btn btn-danger" onclick="return confirm('Tem certeza que deseja excluir as contas selecionadas?');">Excluir Selecionados</button>
+                </div>
+            </div>
+            
+            <div class="table-container">
+                <table>
+                    
+                    <thead>
+                        <tr>
+                            <th><input type="checkbox" id="select-all"></th>
+                            <th>Nome</th>
+                            <th>Descrição</th>
+                            <th>Vencimento</th>
+                            <th>Valor</th>
+                            <th>Categoria</th>
+                            <th>Conta Bancária</th>
+                            <th>Área-DRE</th>
+                            <th>Forma Pag.</th>
+                            <th>Ocorrência</th>
+                            <th>Custo</th>
+                            <th>Status</th>
+                            <th style="text-align: center;">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for account in accounts %}
+                            <tr>
+                                <td data-label="Selecionar"><input type="checkbox" name="account_ids" value="{{ account.id|unlocalize }}" class="select-item"></td>
+                                <td data-label="Nome">{{ account.name }}</td>
+                                <td data-label="Descrição">{{ account.description }}</td>
+                                <td data-label="Vencimento">{{ account.due_date|date:"d/m/Y" }}</td>
+                                <td data-label="Valor">R$ {{ account.amount|intcomma }}</td>
+                                <td data-label="Categoria">{{ account.category.name|default:"-" }}</td>
+                                <td data-label="Conta Bancária">{{ account.bank_account|default:"-" }}</td>
+                                <td data-label="Área-DRE">{{ account.get_dre_area_display }}</td> 
+                                <td data-label="Forma Pag.">{{ account.get_payment_method_display }}</td>
+                                <td data-label="Ocorrência">{{ account.get_occurrence_display }}</td>
+                                <td data-label="Custo">{{ account.cost_type|title }}</td>
+                                <td data-label="Status">
+                                    {% if account.is_paid %}
+                                        {% if account.ofx_import %}
+                                            <span style="color: #007bff; font-weight: bold;">Pago (OFX)</span>
+                                        {% else %}
+                                            Pago
+                                        {% endif %}
+                                    {% else %}
+                                        Aberto
+                                    {% endif %}
+                                </td>
+                                <td data-label="Ações" class="actions-cell">
+                                    <div class="action-menu">
+                                        <div class="menu-icon">...</div>
+                                        <div class="dropdown">
+
+                                            <form method="post" style="margin: 0;">
+                                                {% csrf_token %}
+                                                {% if not account.is_paid %}
+                                                    <button type="submit" name="action_pay" value="{{ account.id|unlocalize }}" title="Baixar">&#10004;</button>
+                                                {% else %}
+                                                    <button type="submit" name="action_undo" value="{{ account.id|unlocalize }}" class="undo-btn" title="Desfazer">&#8634;</button>
+                                                {% endif %}
+                                            </form>
+
+                                            <a href="?edit={{ account.id }}&status={{ filter_status }}&start_date={{ start_date|default:'' }}&end_date={{ end_date|default:'' }}" title="Editar">&#9998;</a>
+
+                                            <button type="button" onclick="triggerFileUpload('{{ account.id|unlocalize }}')" title="Anexar arquivo">&#128206;</button>
+
+                                            <form method="post" style="margin: 0;">
+                                                {% csrf_token %}
+                                                <button type="submit" name="action_delete" value="{{ account.id|unlocalize }}" class="delete-btn" onclick="return confirm('Tem certeza que deseja excluir esta conta?');" title="Excluir">&#128465;</button>
+                                            </form>
+
+                                            {% if account.file %}
+                                                <form method="post" style="margin: 0;">
+                                                    {% csrf_token %}
+                                                    <button type="submit" name="action_delete_file" value="{{ account.id|unlocalize }}" style="color: #ff9800; font-weight: bold;" onclick="return confirm('Deseja remover apenas o anexo PDF desta conta?');" title="Remover Anexo (PDF)">&#10060;</button>
+                                                </form>
+                                            
+                                                <a href="{{ account.file.url }}" target="_blank" title="Ver PDF">&#128065;</a>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="13" style="text-align: center;">Nenhuma conta encontrada.</td>
+                            </tr>
+                        {% endfor %}
+                        <tr class="total-row">
+                            <td colspan="4" style="text-align: right; font-weight: bold;">TOTAL DO PERÍODO:</td>
+                            <td style="font-weight: bold; white-space: nowrap;">R$ {{ total_amount|floatformat:2|intcomma }}</td>
+                            <td colspan="8"></td> {# Célula vazia para preencher as colunas restantes #}
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <div class="pagination">
+                    {% if accounts.has_other_pages %}
+                        {% if accounts.has_previous %}
+                            <a href="?page=1&status={{ filter_status }}&start_date={{ start_date|default:'' }}&end_date={{ end_date|default:'' }}&search_query={{ search_query|default:'' }}">&laquo; Primeira</a>
+                            <a href="?page={{ accounts.previous_page_number }}&status={{ filter_status }}&start_date={{ start_date|default:'' }}&end_date={{ end_date|default:'' }}&search_query={{ search_query|default:'' }}">Anterior</a>
+                        {% endif %}
+                        <span class="current">
+                            Página {{ accounts.number }} de {{ accounts.paginator.num_pages }}.
+                        </span>
+                        {% if accounts.has_next %}
+                            <a href="?page={{ accounts.next_page_number }}&status={{ filter_status }}&start_date={{ start_date|default:'' }}&end_date={{ end_date|default:'' }}&search_query={{ search_query|default:'' }}">Próxima</a>
+                            <a href="?page={{ accounts.paginator.num_pages }}&status={{ filter_status }}&start_date={{ start_date|default:'' }}&end_date={{ end_date|default:'' }}&search_query={{ search_query|default:'' }}">Última &raquo;</a>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+        </form>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Lógica do menu hambúrguer para mobile
+            const menuToggleButton = document.getElementById('menu-toggle');
+            const sidebar = document.querySelector('.sidebar');
+            if (menuToggleButton && sidebar) {
+                menuToggleButton.addEventListener('click', function() {
+                    sidebar.classList.toggle('mobile-open');
+                });
+            }
+            // --- INÍCIO DO SCRIPT DO MENU ---
+            function setupSubmenuToggle(toggleId, submenuId) {
+                const toggleButton = document.getElementById(toggleId);
+                const submenu = document.getElementById(submenuId);
+                if (toggleButton && submenu) {
+                    toggleButton.addEventListener('click', function(event) {
+                        event.preventDefault();
+                        submenu.style.display = submenu.style.display === 'block' ? 'none' : 'block';
+                    });
+                }
+            }
+            setupSubmenuToggle('financeiro-toggle', 'financeiro-submenu');
+            setupSubmenuToggle('comercial-toggle', 'comercial-submenu');
+            setupSubmenuToggle('configuracoes-toggle', 'configuracoes-submenu');
+
+            // Expande o submenu que contém o link ativo na página atual
+            const activeLink = document.querySelector('.sidebar .submenu a.active');
+            if (activeLink) {
+                const parentSubmenu = activeLink.closest('.submenu');
+                if (parentSubmenu) {
+                    parentSubmenu.style.display = 'block';
+                }
+            }
+            // --- FIM DO SCRIPT DO MENU ---
+            // Script para menu de ações individual
+            document.querySelectorAll('.menu-icon').forEach(icon => {
+                icon.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const menu = this.closest('.action-menu');
+                    const isActive = menu.classList.contains('active');
+                    document.querySelectorAll('.action-menu').forEach(m => m.classList.remove('active'));
+                    if (!isActive) {
+                        menu.classList.add('active');
+                    }
+                });
+            });
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.action-menu')) {
+                    document.querySelectorAll('.action-menu').forEach(menu => {
+                        menu.classList.remove('active');
+                    });
+                }
+            });
+
+            
+            // Script para formatar o valor antes de enviar o formulário
+            const form = document.querySelector('.form-container form');
+            const amountInput = document.getElementById('id_amount');
+            if (form && amountInput) {
+                form.addEventListener('submit', function() {
+                    let amountValue = amountInput.value;
+
+                    // --- INÍCIO DA CORREÇÃO ---
+                    // Só executa a formatação se o valor contiver uma vírgula,
+                    // indicando o formato brasileiro (Ex: 1.235,50).
+                    if (amountValue.includes(',')) {
+                        // Remove os pontos (milhar) e substitui a vírgula (decimal) por ponto.
+                        amountValue = amountValue.replace(/\./g, '').replace(',', '.');
+                    }
+                    // Se não houver vírgula, o script não altera o valor,
+                    // permitindo que "235.00" seja enviado corretamente.
+                    // --- FIM DA CORREÇÃO ---
+
+                    amountInput.value = amountValue;
+                });
+            }
+
+            // Script para seleção em massa
+            const selectAllCheckbox = document.getElementById('select-all');
+            const itemCheckboxes = document.querySelectorAll('.select-item');
+            if (selectAllCheckbox) {
+                selectAllCheckbox.addEventListener('change', function() {
+                    itemCheckboxes.forEach(checkbox => {
+                        checkbox.checked = this.checked;
+                    });
+                });
+            }
+
+            // Script para anexo de arquivo
+            const fileUploadInput = document.getElementById('file-upload-input');
+            if(fileUploadInput) {
+                fileUploadInput.addEventListener('change', function() {
+                    if (this.files.length > 0) {
+                        // Define o name do botão de anexo para ser identificado na view
+                        const attachButton = document.createElement('input');
+                        attachButton.type = 'hidden';
+                        attachButton.name = 'action_attach';
+                        attachButton.value = '1';
+                        this.form.appendChild(attachButton);
+                        this.form.submit();
+                    }
+                });
+            }
+            // ▼▼▼ ADICIONE TODO ESTE BLOCO DE CÓDIGO ABAIXO ▼▼▼
+            const importBtn = document.getElementById('import-excel-btn');
+            const excelInput = document.getElementById('excel-upload-input');
+
+            if (importBtn && excelInput) {
+                importBtn.addEventListener('click', function() {
+                    excelInput.click();
+                });
+
+                excelInput.addEventListener('change', function() {
+                    if (this.files.length > 0) {
+                        document.getElementById('import-form').submit();
+                    }
+                });
+            }
+            // --- FIM DO BLOCO A SER ADICIONADO ---
+        });
+
+        function triggerFileUpload(accountId) {
+            document.getElementById('attach-account-id-input').value = accountId;
+            document.getElementById('file-upload-input').click();
+        }
+    </script>
+    <script src="{% static 'js/theme.js' %}"></script>
+</body>
+</html>

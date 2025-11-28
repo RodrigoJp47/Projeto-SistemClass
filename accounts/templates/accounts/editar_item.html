@@ -1,0 +1,99 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar {{ item_name }}</title>
+    <link rel="stylesheet" href="{% static 'css/global.css' %}">
+    <link rel="stylesheet" href="{% static 'css/comercial_cadastro.css' %}">
+    <link rel="stylesheet" href="{% static 'css/themes.css' %}">
+    <link rel="stylesheet" href="{% static 'css/sidebar.css' %}">
+</head>
+<body class="cadastros-page">
+    {% include 'accounts/_sidebar.html' %}
+
+    <div class="main-content">
+        <h1>Editando: {{ item_name }}</h1>
+        
+        <div class="form-container" style="max-width: 800px; margin: 20px auto;">
+            <form method="post">
+                {% csrf_token %}
+                <div class="form-grid">
+                    {% for field in form %}
+                    <div class="form-group">
+                        {{ field.label_tag }}{{ field }}
+                    </div>
+                    {% endfor %}
+                </div>
+                <div style="display: flex; gap: 15px; margin-top: 20px;">
+                    <button type="submit">Salvar Alterações</button>
+                    <a href="{% url 'comercial_cadastros' %}" class="btn-secondary">Cancelar</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="{% static 'js/theme.js' %}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // --- INÍCIO DO SCRIPT DE MÁSCARA DE MOEDA ---
+
+            // Seleciona os dois campos de preço pelos seus IDs
+            const precoVendaInput = document.getElementById('id_preco_venda');
+            const precoCustoInput = document.getElementById('id_preco_custo');
+            const inputsDePreco = [precoVendaInput, precoCustoInput];
+
+            // Função que formata um campo de input
+            const formatPriceInput = (inputElement) => {
+                if (!inputElement) return;
+
+                // Força o tipo para 'text' para permitir a formatação
+                inputElement.type = 'text'; 
+                inputElement.setAttribute('inputmode', 'decimal'); 
+
+                // Pega o valor, remove tudo que não for número
+                let value = inputElement.value.replace(/\D/g, '');
+                if (value === '') {
+                    inputElement.value = '';
+                    return;
+                }
+                // Converte para número e formata para o padrão brasileiro
+                const numberValue = parseFloat(value) / 100;
+                inputElement.value = numberValue.toLocaleString('pt-BR', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                });
+            };
+
+            // Aplica a formatação e os "ouvintes" para ambos os campos
+            inputsDePreco.forEach(input => {
+                if (input) {
+                    input.addEventListener('input', (e) => formatPriceInput(e.target));
+                    // Formata o valor inicial que já vem preenchido na página de edição
+                    formatPriceInput(input);
+                }
+            });
+
+            // Lógica para desformatar ANTES de enviar o formulário
+            const editForm = document.querySelector('.form-container form');
+            if (editForm) {
+                editForm.addEventListener('submit', () => {
+                    inputsDePreco.forEach(input => {
+                        if (input && input.value) {
+                            const formattedValue = input.value;
+                            // Remove o ponto de milhar
+                            const valueWithoutDots = formattedValue.replace(/\./g, '');
+                            // Troca a vírgula do decimal por um ponto
+                            const unformattedValue = valueWithoutDots.replace(',', '.');
+                            // Envia o valor limpo para o backend (ex: 4569.25)
+                            input.value = unformattedValue;
+                        }
+                    });
+                });
+            }
+            // --- FIM DO SCRIPT DE MÁSCARA DE MOEDA ---
+        });
+    </script>
+</body>
+</html>

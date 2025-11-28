@@ -1,0 +1,7 @@
+
+
+<div class="progress-bar" id="progresso-{{ tipo }}" {% if oob_swap %}hx-swap-oob="true"{% endif %}>
+    <div class="progress-bar-fill {% if progresso == 100 %}concluido{% endif %}" 
+         style="width: {{ progresso|floatformat:0 }}%;">
+    </div>
+</div>

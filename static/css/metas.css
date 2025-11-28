@@ -1,0 +1,221 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background-color: #000;
+    color: #fff;
+    display: flex;
+    min-height: 100vh;
+}
+/* Container principal da página */
+.metas-container {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: var(--spacing-md); /* Corrigido */
+    align-items: stretch;
+    margin-bottom: 10px;
+}
+
+/* Estilos para os cards */
+.form-card, .list-card {
+    background-color: var(--color-background-light);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius-lg);
+    padding: 25px; /* Mantido por ser um espaçamento maior específico desta página */
+    /* Adicionado para controlar o layout interno */
+    display: flex;
+    flex-direction: column;
+}
+
+.form-title, .list-title {
+    font-size: var(--font-size-h2);
+    margin-top: 0;
+    margin-bottom: 8px;
+}
+
+.form-subtitle {
+    font-size: var(--font-size-base);
+    color: var(--color-text-secondary);
+    margin-top: 0;
+    margin-bottom: 25px;
+}
+
+/* Formulário de metas */
+.metas-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md); /* Corrigido */
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group label {
+    margin-bottom: 8px;
+    font-weight: 600;
+    font-size: var(--font-size-base);
+}
+
+.form-group select,
+.form-group input {
+    padding: 10px;
+    border: 1px solid var(--color-border); /* Corrigido */
+    border-radius: var(--border-radius-md);
+    font-size: var(--font-size-base);
+}
+
+.input-group {
+    display: flex;
+}
+
+.input-group .input-group-text {
+    padding: 10px;
+    background-color: var(--color-background-ice); /* Corrigido */
+    border: 1px solid var(--color-border); /* Corrigido */
+    border-right: none;
+    border-radius: var(--border-radius-md) 0 0 var(--border-radius-md);
+}
+
+.input-group input {
+    border-radius: 0 var(--border-radius-md) var(--border-radius-md) 0;
+    flex-grow: 1;
+}
+
+.submit-btn {
+    padding: 12px 20px;
+    background-color: var(--color-background-dark); /* Corrigido */
+    color: var(--color-text-light); /* Corrigido */
+    border: none;
+    border-radius: var(--border-radius-md);
+    font-size: var(--font-size-lg);
+    cursor: pointer;
+    transition: background-color 0.2s;
+    margin-top: 10px;
+}
+
+.submit-btn:hover {
+    background-color: var(--color-background-dark-soft); /* Corrigido */
+}
+
+/* Lista de metas cadastradas */
+
+.metas-list {
+    /* AQUI ESTÁ A CORREÇÃO: limitamos a altura máxima da lista */
+    max-height: 450px; /* Você pode ajustar este valor como preferir */
+    overflow-y: auto;  /* Ativa a barra de rolagem quando o conteúdo ultrapassa a altura máxima */
+    padding-right: 10px;
+}
+.meta-mes-group {
+    margin-bottom: var(--spacing-md); /* Corrigido */
+}
+
+.mes-title {
+    font-size: var(--font-size-h3);
+    border-bottom: 2px solid var(--color-border); /* Corrigido */
+    padding-bottom: 8px;
+    margin-bottom: 10px;
+}
+
+.meta-mes-group ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.meta-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px;
+    border-radius: var(--border-radius-md);
+    margin-bottom: 5px;
+}
+
+.meta-item.empresa {
+    background-color: #e9f5ff; /* Mantido como cor específica de status */
+    border-left: 4px solid #3498db; /* Mantido como cor específica de status */
+    font-weight: bold;
+}
+
+.meta-item.vendedor {
+    background-color: var(--color-background-ice); /* Corrigido */
+    border-left: 4px solid #bdc3c7; /* Mantido como cor específica de status */
+}
+
+.meta-valor {
+    font-weight: bold;
+}
+
+/* --- NOVOS ESTILOS PARA FILTRO E PERCENTUAIS --- */
+.list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+.filtro-ano-form select {
+    padding: 8px;
+    font-size: var(--font-size-base);
+    border-radius: var(--border-radius-md);
+    border: 1px solid var(--color-border); /* Corrigido */
+}
+
+.acumulado-ano {
+    font-size: var(--font-size-lg);
+    font-weight: 600;
+    text-align: right;
+    margin-bottom: var(--spacing-md); /* Corrigido */
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--color-border); /* Corrigido */
+}
+
+.meta-item {
+    align-items: center;
+}
+
+.meta-item > div {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm); /* Corrigido */
+}
+
+.meta-percentual {
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    background-color: #eee; /* Mantido por ser um tom neutro específico */
+    padding: 2px 8px;
+    border-radius: 5px; /* Mantido por ser específico do componente */
+    min-width: 60px;
+    text-align: center;
+}
+
+.header {
+    margin-bottom: 20px;
+    font-size: 14px;
+}
+
+/* Responsividade */
+@media (max-width: 992px) {
+    /*
+       O que fica aqui: Regra que afeta APENAS os elementos
+       específicos da página de Metas. O layout geral
+       é controlado pelo arquivo layout-responsive.css.
+    */
+
+    /*
+       Esta regra transforma o layout de duas colunas (formulário ao lado da lista)
+       em uma única coluna (formulário em cima da lista) em telas de tablets e celulares.
+    */
+    .metas-container {
+        grid-template-columns: 1fr;
+    }
+}

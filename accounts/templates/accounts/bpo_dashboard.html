@@ -1,0 +1,103 @@
+{% load static %}
+{% load humanize %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard BPO - Seleção de Clientes</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <link rel="stylesheet" href="{% static 'css/global.css' %}">
+    <link rel="stylesheet" href="{% static 'css/sidebar.css' %}">
+    <link rel="stylesheet" href="{% static 'css/dashbord.css' %}">
+    <link rel="stylesheet" href="{% static 'css/themes.css' %}">
+    <link rel="stylesheet" href="{% static 'css/bpo_dashboard.css' %}">
+    <link rel="stylesheet" href="{% static 'css/layout-responsive.css' %}">
+    
+</head>
+<body class="bpo-dashboard-page"> {# Adicione classes ao body se seu layout usar #}
+    
+    {% include 'accounts/_sidebar.html' %} {# Inclui a sua sidebar existente #}
+
+    <div class="main-content">
+        <button id="menu-toggle">&#9776;</button> {# Se você usa esse botão #}
+        
+        <div class="container-fluid"> {# Use a classe container apropriada do seu layout #}
+            <div class="d-sm-flex align-items-center justify-content-between mb-4">
+                <h1 class="h3 mb-0 text-gray-800">Seu Dashboard BPO</h1>
+            </div>
+
+            <p class="mb-4">Bem-vindo, <strong>{{ request.user.username }}</strong>. Selecione um cliente abaixo para iniciar o gerenciamento financeiro.</p>
+
+            <div class="card shadow mb-4"> {# Adapte as classes 'card', 'shadow' etc. ao seu CSS #}
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Clientes Vinculados</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0"> {# Adapte as classes da tabela #}
+                            <thead>
+                                <tr>
+                                    <th>Cliente (Usuário)</th>
+                                    <th>Email</th>
+                                    <th>Status da Assinatura</th>
+                                    <th class="text-center">Ação</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for client in clients %}
+                                <tr>
+                                    <td>{{ client.username }}</td>
+                                    <td>{{ client.email|default:"-" }}</td>
+                                    <td class="text-center">
+                                        {# Adapte as classes 'badge' ao seu CSS se forem diferentes #}
+                                        {% if client.subscription_status == 'active' %}
+                                            <span class="badge badge-success">Ativa</span>
+                                        {% elif client.subscription_status == 'expired' %}
+                                            <span class="badge badge-danger">Expirada</span>
+                                        {% else %}
+                                            <span class="badge badge-secondary">{{ client.subscription_status|default:'N/A' }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        <a href="{% url 'switch_to_client' client.user_id %}" class="btn btn-primary btn-sm"> {# Adapte classes do botão #}
+                                            <i class="fas fa-sign-in-alt"></i> Gerenciar {# Adapte o ícone se usar outra biblioteca #}
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center">
+                                        Nenhum cliente vinculado à sua conta BPO.
+                                        <br>
+                                        <small>Peça para seu cliente se cadastrar e depois vincule a conta dele à sua através do painel /admin.</small>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{% static 'js/theme.js' %}"></script>
+    {# Adicione aqui scripts para menu-toggle, etc., se forem necessários nesta página #}
+    <script>
+        // Script para o menu-toggle, se aplicável a esta página também
+        document.addEventListener('DOMContentLoaded', function() {
+            const menuToggleButton = document.getElementById('menu-toggle');
+            const sidebar = document.querySelector('.sidebar');
+
+            if (menuToggleButton && sidebar) {
+                menuToggleButton.addEventListener('click', function() {
+                    sidebar.classList.toggle('mobile-open');
+                });
+            }
+            // Adicione aqui outros scripts JS globais que esta página precise
+        });
+    </script>
+</body>
+</html>

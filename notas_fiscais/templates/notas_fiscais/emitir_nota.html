@@ -1,0 +1,204 @@
+{% load static %}
+{% load humanize %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-AR">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emitir Nota Fiscal</title>
+    <link rel="stylesheet" href="{% static 'css/global.css' %}">
+    <link rel="stylesheet" href="{% static 'css/themes.css' %}">
+    <link rel="stylesheet" href="{% static 'css/sidebar.css' %}">
+    <link rel="stylesheet" href="{% static 'css/vendas.css' %}">
+</head>
+
+<body class="notas-fiscais-emitir-page">
+
+    {% include 'accounts/_sidebar.html' %}
+
+    <div class="main-content">
+        {% include 'accounts/partials/bpo_banner.html' %}
+        <button id="menu-toggle">&#9776;</button>
+        <h1>Emitir Nota Fiscal (NF-e)</h1>
+        {% if messages %}
+        <style>
+            /* Estilos Locais para as Mensagens */
+            .alert-box {
+                padding: 15px;
+                border-radius: 8px;
+                margin-bottom: 10px;
+                font-weight: 500;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                border: 1px solid transparent;
+            }
+
+            /* Cores baseadas nas tags do Django */
+            .msg-success {
+                background-color: #d1e7dd;
+                color: #0f5132;
+                border-color: #badbcc;
+            }
+
+            .msg-error {
+                background-color: #f8d7da;
+                color: #842029;
+                border-color: #f5c2c7;
+            }
+
+            .msg-warning {
+                background-color: #fff3cd;
+                color: #664d03;
+                border-color: #ffecb5;
+            }
+
+            .msg-info {
+                background-color: #cff4fc;
+                color: #055160;
+                border-color: #b6effb;
+            }
+
+            .msg-debug {
+                background-color: #e2e3e5;
+                color: #41464b;
+                border-color: #d3d6d8;
+            }
+        </style>
+
+        <div class="messages-container" style="margin-bottom: 20px;">
+            {% for message in messages %}
+            <div class="alert-box msg-{{ message.tags }}">
+
+                {% if 'success' in message.tags %}
+                <i class="fas fa-check-circle" style="font-size: 1.2em;"></i>
+                {% elif 'error' in message.tags %}
+                <i class="fas fa-times-circle" style="font-size: 1.2em;"></i>
+                {% elif 'warning' in message.tags %}
+                <i class="fas fa-exclamation-triangle" style="font-size: 1.2em;"></i>
+                {% else %}
+                <i class="fas fa-info-circle" style="font-size: 1.2em;"></i>
+                {% endif %}
+
+                <span>{{ message }}</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="section-container">
+            <h3>Dados da Venda (Origem)</h3>
+            <div class="grid-3" style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 15px;">
+                <div class="form-group">
+                    <label>Cliente</label>
+                    <input type="text" value="{{ venda.cliente.nome }}" readonly disabled>
+                </div>
+                <div class="form-group">
+                    <label>Venda ID</label>
+                    <input type="text" value="#{{ venda.id }}" readonly disabled>
+                </div>
+                <div class="form-group">
+                    <label>Valor Total</label>
+                    <input type="text" value="R$ {{ venda.valor_total_liquido|intcomma }}" readonly disabled>
+                </div>
+            </div>
+
+            <h4>Itens da Venda</h4>
+            <table style="margin-bottom: 20px;">
+                <thead>
+                    <tr>
+                        <th>Produto/Serviço</th>
+                        <th>Qtd.</th>
+                        <th>Preço Unit.</th>
+                        <th>Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in venda.itens.all %}
+                    <tr>
+                        <td>{{ item.produto.nome }}</td>
+                        <td>{{ item.quantidade|floatformat:"0" }}</td>
+                        <td>R$ {{ item.preco_unitario|intcomma }}</td>
+                        <td>R$ {{ item.subtotal|intcomma }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section-container">
+            <h3>Dados para Emissão da NF-e</h3>
+            <p style="font-size: 0.9em; color: var(--text-color-light);">
+                <strong>Atenção:</strong> Estes são campos fiscais. Preencha de acordo com a orientação da sua
+                contabilidade.
+            </p>
+
+            <form method="POST">
+                {% csrf_token %}
+
+                <div class="grid-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div class="form-group">
+                        <label for="{{ form.natureza_operacao.id_for_label }}">Natureza da Operação</label>
+                        {{ form.natureza_operacao }}
+                    </div>
+                    <div class="form-group">
+                        <label for="{{ form.cfop.id_for_label }}">CFOP</label>
+                        {{ form.cfop }}
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-top: 15px;">
+                    <label for="{{ form.informacoes_adicionais.id_for_label }}">Informações Adicionais</label>
+                    {{ form.informacoes_adicionais }}
+                </div>
+
+                <hr style="border-color: var(--border-color); margin: 20px 0;">
+
+                <button type="submit" class="finalizar-venda-btn" style="background-color: #007bff;">
+                    Registrar Emissão de NF-e
+                </button>
+                <a href="{% url 'vendas' %}" class="btn-cancel">Cancelar</a>
+            </form>
+        </div>
+    </div>
+
+    <script src="{% static 'js/theme.js' %}"></script>
+    <script>
+        // Script do menu mobile (igual ao vendas.html)
+        document.addEventListener('DOMContentLoaded', function () {
+            const menuToggleButton = document.getElementById('menu-toggle');
+            const sidebar = document.querySelector('.sidebar');
+            if (menuToggleButton && sidebar) {
+                menuToggleButton.addEventListener('click', function () {
+                    sidebar.classList.toggle('mobile-open');
+                });
+            }
+
+            // Script do sidebar (copiado de vendas.html)
+            function setupSubmenuToggle(toggleId, submenuId) {
+                const toggleButton = document.getElementById(toggleId);
+                const submenu = document.getElementById(submenuId);
+                if (toggleButton && submenu) {
+                    toggleButton.addEventListener('click', function (event) {
+                        event.preventDefault();
+                        submenu.style.display = submenu.style.display === 'block' ? 'none' : 'block';
+                    });
+                }
+            }
+            setupSubmenuToggle('financeiro-toggle', 'financeiro-submenu');
+            setupSubmenuToggle('comercial-toggle', 'comercial-submenu');
+            setupSubmenuToggle('configuracoes-toggle', 'configuracoes-submenu');
+
+            const activeLink = document.querySelector('.sidebar .submenu a.active');
+            if (activeLink) {
+                const parentSubmenu = activeLink.closest('.submenu');
+                if (parentSubmenu) {
+                    parentSubmenu.style.display = 'block';
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>

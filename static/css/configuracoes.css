@@ -1,0 +1,377 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background-color: #000;
+    color: #c73015ff;
+    display: flex;
+    height: 100vh;
+}
+/* ========================================================================== */
+/* NOVO CABEÇALHO DA PÁGINA                                                   */
+/* ========================================================================== */
+.config-header {
+    display: flex;
+    justify-content: space-between; /* Alinha o título à esquerda e o tema à direita */
+    align-items: center;            /* Alinha verticalmente */
+    margin-bottom: 40px;
+    border-bottom: 1px solid #444;
+    padding-bottom: 20px;
+}
+
+.config-header .section-title {
+    margin: 0;
+    padding: 0;
+    border: none;
+    color: var(--text-color, #fff); /* Usa a cor de texto do tema */
+}
+
+/* Container do seletor de tema */
+/* Container do seletor de tema */
+.theme-selector-container {
+    display: flex;         /* << ADICIONAR: Alinha os itens (título e botões) lado a lado */
+    align-items: center;   /* << ADICIONAR: Alinha verticalmente o título e os botões */
+    gap: 15px;             /* << ADICIONAR: Cria um espaço entre o título e os botões */
+}
+
+.theme-selector-container h4 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    font-size: 16px;
+    color: var(--text-color, #fff);
+}
+
+.theme-selector-container .theme-switcher {
+    display: flex;
+    gap: 15px;
+    justify-content: flex-end;
+}
+
+
+.bank-accounts-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+    font-family: Arial, sans-serif;
+    background-color: #fff;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.bank-accounts-table th,
+.bank-accounts-table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+.bank-accounts-table th {
+    background-color: #4CAF50;
+    color: white;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.bank-accounts-table tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+.bank-accounts-table tr:hover {
+    background-color: #f1f1f1;
+}
+
+.bank-accounts-table a {
+    color: #007bff;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.bank-accounts-table a:hover {
+    text-decoration: underline;
+}
+
+@media screen and (max-width: 600px) {
+
+    .bank-accounts-table th,
+    .bank-accounts-table td {
+        padding: 8px;
+        font-size: 14px;
+    }
+}
+
+.sidebar {
+    width: 250px;
+    background-color: #000;
+    padding: 20px;
+    height: 100%;
+    position: fixed;
+    top: 0;
+    left: 0;
+}
+
+.sidebar h2 {
+    color: #fff;
+    font-size: 24px;
+    margin-bottom: 20px;
+}
+
+.sidebar ul {
+    list-style: none;
+    padding: 0;
+}
+
+.sidebar ul li {
+    margin: 15px 0;
+}
+
+.sidebar ul li a {
+    color: #ccc;
+    text-decoration: none;
+    font-size: 18px;
+}
+
+.sidebar ul li a:hover {
+    color: #fff;
+}
+
+.main-content {
+    margin-left: 260px;
+    padding: 15px;
+    width: calc(100% - 260px);
+}
+
+.form-container {
+    background-color: #222;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+}
+
+.form-container input,
+.form-container select,
+.form-container textarea {
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0;
+    border: none;
+    border-radius: 4px;
+    background-color: #333;
+    color: #fff000;
+}
+
+.form-container input[type="file"] {
+    background-color: #333;
+    padding: 8px;
+}
+
+.form-container button {
+    padding: 10px 20px;
+    background-color: #0f0;
+    border: none;
+    border-radius: 4px;
+    color: #000;
+    cursor: pointer;
+    margin-right: 10px;
+}
+
+.form-container button:hover {
+    background-color: #0c0;
+}
+
+.messages {
+    margin-bottom: 20px;
+}
+
+.messages .success {
+    color: #0f0;
+}
+
+.messages .error {
+    color: #f00;
+}
+
+/* Adicione este CSS dentro da tag <style> */
+.submenu {
+    display: none;
+    /* Esconde o submenu por padrão */
+    list-style: none;
+    padding-left: 20px;
+    margin: 5px 0 0 0;
+}
+
+/* ==========================================================================
+   ESTILIZAÇÃO COMPLETA DO MENU (PARA SER USADA EM TODAS AS PÁGINAS)
+   ========================================================================== */
+
+/* --- Container Principal do Menu --- */
+.sidebar {
+    width: 250px;                   /* Largura fixa do menu */
+    background-color: #000;         /* Cor de fundo */
+    padding: 20px;                  /* Espaçamento interno */
+    position: fixed;                /* Posição fixa na tela (não rola com a página) */
+    top: 5px;
+    left: 5px;
+    bottom: 5px;
+    border-radius: 15px;            /* Bordas arredondadas */
+    z-index: 1000;                  /* Garante que o menu fique acima do conteúdo */
+    display: flex;
+    flex-direction: column;
+}
+
+/* --- Título (Ex: "Menu") --- */
+.sidebar h2 {
+    color: #fff;
+    font-size: 24px;
+    margin-bottom: 20px;
+}
+
+/* --- Lista de Itens do Menu --- */
+.sidebar ul {
+    list-style: none; /* Remove as "bolinhas" da lista */
+}
+
+.sidebar ul li {
+    margin: 10px 0;    /* Espaçamento vertical entre os itens */
+}
+
+/* --- Estilo Padrão dos Links do Menu --- */
+.sidebar ul li a {
+    color: #ffffff;
+    text-decoration: none;      /* Remove o sublinhado */
+    font-size: 18px;
+    display: block;             /* Faz o link ocupar toda a largura, melhorando a área de clique */
+    padding: 6px 15px;          /* Espaçamento interno do link */
+    border-radius: 6px;
+    transition: background-color 0.2s ease-in-out; /* Animação suave no hover */
+}
+
+/* --- Efeito ao passar o mouse sobre um link --- */
+.sidebar ul li a:hover {
+    background-color: #333;
+}
+
+/* --- Estilo do link da página ATIVA --- */
+.sidebar ul li a.active {
+    background-color: #0f0;     /* Fundo verde para destacar a página atual */
+    color: #000;                /* Texto preto para contraste */
+    font-weight: bold;
+}
+
+/* --- Estilo dos Submenus --- */
+.submenu {
+    display: none;              /* Oculto por padrão (o JavaScript controla a exibição) */
+    list-style: none;
+    margin-top: 8px;
+    padding-left: 18px;         /* Recuo para indicar hierarquia */
+    border-left: 2px solid #333;/* Linha vertical para organização visual */
+}
+
+.submenu li a {
+    font-size: 16px;            /* Fonte menor para itens do submenu */
+    padding-left: 10px;
+}
+
+.submenu li a:hover {
+    background-color: #2a2a2a;  /* Cor de hover levemente diferente */
+}
+
+/* --- Indicador de Seta para menus com submenu --- */
+.has-submenu > a::after {
+    content: '▼';               /* Adiciona o ícone de seta */
+    float: right;               /* Alinha a seta à direita */
+    font-size: 12px;
+    opacity: 0.7;
+}
+
+/* --- Rodapé do Menu --- */
+.sidebar-footer {
+    margin-top: auto;           /* Chave para empurrar o bloco inteiro para o rodapé */
+    text-align: center;         /* Centraliza o conteúdo */
+}
+
+/* --- Logo na Base do Menu --- */
+.logo-container {
+    padding-top: 5px;
+}
+
+.logo-container img {
+    width: 120px;               /* <<< ESTA É A REGRA QUE FALTAVA */
+    height: auto;
+    margin-bottom: 5px;
+}
+
+.logo-container p {
+    color: #fff;
+    font-size: 16px;
+}
+
+/* --- Seletor de Tema --- */
+.theme-switcher {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 15px; /* Adiciona um espaço entre o logo e os botões */
+}
+
+
+
+/* --- BOTÃO HAMBÚRGUER (MOBILE) --- */
+#menu-toggle {
+    display: none;
+    position: fixed;
+    top: 15px;
+    right: 20px;
+    width: 40px;
+    height: 40px;
+    background-color: #333;
+    color: #fff;
+    border: 1px solid #555;
+    border-radius: 5px;
+    cursor: pointer;
+    z-index: 1001;
+    font-size: 24px;
+    line-height: 40px;
+    text-align: center;
+}
+
+/* 2. Media Query para telas pequenas (celulares e tablets) */
+@media screen and (max-width: 768px) {
+    #menu-toggle {
+        display: block;
+        /* Mostra o botão hambúrguer */
+    }
+
+    .main-content {
+        margin-left: 0;
+        /* Ocupa toda a largura */
+        width: 100%;
+        padding: 15px;
+    }
+
+    .sidebar {
+        position: fixed;
+        /* Posição fixa para deslizar sobre o conteúdo */
+        left: 0;
+        top: 0;
+        height: 100%;
+        width: 260px;
+        /* Largura do menu quando aberto */
+        z-index: 1000;
+        transform: translateX(-100%);
+        /* Esconde o menu fora da tela à esquerda */
+        transition: transform 0.3s ease-in-out;
+        /* Animação de deslize */
+        border-right: 1px solid #444;
+    }
+
+    .sidebar.mobile-open {
+        transform: translateX(0);
+        /* Traz o menu para a tela */
+    }
+
+    .table-container {
+        overflow-x: auto;
+    }
+}

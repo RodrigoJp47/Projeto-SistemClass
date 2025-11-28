@@ -1,0 +1,23 @@
+<li class="checklist-item {% if item.concluido %}concluido{% endif %}" id="checklist-item-{{ item.id }}" hx-swap-oob="true">
+    
+    <input type="checkbox" 
+           id="check-{{ item.id }}" 
+           {% if item.concluido %}checked{% endif %}
+           hx-post="{% url 'toggle_checklist_item' item.id %}"
+           hx-target="body"
+           hx-swap="none" 
+           hx-indicator="#loading-item-{{ item.id }}">
+    
+    <label class="checklist-item-label" for="check-{{ item.id }}">{{ item.titulo }}</label>
+    
+    <span id="loading-item-{{ item.id }}" class="htmx-indicator">...</span>
+
+       <button class="btn-delete-item"
+            hx-post="{% url 'deletar_checklist_item' item.id %}"
+            hx-target="#progresso-{{ item.tipo }}"
+            hx-swap="outerHTML"
+            hx-confirm="Tem certeza que deseja excluir este item?"
+            hx-trigger="click"
+            title="Excluir item">&times;
+       </button>
+</li>

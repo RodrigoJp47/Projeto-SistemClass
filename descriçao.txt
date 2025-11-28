@@ -1,0 +1,234 @@
+1° aula (Criando ambiente venv)
+=> Criar pasta (Nome do projeto)
+=> Criar venv(python -m venv .venv) enter
+=> Instalar extensão Django
+=> Executar arquivo(.\.venv\Script\activate)
+=> Instalar Django (pip install django)
+=> Colocar as bibliotecas dentro de requirements
+=> pip freeze > requirements.txt
+
+python manage.py makemigrations
+
+python manage.py migrate
+
+
+render@srv-d2h0mcfdiees73e13vag-858b574575-xtzj5:~/project/src$ python manage.py createsuperuser
+Usuário (leave blank to use 'render'): rodrigo2025
+Endereço de email: rodriabreu@gmail.com
+Password: 
+Password (again): Padrão
+
+Usuário (leave blank to use 'pc'): Rodrigo2025
+Endereço de email: rodriabreu@gmail.com
+Password: 
+Password (again):Padrão
+Superuser created successfully.
+
+# 1. Veja o que mudou
+git status
+
+# 2. Adicione tudo para o pacote
+git add .
+
+# 3. Feche o pacote com uma etiqueta clara
+git commit -m ""
+
+# 4. Envie para a nuvem (GitHub/Render)
+git push
+
+2° aula (Criando projeto)
+=> Criar a pasta SETUP
+=> Criando o projeto(django-admin startproject setup .)Enter
+=> Criou a pasta setup
+=> arquivo URL(onde coloco as rotas)
+=> Colocando o projeto no servidor(python manage.py runserver) Enter
+=> Copiar url com a porta 8000 e colocar no navegador.
+
+Ate aqui deu super certo!!!!!
+
+3° aula(Criando a primeira rota)
+=> Rotas entrar em SETUP => urls.py
+=> Em urlpattners criar abaixo de path admin:
+=> path('', homepage), Rota primaria (precisa criar primeiro o arquivo view)
+=> path('about', about)
+=> Criar arquivo views dentro da pasta SETUP
+=> views.py => from django.http import httpResponse
+=> Dentro do arquivo views.py criar duas funções:
+=> def homepage(request):
+       return httpResponse("Hello Word")
+=> def about(request):
+       return httpResponse("About me")  
+
+=> Entrar no arquivo url.py e importar as funções homepage e about
+=> from .views import homepage, About
+=> Depois testar se deu certo.
+
+Ate aqui deu super certo!!!!!
+
+4° aula(Integrando com pagina HTML)
+=> Na aula anterior foi só um exemplo. 
+=> Vamos trocar HttpResponse por render HTML
+=> Em settings.py => Templates => DIRS: ['templates'],
+=> Criar fora de SETUP a pasta templates.
+=> Criar dois arquivos home.html e about.html
+=> home.html digitar '!' para criar a estrutura.
+=> Dentro de title HOME e dentro de Body <h2> home <h2>
+=> <p> Acesse a pagina <a href="/about">About</a></p>
+=> about.html '!' para criar a estrutura.
+=> Dentro de title About e dentro de Body <h2> About <h2>
+=> <p> Acesse a pagina <a href="/">Home</a></p>
+=> Agora voltar na views.py comentar HttpResponse e importar:
+=> from django.shortcuts import render
+=> Comentar return HttpResponse
+=> Digitar: return render(request, 'home.html') #na primeira função
+=> return render(request, 'about.html')#na segunda
+=> Testar se deu certo.
+
+Ate aqui deu super certo!!!!!
+
+5° aula(Recuperando dados no HTML)
+=> dentro de views.py podemos criar variaveis e chamar com {{nome da variavel}} dentro do arquivo htmal
+=> No caso do laço for dentro de views, pegar a variavel e coloca-la dentro do 'context'
+=> Exemplo:
+=> def about(request):
+    frutas = ['Banana', 'Maça', 'Uva', 'Abacate']
+    context = {
+        'frutas': frutas  # Certifique-se de que o nome da variável bate com o template
+    }
+    return render(request, 'about.html', context)
+
+6° aula (arquivos estaticos CSS) 
+=> Em settings.py  importar OS
+=> Descer até Static_url e criar:
+=> STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static')
+]#Esse código é para criar os arquivos CSS 
+=> Fora da pasta SETUP criar pasta static/CSS
+=> Criar o arquivo style.css
+*{
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+body {
+    min-height: 100vh;
+    display: grid;
+    place-content: center;
+    font-size: 3rem;
+    background-color: black;
+    color: whitesmoke;
+}
+h2, p {
+    text-align: center;
+}
+=> importar o css no html.
+=> <link rel="stylesheet" href="{% static 'css/style.css' %}">
+=> Dentro ainda do html importar abaixo do !doctype html {% load static %}
+=> Rodar o programa.
+
+7° aula (Criando aplicações.)
+=> python manage.py startapp products
+=> SETUP => settings => installed_apps => registrar o 'products'=>
+=> Pasta products => criar arquivo urls.py 
+=> from django.urls import path
+=> from . import views
+=> urlpattners = [path('', views.products_list)]
+=> views.py => from django.shortcuts import render
+=> def products_list(request):
+        return render(request, 'products/products_list.html')
+=> Criar html
+=> products =>  criar pasta templates =>  criar pasta products
+=> criar arquivo products_list.html
+=> '!' <title>produts list => h2 products list
+=> Ir em urls.py global e incluir import include
+=> path('products/', include('products.urls))
+=> testar.
+
+8° aula(Usando um template)
+=> Dentro de templates em setup criar layout.html
+=> Pasta pai onde será importado para todas os outros htmls do projeto.
+=> importar o css para ela e o load static
+=> Em <title> colocar:
+        {% block title %}
+            DjangoAPP
+        {% endblock %}   
+    <title>
+=> em body:
+        <nav>
+            <a href="/"> Home<a>
+            <a href="/about">About<a>
+            <a href="/products">Products<a>
+        </nav>
+       <main>
+            {% block content %}
+
+            {% endblock %}   
+     <main>     
+=> ir em css dentro de setup e adicionar:
+nav{
+    padding: 1rem;
+    background-color: #44878B;
+    color: white;
+    font-size: 2.5rem;
+}
+a {
+    text-decoration: none;
+    color: #81dbb8;
+}
+a:hover{
+    opacity: .85;
+}
+=> em body adicionar display: flex; e flex-flow: colum;
+=> tirar o place_content
+=> Em home.html tirar todas as configurações, exeto h2, p, h3...
+=> Acrescentar no topo:{% extends 'layout.html' %}
+=> {% block title %}
+        Home
+   {% endblock %}
+=> {% block}        
+
+============================================================================================
+Resumo do curso até aqui...
+
+Criar a pasta do projeto em c:, depois abrir em V.S Code =>
+Criar a pasta venv => ativar script=> instalar extensão e o fremework django => salvar as bibliotecas em requirements.txt
+Criar o projeto - Clicar no terminal (django-admin startproject setup .) => Criou a pasta SETUP =>
+Dentro de SETUP criar rota em urls.py => criar arquivo views.py dentro de SETUP e importar from django.shortcuts import render =>
+Criar funções do projeto no arquivo views.py e depois importar essas funçoes em urls.py =>
+Ir em settings.py => Templates => DIRS: ['templates'] => Criar fora de SETUP a pasta templates.
+Dentro da pasta templates, criar pagina html e fazer manipulações. => 
+Criar aquivos css => Em settings.py  importar OS => Descer até Static_url e criar:STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
+Fora da pasta SETUP criar pasta static/CSS => Criar o arquivo style.css =>
+importar o css no html. => importar load static =>
+Criar o app => python manage.py startapp products =>
+SETUP => settings => installed_apps => registrar o 'products'=> 
+=> criar arquivo urls.py na pasta products =>
+=> from django.urls import path => from . import views => urlpattners = [path('', views.products_list)]
+=> Em views criar a função products_list
+=> Criar html
+=> products =>  criar pasta templates =>  criar pasta products
+=> criar arquivo products_list.html
+Ir em urls.py global e incluir import include
+=> path('products/', include('products.urls))
+===============================================================================================
+
+Recursos das pastas e arquivos
+=> Pasta venv ativar script
+=> Criar pasta setup (global)
+=> urls.py = Esse arquivo onde se cria as rotas do projeto atráves do "path"
+=> views.py = Esse arquivo onde se cria as funções do projeto e importa-las a urls.py
+=> settings.py = fazer configurações importantes como Templates => DIRS: ['templates'], 
+=> settings.py = importar OS, Static_url e criar:STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')], installed_apps => registrar o 'products'
+=> templates.py = criar fora de setup e criar os arquivos html
+=> pasta static/CSS => Criar o arquivo style.css =>
+
+============================================================================================
+
+Resumo dos Comandos Principais
+Comando	Função
+python -m venv venv	Cria ambiente virtual
+django-admin startproject myproject .	Cria projeto Django
+python manage.py startapp products	Cria um app
+python manage.py makemigrations	Prepara migrações do BD
+python manage.py migrate	Executa migrações
+python manage.py runserver	Inicia servidor local

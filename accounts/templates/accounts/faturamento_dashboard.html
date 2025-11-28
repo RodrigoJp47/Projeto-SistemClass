@@ -1,0 +1,1514 @@
+{% load static %}
+{% load humanize %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Faturamento</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+    <link rel="stylesheet" href="{% static 'css/global.css' %}">
+    <link rel="stylesheet" href="{% static 'css/faturamento_dashboard.css' %}">
+    <link rel="stylesheet" href="{% static 'css/themes.css' %}">
+    <link rel="stylesheet" href="{% static 'css/sidebar.css' %}">
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+</head>
+<body class="faturamento-dashboard-page">
+    
+    {% include 'accounts/_sidebar.html' %}
+    <div class="main-content">
+        {% include 'accounts/partials/bpo_banner.html' %}
+        <button id="menu-toggle">&#9776;</button>
+        <div class="header"><h1>Dashboard Comercial</h1></div>
+
+        <div class="faturamento-section">
+            <div class="faturamento-chart-area">
+                <h1 class="faturamento-title">Faturamento</h1>
+                <div class="faturamento-header">
+                    <span class="faturamento-subtitle">Resumo</span>
+                    <div class="faturamento-controls">
+                        <a href="?faturamento_periodo=semanal{% if request.GET.period %}&amp;period={{ request.GET.period }}{% if request.GET.start_date %}&amp;start_date={{ request.GET.start_date }}&amp;end_date={{ request.GET.end_date }}{% endif %}{% endif %}" class="control-btn {% if faturamento_periodo == 'semanal' %}active{% endif %}">Semanal</a>
+                        <a href="?faturamento_periodo=mensal{% if request.GET.period %}&amp;period={{ request.GET.period }}{% if request.GET.start_date %}&amp;start_date={{ request.GET.start_date }}&amp;end_date={{ request.GET.end_date }}{% endif %}{% endif %}" class="control-btn {% if faturamento_periodo == 'mensal' %}active{% endif %}">Mensal</a>
+                        <a href="?faturamento_periodo=anual{% if request.GET.period %}&amp;period={{ request.GET.period }}{% if request.GET.start_date %}&amp;start_date={{ request.GET.start_date }}&amp;end_date={{ request.GET.end_date }}{% endif %}{% endif %}" class="control-btn {% if faturamento_periodo == 'anual' %}active{% endif %}">Anual</a>
+                    </div>
+                </div>
+                <div class="faturamento-chart-container">
+                    <canvas id="faturamentoResumoChart"></canvas>
+                </div>
+            </div>
+            <div class="faturamento-insights-area">
+                <h3 class="insights-title">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" style="vertical-align: middle; margin-right: 8px;"><path d="M9 21.0351C9 21.5874 9.44772 22.0351 10 22.0351H14C14.5523 22.0351 15 21.5874 15 21.0351V20.0351H9V21.0351Z" fill="currentColor"/><path d="M12 2.0351C7.86 2.0351 4.5 5.3951 4.5 9.5351C4.5 12.0451 5.56 14.2251 7.11 15.7851L7.5 16.1651C8.61 17.2751 9.38 18.5851 9.38 20.0351H14.62C14.62 18.5851 15.39 17.2751 16.5 16.1651L16.86 15.8151C18.44 14.2251 19.5 12.0451 19.5 9.5351C19.5 5.3951 16.14 2.0351 12 2.0351Z" fill="currentColor"/></svg>
+                    Insights 
+                </h3>
+                <p class="insights-text">
+                    O valor de vendas dos <strong>{{ period_text }}</strong> foi de <strong>R$ {{ current_period_sales|floatformat:2|intcomma }}</strong>, enquanto nos {{ prev_period_text }} foi de <strong>R$ {{ previous_period_sales|floatformat:2|intcomma }}</strong>, o que representa uma variação de <strong style="color: {% if sales_variation > 0 %}#28a745{% elif sales_variation < 0 %}#dc3545{% else %}#fff{% endif %};">{{ sales_variation|floatformat:2 }}%</strong>.
+                </p>
+                
+            </div>
+        </div>
+
+        <div class="cards-vendas-container">
+            <div class="card-vendas card-vendas-verde">
+                <h3>Valor vendido</h3>
+                <hr>
+                <div class="card-vendas-content">
+                    <div>
+                        <p class="card-vendas-subtitle">Hoje</p>
+                        <p class="card-vendas-value">R$ {{ valor_vendido_hoje|floatformat:2|intcomma }}</p>
+                    </div>
+                    <div>
+                        <p class="card-vendas-subtitle">Neste mês</p>
+                        <p class="card-vendas-value">R$ {{ valor_vendido_mes|floatformat:2|intcomma }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-vendas card-vendas-roxo">
+                <h3>Quantidade de vendas</h3>
+                <hr>
+                <div class="card-vendas-content">
+                    <div>
+                        <p class="card-vendas-subtitle">Hoje</p>
+                        <p class="card-vendas-value">{{ qtd_vendas_hoje|intcomma }}</p>
+                    </div>
+                    <div>
+                        <p class="card-vendas-subtitle">Neste mês</p>
+                        <p class="card-vendas-value">{{ qtd_vendas_mes|intcomma }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-vendas card-vendas-cinza">
+                <h3>Novos clientes</h3>
+                <hr>
+                <div class="card-vendas-content">
+                    <div>
+                        <p class="card-vendas-subtitle">Hoje</p>
+                        <p class="card-vendas-value">{{ novos_clientes_hoje|intcomma }}</p>
+                    </div>
+                    <div>
+                        <p class="card-vendas-subtitle">Neste mês</p>
+                        <p class="card-vendas-value">{{ novos_clientes_mes|intcomma }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="card-vendas card-vendas-amarelo">
+                <h3>Clientes Recorrentes</h3>
+                <hr>
+                <div class="card-vendas-content">
+                    <div>
+                        <p class="card-vendas-subtitle">Hoje</p>
+                        <p class="card-vendas-value">{{ clientes_recorrentes_hoje|intcomma }}</p>
+                    </div>
+                    <div>
+                        <p class="card-vendas-subtitle">Neste mês</p>
+                        <p class="card-vendas-value">{{ clientes_recorrentes_mes|intcomma }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid-container-metas">
+    
+            <div class="card">
+                <div class="card-title">Progresso de Metas de Faturamento ({{ "now"|date:"Y" }})</div>
+                <div class="chart-container" style="height: 350px;">
+                    <canvas id="metasChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card velocimetro-card">
+                <div class="card-title-container">
+                    <div class="card-title">Velocímetro de Metas</div>
+                    <div class="faturamento-controls">
+                        <a href="?meta_periodo=mes&{{ request.GET.urlencode | cut:'meta_periodo=mes' | cut:'meta_periodo=ano' }}" class="control-btn {% if request.GET.meta_periodo == 'mes' %}active{% endif %}">Mês</a>
+                        <a href="?meta_periodo=ano&{{ request.GET.urlencode | cut:'meta_periodo=mes' | cut:'meta_periodo=ano' }}" class="control-btn {% if request.GET.meta_periodo == 'ano' or not request.GET.meta_periodo %}active{% endif %}">Ano</a>
+                    </div>
+                </div>
+                <div class="velocimetro-info">
+                    <div class="info-item">
+                        <span>Realizado no Período</span>
+                        <strong>R$ {{ valor_acumulado|floatformat:2|intcomma }}</strong>
+                    </div>
+                    <div class="info-item">
+                        <span>Meta do Período</span>
+                        <strong>R$ {{ valor_meta_atual|floatformat:2|intcomma }}</strong>
+                    </div>
+                    <div class="info-item">
+                        <span>Diferença</span>
+                        <strong style="color: {% if diferenca_meta_valor >= 0 %}#28a745{% else %}#dc3545{% endif %};">
+                            ({{ diferenca_meta_percentual|floatformat:1 }}%)<span style="margin-left: 8px;">R$ {{ diferenca_meta_valor|floatformat:2|intcomma }}</span>
+                        </strong>
+                    </div>
+                </div>
+                <div class="velocimetro-chart-container">
+
+                    <div class="velocimetro-percentual-container">
+                        <div class="velocimetro-percentual-valor">{{ atingimento_percentual|floatformat:1 }}%</div>
+                        <div class="velocimetro-percentual-texto">da meta atingida</div>
+                    </div>
+                    <canvas id="velocimetroChart"></canvas>
+                    
+                    <div class="velocimetro-seta" style="transform: rotate({{ velocimetro_rotacao }}deg);"></div>
+
+                </div>
+
+                <div class="velocimetro-footer">
+                    {{ texto_rodape_meta }}
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="filtro-container" style="margin-top: 30px; margin-bottom: 20px; padding: 15px; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px;">
+            <form id="filter-form" method="GET" action="{% url 'faturamento_dashboard' %}" style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+                <label for="period-filter" style="font-weight: bold;">Filtrar Período:</label>
+                <select name="period" id="period-filter" style="padding: 8px; border-radius: 5px; border: 1px solid #ccc;">
+                    <option value="all" {% if request.GET.period == 'all' or not request.GET.period %}selected{% endif %}>Sem Filtro</option>
+                    <option value="30" {% if request.GET.period == '30' %}selected{% endif %}>Últimos 30 dias</option>
+                    <option value="60" {% if request.GET.period == '60' %}selected{% endif %}>Últimos 60 dias</option>
+                    <option value="90" {% if request.GET.period == '90' %}selected{% endif %}>Últimos 90 dias</option>
+                    <option value="180" {% if request.GET.period == '180' %}selected{% endif %}>Últimos 180 dias</option>
+                    <option value="custom" {% if request.GET.period == 'custom' %}selected{% endif %}>Personalizar</option>
+                </select>
+                
+                <div id="custom-date-container" style="display: {% if request.GET.period == 'custom' %}flex{% else %}none{% endif %}; align-items: center; gap: 10px;">
+                    <label for="start_date">De:</label>
+                    <input type="date" name="start_date" id="start_date" value="{{ start_date }}" style="padding: 7px; border-radius: 5px; border: 1px solid #ccc;">
+                    <label for="end_date">Até:</label>
+                    <input type="date" name="end_date" id="end_date" value="{{ end_date }}" style="padding: 7px; border-radius: 5px; border: 1px solid #ccc;">
+                    <button type="submit" style="padding: 8px 15px; border-radius: 5px; border: none; background-color: #2c3e50; color: white; cursor: pointer;">Filtrar</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="header"><h1>Análise por Região</h1></div>
+
+        <div class="info-cards-container">
+            <div class="info-card">
+                <div class="info-card-header">
+                    <h4>Valor Vendido</h4>
+                </div>
+                <div class="info-card-body">
+                    <p class="info-card-value">R$ {{ total_vendido|floatformat:2|intcomma }}</p>
+                </div>
+                <div class="info-card-footer">
+                    {% if melhor_mes_valor %}
+                        <p><strong>Melhor Mês:</strong> {{ melhor_mes_valor.mes }} (R$ {{ melhor_mes_valor.valor|floatformat:2|intcomma }})</p>
+                        <p><strong>Pior Mês:</strong> {{ pior_mes_valor.mes }} (R$ {{ pior_mes_valor.valor|floatformat:2|intcomma }})</p>
+                    {% else %}
+                        <p>Sem dados suficientes.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="info-card">
+                <div class="info-card-header">
+                    <h4>Qtd. Vendas</h4>
+                </div>
+                <div class="info-card-body">
+                    <p class="info-card-value">{{ qtd_vendas|intcomma }}</p>
+                </div>
+                <div class="info-card-footer">
+                    {% if melhor_mes_qtd %}
+                        <p><strong>Melhor Mês:</strong> {{ melhor_mes_qtd.mes }} ({{ melhor_mes_qtd.qtd }} vendas)</p>
+                        <p><strong>Pior Mês:</strong> {{ pior_mes_qtd.mes }} ({{ pior_mes_qtd.qtd }} vendas)</p>
+                    {% else %}
+                        <p>Sem dados suficientes.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="info-card">
+                <div class="info-card-header">
+                    <h4>Ticket Médio</h4>
+                </div>
+                <div class="info-card-body">
+                    <p class="info-card-value">R$ {{ ticket_medio|floatformat:2|intcomma }}</p>
+                </div>
+                <div class="info-card-footer">
+                    {% if melhor_mes_ticket %}
+                        <p><strong>Melhor Mês:</strong> {{ melhor_mes_ticket.mes }} (R$ {{ melhor_mes_ticket.ticket|floatformat:2|intcomma }})</p>
+                        <p><strong>Pior Mês:</strong> {{ pior_mes_ticket.mes }} (R$ {{ pior_mes_ticket.ticket|floatformat:2|intcomma }})</p>
+                    {% else %}
+                        <p>Sem dados suficientes.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="info-card">
+                <div class="info-card-header">
+                    <h4>Prazo Médio Recebimento</h4>
+                </div>
+                <div class="info-card-body">
+                    <p class="info-card-value">{{ prazo_medio_recebimento }} dias</p>
+                </div>
+                <div class="info-card-footer">
+                    {% if melhor_mes_prazo %}
+                        <p><strong>Melhor Mês:</strong> {{ melhor_mes_prazo.mes }} ({{ melhor_mes_prazo.dias }} dias)</p>
+                        <p><strong>Pior Mês:</strong> {{ pior_mes_prazo.mes }} ({{ pior_mes_prazo.dias }} dias)</p>
+                    {% else %}
+                        <p>Sem dados suficientes.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        
+
+        <div class="layout-mapa-vendas" id="secao-mapa-vendas">
+
+            <div class="coluna-mapa">
+                <div class="card map-container">
+                    <div class="card-title">Vendas por Estado</div>
+                    <div class="chart-container" id="map_container_wrapper">
+                        <div id="brazil_map_borders" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></div>
+                        <div id="brazil_map_markers" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="coluna-graficos-empilhados">
+
+                <div class="card monthly-sales-container">
+                    <div class="card-title">Vendas por Mês/Ano</div>
+                    <div class="chart-container">
+                        <canvas id="vendasPorMesChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="bottom-chart-row">
+
+                    <div class="card">
+                        <div class="card-title">Top 5 Cidades por Venda</div>
+                        <div class="chart-container"> <canvas id="topCidadesChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-title">Venda por Cliente</div>
+                        <div class="scrollable-chart-container">
+                            <canvas id="vendasPorClienteChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-title">Venda por Produto/Serviço</div>
+                        <div class="scrollable-chart-container">
+                            <canvas id="vendasPorProdutoServicoChart"></canvas>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+
+        <div class="header"><h1>Análise por Vendas</h1></div>
+
+        <div class="layout-container-vendas">
+
+            <div class="vendas-cards-row">
+                <div class="novo-card"><div class="card-title">Valor Vendido</div><div class="card-value">R$ {{ novo_dash_total_vendido|floatformat:2|intcomma }}</div></div>
+                <div class="novo-card"><div class="card-title">Qtd. Vendas</div><div class="card-value">{{ novo_dash_qtd_vendas|intcomma }}</div></div>
+                <div class="novo-card"><div class="card-title">Ticket Médio</div><div class="card-value">R$ {{ novo_dash_ticket_medio|floatformat:2|intcomma }}</div></div>
+                <div class="novo-card"><div class="card-title">Itens Vendidos</div><div class="card-value">{{ novo_dash_itens_vendidos|intcomma }}</div></div>
+            </div>
+
+            <div class="vendas-chart-full-width">
+                <div class="card full-width-card" style="height: 100%;">
+                    <div class="dashboard-section">
+                        <div class="indicador-menu">
+                            <button class="indicador-btn active" data-indicator="valor_vendas">Valor de Vendas</button>
+                            <button class="indicador-btn" data-indicator="qtd_vendas">Qtd. de Vendas</button>
+                            <button class="indicador-btn" data-indicator="ticket_medio">Ticket Médio</button>
+                            <button class="indicador-btn" data-indicator="itens_vendidos">Itens Vendidos</button>
+                            <button class="indicador-btn" data-indicator="valor_medio_item">Valor Méd. por Item</button>
+                        </div>
+                        <div class="indicador-chart-area">
+                            <div class="card-title" style="text-align: center; font-size: 15px; margin-bottom: 15px;">Análise de Vendas</div>
+                            <div class="chart-container" style="height: 220px;">
+                                <canvas id="indicadorMensalChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="grid-container charts-grid" style="margin-top: 20px;">
+            
+            
+            <div class="card">
+                <div class="card-title">Top 10 Clientes por Faturamento</div>
+                <div class="chart-container">
+                    <canvas id="topClientesChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card" style="background-color: #000; border-color: #333;">
+                <div class="card-title" style="color: #fff;">Vendas por Produtos (Top 10)</div>
+                <div class="chart-container">
+                    <canvas id="vendasPorProdutosChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card" style="background-color: #000; border-color: #333;">
+                <div class="card-title" style="color: #fff;">Vendas por Serviços (Top 10)</div>
+                <div class="chart-container">
+                    <canvas id="vendasPorServicosChart"></canvas>
+                </div>
+            </div>
+            
+        </div>
+
+        <div class="header"><h1>Análise Curva ABC</h1></div>
+        
+        {% if abc_summary %}
+            <div class="abc-layout-container">
+
+                <div class="abc-summary-card">
+                    <div class="abc-group">
+                        <h3>Grupo A</h3>
+                        <p>
+                            Foram classificados como Grupo A um total de <strong>{{ abc_summary.A.count|intcomma }}</strong> produtos, com um valor vendido de <strong>R$ {{ abc_summary.A.value|floatformat:0|intcomma }}</strong>, representando <strong>{{ abc_summary.A.percentage|floatformat:2 }}%</strong> do valor total vendido.
+                        </p>
+                    </div>
+                    <div class="abc-group">
+                        <h3>Grupo B</h3>
+                        <p>
+                            Foram classificados como Grupo B um total de <strong>{{ abc_summary.B.count|intcomma }}</strong> produtos, com um valor vendido de <strong>R$ {{ abc_summary.B.value|floatformat:0|intcomma }}</strong>, representando <strong>{{ abc_summary.B.percentage|floatformat:2 }}%</strong> do valor total vendido.
+                        </p>
+                    </div>
+                    <div class="abc-group">
+                        <h3>Grupo C</h3>
+                        <p>
+                            Foram classificados como Grupo C um total de <strong>{{ abc_summary.C.count|intcomma }}</strong> produtos, com um valor vendido de <strong>R$ {{ abc_summary.C.value|floatformat:0|intcomma }}</strong>, representando <strong>{{ abc_summary.C.percentage|floatformat:2 }}%</strong> do valor total vendido.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="abc-legend-container">
+                    <div class="abc-legend-item">
+                        <div class="abc-legend-letter">A</div>
+                        <div class="abc-legend-text">Produtos que acumulam até 80% do valor de venda total.</div>
+                    </div>
+                    <div class="abc-legend-item">
+                        <div class="abc-legend-letter">B</div>
+                        <div class="abc-legend-text">Produtos que estão na faixa de 80% e 95% do valor acumulado.</div>
+                    </div>
+                    <div class="abc-legend-item">
+                        <div class="abc-legend-letter">C</div>
+                        <div class="abc-legend-text">Produtos que estão na faixa de 95% e 100% do valor acumulado.</div>
+                    </div>
+                </div>
+
+            </div>
+        {% endif %}
+        
+       <div class="grid-container abc-chart-table-grid" style="margin-top: 20px;">
+    
+            <div class="card card-com-overflow">
+                <div class="card-title">Análise ABC de Produtos/Serviços por Faturamento</div>
+                <div class="chart-container"><canvas id="abcChart"></canvas></div>
+            </div>
+
+            <div class="card card-com-overflow">
+                <div class="card-title">Detalhes da Análise ABC</div>
+                <div class="table-wrapper"> <table class="abc-details-table">
+                        <thead><tr><th>Rank</th><th>Produto/Serviço</th><th>Valor Vendido</th><th>Classe</th><th>% Acumulado</th></tr></thead>
+                        <tbody>
+                            {% for item in abc_data %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td>{{ item.produto }}</td>
+                                <td>R$ {{ item.valor|floatformat:2|intcomma }}</td>
+                                <td class="abc-{{ item.classe }}">{{ item.classe }}</td>
+                                <td>{{ item.acumulado_percentual|floatformat:2 }}%</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="header"><h1>Análise por Clientes</h1></div>
+
+
+        <div class="grid-container top-cards">
+            <div class="card">
+                <div class="card-title">Total de clientes na base</div>
+                <div class="card-value">{{ card_total_clientes|intcomma }}</div>
+            </div>
+            <div class="card">
+                <div class="card-title">Clientes no Período</div>
+                <div class="card-value">{{ card_clientes_periodo|intcomma }}</div>
+            </div>
+            <div class="card">
+                <div class="card-title">Clientes Recorrentes</div>
+                <div class="card-value">{{ card_clientes_recorrentes|intcomma }}</div>
+            </div>
+            <div class="card">
+                <div class="card-title">Cobertura da carteira</div>
+                <div class="card-value">{{ card_cobertura_carteira|floatformat:2 }}%</div>
+            </div>
+        </div>
+
+        <div class="cliente-analysis-grid">
+            
+
+            <div class="card cliente-buttons-area">
+                <div class="analise-cliente-menu">
+                    <button class="analise-cliente-btn active" data-indicator="valor_vendas">Valor de Vendas</button>
+                    <button class="analise-cliente-btn" data-indicator="qtd_vendas">Qtd. de Vendas</button>
+                    <button class="analise-cliente-btn" data-indicator="ticket_medio">Valor Méd. Vendas</button>
+                    <button class="analise-cliente-btn" data-indicator="itens_vendidos">Itens Vendidos</button>
+                    <button class="analise-cliente-btn" data-indicator="valor_medio_produto">Valor Méd. Produto</button>
+                </div>
+            </div>
+
+            <div class="card cliente-barchart-area">
+                <div class="card-title">Análise por Venda/Cliente</div>
+                <div class="chart-container">
+                    <canvas id="analiseClienteChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card cliente-table-area">
+                <div class="table-wrapper" style="height: 100%;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Mês/Ano</th>
+                                <th>Qtd. Clientes Compra</th>
+                                <th>Clientes Recorrentes</th>
+                                <th>Clientes Novos</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for dado in dados_evolucao_cliente %}
+                            <tr>
+                                <td>{{ dado.mes_ano|title }}</td>
+                                <td>{{ dado.qtd_clientes_compra }}</td>
+                                <td>{{ dado.clientes_recorrentes_mes }}</td>
+                                <td>{{ dado.clientes_novos_mes }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="4">Sem dados para exibir.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card cliente-linechart-area">
+                <div class="card-title">Análise por Período</div>
+                <div class="chart-container">
+                    <canvas id="evolucaoClientesChart"></canvas> </div>
+            </div>
+
+        </div>
+
+
+        <h2 class="header">Análise por Vendedor</h2>
+
+            <div class="vendedor-cards-row">
+                <div class="vd-novo-card">
+                    <div class="card-title">Valor Vendido (Total Vendedores)</div>
+                    <div class="card-value">R$ {{ resumo_valor_vendido|floatformat:2|intcomma }}</div>
+                </div>
+                <div class="vd-novo-card">
+                    <div class="card-title">Qtd. Vendas (Total Vendedores)</div>
+                    <div class="card-value">{{ resumo_qtd_vendas|intcomma }}</div>
+                </div>
+                <div class="vd-novo-card">
+                    <div class="card-title">Ticket Médio (Total Vendedores)</div>
+                    <div class="card-value">R$ {{ resumo_ticket_medio|floatformat:2|intcomma }}</div>
+                </div>
+                <div class="vd-novo-card">
+                    <div class="card-title">Cobertura da Carteira</div>
+                    <div class="card-value">{{ resumo_cobertura_carteira|floatformat:2 }}%</div>
+                </div>
+            </div>
+            <div class="layout-vendedor-grid">
+
+                <div class="coluna-vendedor-esquerda">
+                    <div class="vendedor-top3-cards-row">
+                        <div class="card">
+                            <div class="card-title">Valor Vendido TOP 3</div>
+                            <div class="card-value">
+                            R$ {{ valor_vendido_top_3|floatformat:2|intcomma }}
+                            <span class="card-value-percentage">({{ percentual_valor_top_3|floatformat:1 }}%)</span>
+                        </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-title">Qtd. Vendas TOP 3</div>
+                            <div class="card-value">{{ qtd_vendas_top_3|intcomma }}</div>
+                        </div>
+                    </div>
+
+                    <div class="podium-card">
+                        <div class="podium-title">Pódio de Vendedores</div>
+                        <div class="podium-container">
+                            {% for vendedor in top_3_vendedores %}
+                                {% if forloop.counter == 2 %}
+                                <div class="podium-column">
+                                    <div class="vendedor-info">
+                                        <div class="vendedor-nome">{{ vendedor.vendedor__nome }}</div>
+                                        <div class="vendedor-valor">R$ {{ vendedor.valor_vendas|floatformat:2|intcomma }}</div>
+                                    </div>
+                                    <div class="podium-step rank-2">
+                                        <div class="rank">{{ vendedor.rank }}</div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            {% endfor %}
+
+                            {% for vendedor in top_3_vendedores %}
+                                {% if forloop.counter == 1 %}
+                                <div class="podium-column">
+                                    <div class="vendedor-info">
+                                        <div class="vendedor-nome">{{ vendedor.vendedor__nome }}</div>
+                                        <div class="vendedor-valor">R$ {{ vendedor.valor_vendas|floatformat:2|intcomma }}</div>
+                                    </div>
+                                    <div class="podium-step rank-1">
+                                        <div class="rank">{{ vendedor.rank }}</div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            {% endfor %}
+
+                            {% for vendedor in top_3_vendedores %}
+                                {% if forloop.counter == 3 %}
+                                <div class="podium-column">
+                                    <div class="vendedor-info">
+                                        <div class="vendedor-nome">{{ vendedor.vendedor__nome }}</div>
+                                        <div class="vendedor-valor">R$ {{ vendedor.valor_vendas|floatformat:2|intcomma }}</div>
+                                    </div>
+                                    <div class="podium-step rank-3">
+                                        <div class="rank">{{ vendedor.rank }}</div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="vendedor-table-container">
+                        <table class="vendedor-table">
+                            <thead><tr><th>Nome do Vendedor</th><th>Valor de Vendas</th><th>%Valor</th><th>Total Qtd</th><th>Ticket Médio</th><th>Total Clientes</th></tr></thead><tbody>{% for vendedor in vendedores_data_table %}<tr><td>{{ vendedor.vendedor__nome }}</td><td>R$ {{ vendedor.valor_vendas|floatformat:2|intcomma }}</td><td><div style="position: relative; width: 100%; background-color: #555; border-radius: 5px;"><div class="value-bar" style="width: {{ vendedor.percentual_valor|floatformat:2 }}%;"></div><span style="position: relative; z-index: 2; padding-left: 5px;">{{ vendedor.percentual_valor|floatformat:2 }}%</span></div></td><td>{{ vendedor.qtd_vendas }}</td><td>R$ {{ vendedor.ticket_medio|floatformat:2|intcomma }}</td><td>{{ vendedor.total_clientes }}</td></tr>{% endfor %}</tbody>
+                             <tfoot>
+                                <tr>
+                                    <th>Totais</th>
+                                    <th>R$ {{ vendedor_table_totals.total_valor|floatformat:2|intcomma }}</th>
+                                    <th></th> <th>{{ vendedor_table_totals.total_qtd|intcomma }}</th>
+                                    <th>R$ {{ vendedor_table_totals.total_ticket_medio|floatformat:2|intcomma }}</th>
+                                    <th>{{ vendedor_table_totals.total_clientes|intcomma }}</th>
+                                </tr>
+                            </tfoot>
+                    
+                        </table>
+                    </div>
+                </div>
+
+                <div class="coluna-vendedor-direita">
+                    <div class="card">
+                        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                            <div class="card-title" style="margin-bottom: 0;">Análise por Vendedor</div>
+                            <select id="analise-vendedor-select" style="padding: 5px; border-radius: 5px; border: 1px solid #ddd;">
+                                <option value="valor_vendas">Valor de Vendas</option>
+                                <option value="qtd_vendas">Qtd. de Vendas</option>
+                                <option value="ticket_medio">Ticket Médio</option>
+                                <option value="metas_batidas">Metas Batidas</option>
+                                <option value="metas_nao_batidas">Metas não Batidas</option>
+                            </select>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="analiseVendedorChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-title">Análise por Período (Últimos 12 Meses)</div>
+                        <div class="chart-container">
+                            <canvas id="vendasPorPeriodoChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div style="text-align: center; margin: 40px 0;">
+                <button id="gerar-laudo-comercial-btn" class="analise-btn">Gerar Laudo Comercial</button>
+            </div>
+    </div>
+    <script src="{% static 'js/theme.js' %}"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+
+        // ▼▼▼ ADICIONE ESTE NOVO BLOCO PARA O LAUDO COMERCIAL ▼▼▼
+        const laudoModal = document.getElementById('laudo-comercial-modal');
+        const laudoBtn = document.getElementById('gerar-laudo-comercial-btn');
+        const closeBtn = laudoModal.querySelector('.close-btn');
+        const laudoTexto = document.getElementById('laudo-comercial-texto');
+
+        if (laudoBtn) {
+            laudoBtn.addEventListener('click', function() {
+                laudoModal.style.display = 'block';
+                laudoTexto.innerHTML = '<p>Gerando análise comercial, por favor aguarde...</p>';
+
+                // Pega os filtros atuais da URL principal da página
+                const queryString = window.location.search;
+                const url = `{% url "gerar_laudo_comercial" %}${queryString}`;
+
+                fetch(url)
+                    .then(response => response.json())
+                    .then(data => {
+                        laudoTexto.innerHTML = data.laudo_html;
+                    })
+                    .catch(error => {
+                        console.error('Erro ao gerar o laudo comercial:', error);
+                        laudoTexto.innerHTML = '<p style="color: red;">Ocorreu um erro ao gerar a análise. Tente novamente.</p>';
+                    });
+            });
+        }
+
+        // Lógica para fechar o modal
+        if (closeBtn) {
+            closeBtn.onclick = function() {
+                laudoModal.style.display = 'none';
+            }
+        }
+        window.onclick = function(event) {
+            if (event.target == laudoModal) {
+                laudoModal.style.display = 'none';
+            }
+        }
+        // ▲▲▲ FIM DO NOVO BLOCO PARA O LAUDO ▲▲▲
+
+        // --- LÓGICA DO MENU E FILTROS ---
+        const menuToggleButton = document.getElementById('menu-toggle');
+        const sidebar = document.querySelector('.sidebar');
+
+        if (menuToggleButton && sidebar) {
+            menuToggleButton.addEventListener('click', function() {
+                sidebar.classList.toggle('mobile-open');
+            });
+        }
+        function setupSubmenuToggle(toggleId, submenuId) {
+            const toggleButton = document.getElementById(toggleId);
+            const submenu = document.getElementById(submenuId);
+            if (toggleButton && submenu) {
+                toggleButton.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    submenu.style.display = submenu.style.display === 'block' ? 'none' : 'block';
+                });
+            }
+        }
+        setupSubmenuToggle('financeiro-toggle', 'financeiro-submenu');
+        setupSubmenuToggle('comercial-toggle', 'comercial-submenu');
+        setupSubmenuToggle('configuracoes-toggle', 'configuracoes-submenu');
+
+        const activeLink = document.querySelector('.sidebar a.active');
+        if (activeLink) {
+            const parentSubmenu = activeLink.closest('.submenu');
+            if (parentSubmenu) parentSubmenu.style.display = 'block';
+        }
+        
+        const periodFilter = document.getElementById('period-filter');
+        const customDateContainer = document.getElementById('custom-date-container');
+        const filterForm = document.getElementById('filter-form');
+
+        if(periodFilter && customDateContainer && filterForm) {
+            periodFilter.addEventListener('change', function() {
+                if (this.value === 'custom') {
+                    customDateContainer.style.display = 'flex';
+                } else {
+                    customDateContainer.style.display = 'none';
+                    filterForm.submit();
+                }
+            });
+        }
+        // --- INÍCIO: CÓDIGO PARA MANTER A POSIÇÃO DO SCROLL APÓS CLICAR NO FILTRO ---
+        // Salva a posição do scroll no sessionStorage antes de recarregar a página
+        document.querySelectorAll('.faturamento-controls a, .filtro-container a').forEach(link => {
+            link.addEventListener('click', function() {
+                sessionStorage.setItem('scrollPosition', window.scrollY);
+            });
+        });
+
+        // Após a página carregar, verifica se há uma posição salva e rola até ela
+        const scrollPosition = sessionStorage.getItem('scrollPosition');
+        if (scrollPosition) {
+            window.scrollTo(0, parseInt(scrollPosition, 10));
+            sessionStorage.removeItem('scrollPosition'); // Limpa a posição para não interferir em recarregamentos normais (F5)
+        }
+        // --- FIM: CÓDIGO PARA MANTER A POSIÇÃO DO SCROLL ---
+
+        // --- FUNÇÕES UTILITÁRIAS E DADOS GLOBAIS ---
+        const formatCurrency = (value) => value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        const formatNumber = (value) => value.toLocaleString('pt-BR');
+
+        // --- INICIALIZAÇÃO DE TODOS OS GRÁFICOS ---
+
+        // 1. GRÁFICO DE RESUMO (TOPO)
+        const faturamentoResumoData = JSON.parse('{{ faturamento_chart_json|escapejs }}');
+        const faturamentoResumoCtx = document.getElementById('faturamentoResumoChart');
+        if (faturamentoResumoCtx) {
+            new Chart(faturamentoResumoCtx, {
+                type: 'line',
+                data: { labels: faturamentoResumoData.labels, datasets: [{ label: 'Faturamento', data: faturamentoResumoData.data, borderColor: '#28a745', backgroundColor: 'rgba(40, 167, 69, 0.1)', fill: true, tension: 0.4, borderWidth: 2 }] },
+                options: { maintainAspectRatio: false, responsive: true, scales: { y: { beginAtZero: true, ticks: { color: '#A0A0A0', font: { size: 12 }, callback: value => 'R$ ' + value.toLocaleString('pt-BR') }, grid: { color: 'rgba(255, 255, 255, 0.1)' } }, x: { ticks: { color: '#A0A0A0', font: { size: 12 } }, grid: { display: false } } }, plugins: { legend: { display: false }, tooltip: { backgroundColor: '#333', titleColor: '#fff', bodyColor: '#fff', callbacks: { label: ctx => 'Faturamento: ' + formatCurrency(ctx.raw) } } } }
+            });
+        }
+
+        // 2. GRÁFICO DE MAPA DO BRASIL
+        google.charts.load('current', { 'packages':['geochart'] });
+        google.charts.setOnLoadCallback(drawRegionsMap);
+
+        function drawRegionsMap() {
+            try {
+                const stateCoordinates = {
+                    'BR-AC': [-9.97, -67.81], 'BR-AL': [-9.65, -35.72], 'BR-AP': [0.03, -51.05], 'BR-AM': [-3.10, -60.02], 'BR-BA': [-12.97, -38.50], 'BR-CE': [-3.72, -38.54], 'BR-DF': [-15.78, -47.93], 'BR-ES': [-20.32, -40.34], 'BR-GO': [-16.68, -49.25], 'BR-MA': [-2.53, -44.30], 'BR-MT': [-15.59, -56.09], 'BR-MS': [-20.44, -54.64], 'BR-MG': [-19.92, -43.94], 'BR-PA': [-1.45, -48.49], 'BR-PB': [-7.11, -34.86], 'BR-PR': [-25.43, -49.27], 'BR-PE': [-8.05, -34.88], 'BR-PI': [-5.09, -42.80], 'BR-RJ': [-22.91, -43.17], 'BR-RN': [-5.79, -35.21], 'BR-RS': [-30.03, -51.23], 'BR-RO': [-8.76, -63.90], 'BR-RR': [2.82, -60.67], 'BR-SC': [-27.59, -48.55], 'BR-SP': [-23.55, -46.63], 'BR-SE': [-10.91, -37.07], 'BR-TO': [-10.17, -48.33]
+                };
+                const vendasPorEstadoData = JSON.parse('{{ vendas_por_estado_json|escapejs }}');
+                const hasSalesData = vendasPorEstadoData && vendasPorEstadoData.length > 1;
+                const allStatesData = [['State', 'Value']];
+                for (const stateCode in stateCoordinates) { allStatesData.push([stateCode, 0]); }
+                const borderData = google.visualization.arrayToDataTable(allStatesData);
+                const borderOptions = {
+                    region: 'BR',
+                    resolution: 'provinces',
+                    displayMode: 'regions',
+                    backgroundColor: '#2E86C1', // <<< MUDANÇA 1: Cor alterada para azul mar.
+                    datalessRegionColor: 'transparent',
+                    tooltip: { trigger: 'none' },
+                    width: '100%',  // <<< MUDANÇA 2: Força o mapa a ocupar 100% da largura do container.
+                    height: '100%'  // <<< MUDANÇA 3: Força o mapa a ocupar 100% da altura do container.
+                };
+                var borderChart = new google.visualization.GeoChart(document.getElementById('brazil_map_borders'));
+                borderChart.draw(borderData, borderOptions);
+                if (hasSalesData) {
+                    const dataWithCoords = [['Latitude', 'Longitude', 'Local', 'Valor (R$)']];
+                    for (let i = 1; i < vendasPorEstadoData.length; i++) { const row = vendasPorEstadoData[i]; const stateCode = row[0]; const salesValue = row[1]; if (stateCoordinates[stateCode]) { const coords = stateCoordinates[stateCode]; dataWithCoords.push([coords[0], coords[1], stateCode, salesValue]); } }
+                    var markerData = google.visualization.arrayToDataTable(dataWithCoords);
+                    var formatter = new google.visualization.NumberFormat({ prefix: 'R$ ', decimalSymbol: ',', groupingSymbol: '.', fractionDigits: 2 });
+                    formatter.format(markerData, 3);
+                    const markerOptions = {
+                        region: 'BR',
+                        displayMode: 'markers',
+                        resolution: 'provinces',
+                        colorAxis: { colors: ['#A569BD', '#8E44AD'] },
+                        sizeAxis: { minValue: 0, maxSize: 12, minSize: 5 },
+                        backgroundColor: 'transparent',
+                        datalessRegionColor: 'transparent',
+                        tooltip: { textStyle: { color: '#000000' }, showColorCode: true, isHtml: true },
+                        width: '100%',  // <<< ADICIONE ESTA LINHA
+                        height: '100%' // <<< ADICIONE ESTA LINHA
+                    };
+                    var markerChart = new google.visualization.GeoChart(document.getElementById('brazil_map_markers'));
+                    markerChart.draw(markerData, markerOptions);
+                } else { document.getElementById('map_container_wrapper').innerHTML = '<p style="text-align:center; padding-top: 50px; color: #FFFFFF;">Sem dados de vendas por estado para exibir no período.</p>'; }
+            } catch (e) { console.error("Erro ao desenhar o mapa de vendas:", e); document.getElementById('map_container_wrapper').innerHTML = '<p style-align:center; padding-top: 50px; color: #ff8a80;">Ocorreu um erro ao carregar os dados do mapa.</p>'; }
+        }
+        
+        // 3. GRÁFICO VENDAS POR MÊS/ANO
+        const vendasPorMesData = JSON.parse('{{ vendas_por_mes_json|escapejs }}');
+        if (document.getElementById('vendasPorMesChart')) {
+            new Chart(document.getElementById('vendasPorMesChart'), {
+                type: 'bar',
+                data: { labels: vendasPorMesData.labels, datasets: [{ label: 'Valor Vendido', data: vendasPorMesData.data, backgroundColor: 'rgba(142, 68, 173, 0.7)', borderColor: '#8E44AD' }] },
+                options: { 
+                    maintainAspectRatio: false, 
+                    scales: { 
+                        y: { 
+                            ticks: { 
+                                color: '#000000', 
+                                callback: value => formatCurrency(value),
+                                font: { size: 10 } // <-- LINHA ADICIONADA
+                            }, 
+                            grid: { color: 'rgba(0, 0, 0, 0.1)' } 
+                        }, 
+                        x: { 
+                            ticks: { 
+                                color: '#000000',
+                                font: { size: 10 } // <-- LINHA ADICIONADA
+                            }, 
+                            grid: { display: false } 
+                        } 
+                    }, 
+                    plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => formatCurrency(ctx.raw) } } } 
+                }
+            });
+        }
+
+        // 4. GRÁFICO ABC
+        const abcChartData = JSON.parse('{{ abc_chart_json|escapejs }}');
+        if (document.getElementById('abcChart')) {
+            new Chart(document.getElementById('abcChart'), {
+                type: 'bar',
+                data: { labels: abcChartData.labels, datasets: [ { label: 'Valor Vendido', data: abcChartData.data_valor, backgroundColor: '#2504b8', yAxisID: 'y' }, { label: '% Acumulada', data: abcChartData.data_acumulado, type: 'line', borderColor: '#FFC107', yAxisID: 'y1' } ] },
+                options: {
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
+                    scales: {
+                        x: { // Eixo X (Nomes dos Produtos)
+                            ticks: {
+                                font: {
+                                    size: 10 // <-- Altere a fonte dos nomes dos produtos aqui
+                                }
+                            }
+                        },
+                        y: { // Eixo Y principal (Valor Vendido)
+                            type: 'linear',
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'Valor Vendido (R$)'
+                            },
+                            ticks: {
+                                callback: value => formatCurrency(value),
+                                font: {
+                                    size: 10 // <-- Altere a fonte dos valores em R$ aqui
+                                }
+                            }
+                        },
+                        y1: { // Eixo Y secundário (% Acumulada)
+                            type: 'linear',
+                            position: 'right',
+                            grid: {
+                                drawOnChartArea: false
+                            },
+                            min: 0,
+                            max: 100,
+                            title: {
+                                display: true,
+                                text: 'Contribuição Acumulada (%)'
+                            },
+                            ticks: {
+                                callback: value => value + '%',
+                                font: {
+                                    size: 10 // <-- Altere a fonte dos valores em % aqui
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // 5. GRÁFICO INDICADORES MENSAIS
+        const indicadoresData = JSON.parse('{{ indicadores_mensais_json|escapejs }}');
+        const indicadorChartCtx = document.getElementById('indicadorMensalChart');
+        if (indicadorChartCtx && indicadoresData) {
+            const indicatorConfig = { valor_vendas: { label: 'Valor de Vendas', formatter: formatCurrency, color: 'rgba(118,106,204, 0.7)' }, qtd_vendas: { label: 'Quantidade de Vendas', formatter: formatNumber, color: 'rgba(54, 162, 235, 0.7)' }, ticket_medio: { label: 'Ticket Médio', formatter: formatCurrency, color: 'rgba(255, 159, 64, 0.7)' }, itens_vendidos: { label: 'Itens Vendidos', formatter: formatNumber, color: 'rgba(75, 192, 192, 0.7)' }, valor_medio_item: { label: 'Valor Médio por Item', formatter: formatCurrency, color: 'rgba(255, 99, 132, 0.7)' } };
+            const indicadorChart = new Chart(indicadorChartCtx, {
+                type: 'bar',
+                data: { labels: indicadoresData.labels, datasets: [{ label: indicatorConfig.valor_vendas.label, data: indicadoresData.datasets.valor_vendas, backgroundColor: indicatorConfig.valor_vendas.color, borderColor: indicatorConfig.valor_vendas.color.replace('0.7', '1'), borderWidth: 1 }] },
+                options: { 
+                    maintainAspectRatio: false, 
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                font: { size: 10 }, // <-- Altere o tamanho da fonte do eixo Y aqui
+                                callback: (value) => indicatorConfig.valor_vendas.formatter(value)
+                            }
+                        },
+                        x: { // <-- ADICIONE ESTE BLOCO PARA O EIXO X
+                            ticks: {
+                                font: { size: 10 } // <-- Altere o tamanho da fonte do eixo X aqui
+                            }
+                        }
+                    }, 
+                    plugins: { legend: { display: false }, tooltip: { callbacks: { label: (context) => { const activeIndicator = document.querySelector('.indicador-btn.active').dataset.indicator; let label = indicatorConfig[activeIndicator].label || ''; if (label) { label += ': '; } if (context.parsed.y !== null) { label += indicatorConfig[activeIndicator].formatter(context.parsed.y); } return label; } } } } }
+            });
+            document.querySelectorAll('.indicador-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    document.querySelectorAll('.indicador-btn').forEach(btn => btn.classList.remove('active')); this.classList.add('active');
+                    const indicatorKey = this.dataset.indicator; const config = indicatorConfig[indicatorKey];
+                    indicadorChart.data.datasets[0].data = indicadoresData.datasets[indicatorKey]; indicadorChart.data.datasets[0].label = config.label;
+                    indicadorChart.data.datasets[0].backgroundColor = config.color; indicadorChart.data.datasets[0].borderColor = config.color.replace('0.7', '1');
+                    indicadorChart.options.scales.y.ticks.callback = (value) => config.formatter(value); indicadorChart.update();
+                });
+            });
+        }
+
+        // 6. GRÁFICOS DE BARRA HORIZONTAL (TOP 10, PRODUTOS, SERVIÇOS)
+        const topProdutosServicosData = JSON.parse('{{ top_produtos_servicos_chart_json|escapejs }}');
+        const topClientesData = JSON.parse('{{ top_clientes_chart_json|escapejs }}');
+        const vendasPorProdutoData = JSON.parse('{{ vendas_por_produto_data_json|escapejs }}');
+        const vendasPorServicoData = JSON.parse('{{ vendas_por_servico_data_json|escapejs }}');
+        const horizontalBarOptions = {
+            indexAxis: 'y',
+            maintainAspectRatio: false,
+            scales: {
+                x: { // Eixo X (horizontal, os valores em R$)
+                    ticks: {
+                        callback: value => formatCurrency(value),
+                        font: {
+                            size: 10 // <-- AJUSTE O TAMANHO DA FONTE DO EIXO X AQUI
+                        }
+                    }
+                },
+                y: { // Eixo Y (vertical, os nomes dos clientes)
+                    ticks: {
+                        font: {
+                            size: 10 // <-- AJUSTE O TAMANHO DA FONTE DO EIXO Y AQUI
+                        }
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: ctx => formatCurrency(ctx.raw)
+                    }
+                }
+            }
+        };
+        if (document.getElementById('topProdutosServicosChart')) { new Chart(document.getElementById('topProdutosServicosChart'), { type: 'bar', data: { labels: topProdutosServicosData.labels, datasets: [{ label: 'Total Vendido', data: topProdutosServicosData.data, backgroundColor: 'rgba(54, 162, 235, 0.6)' }] }, options: horizontalBarOptions }); }
+        if (document.getElementById('topClientesChart')) { new Chart(document.getElementById('topClientesChart'), { type: 'bar', data: { labels: topClientesData.labels, datasets: [{ label: 'Total Vendido', data: topClientesData.data, backgroundColor: 'rgba(255, 159, 64, 0.6)' }] }, options: horizontalBarOptions }); }
+        const customStyledOptions = {
+            indexAxis: 'y',
+            maintainAspectRatio: false,
+            scales: {
+                x: { // Eixo X (horizontal, os valores em R$)
+                    ticks: {
+                        callback: value => formatCurrency(value),
+                        color: '#faf6f6ff',
+                        font: {
+                            size: 10 // <-- AJUSTE O TAMANHO DA FONTE DO EIXO X AQUI
+                        }
+                    },
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    }
+                },
+                y: { // Eixo Y (vertical, os nomes dos produtos/serviços)
+                    ticks: {
+                        color: '#FFFFFF',
+                        font: {
+                            size: 10 // <-- AJUSTE O TAMANHO DA FONTE DO EIXO Y AQUI
+                        }
+                    },
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: ctx => formatCurrency(ctx.raw)
+                    }
+                }
+            }
+        };
+        if (document.getElementById('vendasPorProdutosChart') && vendasPorProdutoData.labels.length > 0) { new Chart(document.getElementById('vendasPorProdutosChart'), { type: 'bar', data: { labels: vendasPorProdutoData.labels, datasets: [{ label: 'Total Vendido', data: vendasPorProdutoData.data, backgroundColor: 'rgba(118, 106, 204, 0.8)' }] }, options: customStyledOptions }); }
+        if (document.getElementById('vendasPorServicosChart') && vendasPorServicoData.labels.length > 0) { new Chart(document.getElementById('vendasPorServicosChart'), { type: 'bar', data: { labels: vendasPorServicoData.labels, datasets: [{ label: 'Total Vendido', data: vendasPorServicoData.data, backgroundColor: 'rgba(118, 106, 204, 0.8)' }] }, options: customStyledOptions }); }
+
+        // 7. GRÁFICO ANÁLISE POR CLIENTE
+        const analiseClienteJSON = '{{ analise_cliente_json|escapejs }}';
+        if (analiseClienteJSON && analiseClienteJSON !== 'null') {
+            const analiseClienteData = JSON.parse(analiseClienteJSON); const analiseClienteCtx = document.getElementById('analiseClienteChart');
+            const analiseConfig = { valor_vendas: { label: 'Valor de Vendas', formatter: formatCurrency, backgroundColor: 'rgba(118, 106, 204, 0.7)' }, qtd_vendas: { label: 'Quantidade de Vendas', formatter: formatNumber, backgroundColor: 'rgba(54, 162, 235, 0.7)' }, ticket_medio: { label: 'Valor Médio por Venda', formatter: formatCurrency, backgroundColor: 'rgba(255, 159, 64, 0.7)' }, itens_vendidos: { label: 'Total de Itens Vendidos', formatter: formatNumber, backgroundColor: 'rgba(75, 192, 192, 0.7)' }, valor_medio_produto: { label: 'Valor Médio por Produto', formatter: formatCurrency, backgroundColor: 'rgba(255, 99, 132, 0.7)' } };
+            const analiseClienteChart = new Chart(analiseClienteCtx, { type: 'bar', data: { labels: analiseClienteData.valor_vendas.labels, datasets: [{ label: analiseConfig.valor_vendas.label, data: analiseClienteData.valor_vendas.data, backgroundColor: analiseConfig.valor_vendas.backgroundColor }] }, options: { indexAxis: 'y', maintainAspectRatio: false, 
+            scales: { 
+                x: { beginAtZero: true, 
+                    ticks: {font: { size: 10 }, callback: (value) => analiseConfig.valor_vendas.formatter(value) } 
+                },
+                y: { // <-- BLOCO ADICIONADO PARA O EIXO Y
+                    ticks: {
+                        font: {
+                            size: 10 // <-- FONTE DO EIXO Y (NOMES)
+                        }
+                    }
+                } 
+            }, 
+            plugins: { legend: { display: false }, tooltip: { callbacks: { label: (context) => { const activeIndicator = document.querySelector('.analise-cliente-btn.active').dataset.indicator; let value = context.parsed.x; return analiseConfig[activeIndicator].formatter(value); } } } } } });
+            document.querySelectorAll('.analise-cliente-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    document.querySelectorAll('.analise-cliente-btn').forEach(btn => btn.classList.remove('active')); this.classList.add('active');
+                    const indicatorKey = this.dataset.indicator; const config = analiseConfig[indicatorKey]; const newData = analiseClienteData[indicatorKey];
+                    analiseClienteChart.data.labels = newData.labels; analiseClienteChart.data.datasets[0].data = newData.data;
+                    analiseClienteChart.data.datasets[0].backgroundColor = config.backgroundColor;
+                    analiseClienteChart.options.scales.x.ticks.callback = (value) => config.formatter(value);
+                    analiseClienteChart.update();
+                });
+            });
+        }
+
+        // 8. GRÁFICO ANÁLISE POR VENDEDOR
+        const vendasPeriodoData = JSON.parse('{{ vendas_periodo_json|escapejs }}');
+        const vendasPeriodoCtx = document.getElementById('vendasPorPeriodoChart');
+        if (vendasPeriodoCtx && vendasPeriodoData.labels.length > 0) {
+            new Chart(vendasPeriodoCtx, { 
+                type: 'line', 
+                data: { labels: vendasPeriodoData.labels, datasets: [{ label: 'Valor Vendido', data: vendasPeriodoData.data, borderColor: '#8E44AD', backgroundColor: 'rgba(142, 68, 173, 0.1)', fill: true, tension: 0.3 }] }, 
+                options: {
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: value => formatCurrency(value),
+                            font: {
+                                size: 10 // <-- FONTE DO EIXO Y (VALORES)
+                            }
+                        }
+                    },
+                    x: { // <-- BLOCO ADICIONADO PARA O EIXO X
+                        ticks: {
+                            font: {
+                                size: 10 // <-- FONTE DO EIXO X (MESES)
+                            }
+                        }
+                    }
+                }, 
+                plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => 'Vendas: ' + formatCurrency(ctx.raw) } } } } });
+        }
+
+
+
+        // --- INÍCIO: NOVO GRÁFICO DE EVOLUÇÃO DE CLIENTES ---
+        const evolucaoClientesData = JSON.parse('{{ evolucao_clientes_chart_json|escapejs }}');
+        const evolucaoClientesCtx = document.getElementById('evolucaoClientesChart');
+        if (evolucaoClientesCtx && evolucaoClientesData.labels.length > 0) {
+            new Chart(evolucaoClientesCtx, {
+                type: 'line',
+                data: {
+                    labels: evolucaoClientesData.labels,
+                    datasets: [{
+                        label: 'Clientes que Compraram',
+                        data: evolucaoClientesData.data,
+                        borderColor: '#36A2EB',
+                        backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                        fill: true,
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    responsive: true,
+                    scales: {
+                        y: { 
+                            beginAtZero: true, 
+                            ticks: {
+                                font: { size: 10 }, 
+                                precision: 0 
+                            } 
+                        },
+                        x: { 
+                            ticks: {
+                                font: { size: 10 } // <-- Altere o tamanho da fonte do eixo X aqui
+                            }
+                        } 
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+
+
+        // --- INÍCIO: NOVO GRÁFICO DINÂMICO "ANÁLISE POR VENDEDOR" ---
+        const analiseVendedorData = JSON.parse('{{ analise_vendedor_chart_json|escapejs }}');
+        const analiseVendedorCtx = document.getElementById('analiseVendedorChart');
+        const analiseVendedorSelect = document.getElementById('analise-vendedor-select');
+        let analiseVendedorChart;
+
+        const chartConfigs = {
+            valor_vendas: {
+                label: 'Valor de Vendas',
+                formatter: (value) => 'R$ ' + value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })
+            },
+            qtd_vendas: {
+                label: 'Qtd. de Vendas',
+                formatter: (value) => value.toLocaleString('pt-BR')
+            },
+            ticket_medio: {
+                label: 'Ticket Médio',
+                formatter: (value) => 'R$ ' + value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })
+            },
+            metas_batidas: {
+                label: 'Vendedores que Bateram a Meta (Valor Vendido)',
+                formatter: (value) => 'R$ ' + value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })
+            },
+            metas_nao_batidas: {
+                label: 'Vendedores que não Bateram a Meta (Valor Vendido)',
+                formatter: (value) => 'R$ ' + value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })
+            }
+        };
+
+        function createOrUpdateAnaliseVendedorChart(indicator) {
+            const config = chartConfigs[indicator];
+            const chartData = analiseVendedorData[indicator];
+
+            if (analiseVendedorChart) {
+                analiseVendedorChart.data.labels = chartData.labels;
+                analiseVendedorChart.data.datasets[0].data = chartData.data;
+                analiseVendedorChart.data.datasets[0].label = config.label;
+                analiseVendedorChart.options.scales.x.ticks.callback = config.formatter;
+                analiseVendedorChart.options.plugins.tooltip.callbacks.label = (ctx) => {
+                    const indicator = analiseVendedorSelect.value;
+                    const config = chartConfigs[indicator];
+
+                    // Se o filtro for 'Metas não Batidas', cria o tooltip customizado
+                    if (indicator === 'metas_nao_batidas') {
+                        const sales = ctx.raw;
+                        // Busca a meta correspondente no novo array que criamos
+                        const goal = analiseVendedorData.metas_nao_batidas.metas[ctx.dataIndex];
+
+                        // Formata as strings para exibição
+                        const salesStr = 'Vendido: R$ ' + sales.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+
+                        if (goal > 0) {
+                            const difference = ((sales / goal) - 1) * 100;
+                            const goalStr = 'Meta: R$ ' + goal.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+                            const diffStr = 'Diferença: ' + difference.toFixed(1) + '%';
+                            // Retorna um array para criar um tooltip com múltiplas linhas
+                            return [salesStr, goalStr, diffStr];
+                        }
+
+                        // Se não houver meta, mostra apenas o valor vendido
+                        return [salesStr, 'Meta: N/A'];
+                    }
+
+                    // Para todos os outros filtros, mantém o comportamento padrão
+                    return config.formatter(ctx.raw);
+                };
+                analiseVendedorChart.update();
+            } else {
+                analiseVendedorChart = new Chart(analiseVendedorCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: chartData.labels,
+                        datasets: [{
+                            label: config.label,
+                            data: chartData.data,
+                            backgroundColor: 'rgba(142, 68, 173, 1)', // Roxo
+                            borderColor: 'rgba(142, 68, 173, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    // NOVO TOOLTIP MULTILINHA
+                                    label: function(context) {
+                                        const indicator = analiseVendedorSelect.value;
+                                        const config = chartConfigs[indicator];
+                                        let labels = [];
+
+                                        // Se o indicador for 'Valor de Vendas', mostra a comissão
+                                        if (indicator === 'valor_vendas') {
+                                            const valorVendido = context.raw;
+                                            // Pega os dados extras de comissão que enviamos do backend
+                                            const comissaoValor = analiseVendedorData.valor_vendas.comissoes_valor[context.dataIndex];
+                                            const comissaoPercent = analiseVendedorData.valor_vendas.comissoes_percentual[context.dataIndex];
+
+                                            labels.push('Valor Vendido: ' + config.formatter(valorVendido));
+                                            labels.push(`Comissão: R$ ${comissaoValor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
+                                            labels.push(`(${comissaoPercent.toLocaleString('pt-BR')}% do valor)`);
+
+                                            return labels; // Retorna um array para criar múltiplas linhas
+                                        }
+                                        
+                                        // A lógica para 'Metas não Batidas' continua a mesma
+                                        if (indicator === 'metas_nao_batidas') {
+                                            const sales = context.raw;
+                                            const goal = analiseVendedorData.metas_nao_batidas.metas[context.dataIndex];
+                                            const salesStr = 'Vendido: R$ ' + sales.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+                                            if (goal > 0) {
+                                                const difference = ((sales / goal) * 100).toFixed(1);
+                                                const goalStr = 'Meta: R$ ' + goal.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+                                                const diffStr = 'Atingido: ' + difference + '%';
+                                                return [salesStr, goalStr, diffStr];
+                                            }
+                                            return [salesStr, 'Meta: N/A'];
+                                        }
+
+                                        // Para todos os outros filtros, mantém o comportamento padrão
+                                        return config.label + ': ' + config.formatter(context.raw);
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: config.formatter,
+                                    font: {
+                                        size: 10 // <-- FONTE DO EIXO X (VALORES)
+                                    }
+                                }
+                            },
+                            y: { // <-- BLOCO ADICIONADO PARA O EIXO Y
+                                ticks: {
+                                    font: {
+                                        size: 10 // <-- FONTE DO EIXO Y (NOMES)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+        
+        // Renderiza o gráfico inicial
+        createOrUpdateAnaliseVendedorChart('valor_vendas');
+
+        // Adiciona o evento para o menu dropdown
+        analiseVendedorSelect.addEventListener('change', (event) => {
+            createOrUpdateAnaliseVendedorChart(event.target.value);
+        });
+        // --- FIM: NOVO GRÁFICO DINÂMICO ---
+
+        // --- FIM: NOVO GRÁFICO DE EVOLUÇÃO DE CLIENTES ---
+
+
+        // --- INÍCIO DO NOVO CÓDIGO ---
+
+        // Função auxiliar para criar os gráficos com altura dinâmica e rolagem
+        function createScrollableBarChart(canvasId, chartData, label) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas || !chartData || chartData.labels.length === 0) {
+                // Exibe mensagem se não houver dados
+                const container = document.getElementById(canvasId).parentElement;
+                container.innerHTML = `<p style="text-align:center; padding-top:50px; opacity:0.7;">Sem dados para exibir.</p>`;
+                return;
+            };
+
+            // Calcula a altura necessária para o canvas (35px por barra + espaço extra)
+            const dynamicHeight = chartData.labels.length * 35 + 50;
+            canvas.height = dynamicHeight; // Define a altura do canvas para caber todas as barras
+
+            new Chart(canvas, {
+                type: 'bar',
+                data: {
+                    labels: chartData.labels,
+                    datasets: [{
+                        label: label,
+                        data: chartData.data,
+                        backgroundColor: 'rgba(118, 106, 204, 0.7)',
+                        borderColor: 'rgba(118, 106, 204, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    indexAxis: 'y', // Gráfico de barras horizontal
+                    responsive: true,
+                    maintainAspectRatio: false, // ESSENCIAL para a rolagem funcionar
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => ' R$ ' + ctx.raw.toLocaleString('pt-BR', { minimumFractionDigits: 2 })
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: (value) => 'R$ ' + (value / 1000).toFixed(0) + 'k',
+                                font: { size: 10 }
+                            }
+                        },
+                        y: { // <-- BLOCO ADICIONADO
+                            ticks: {
+                                font: { size: 10 }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Chama a função para renderizar os dois novos gráficos
+        const vendasPorClienteData = JSON.parse('{{ vendas_por_cliente_json|escapejs }}');
+        createScrollableBarChart('vendasPorClienteChart', vendasPorClienteData, 'Total Vendido');
+
+        const vendasPorProdutoServicoData = JSON.parse('{{ vendas_por_produto_servico_json|escapejs }}');
+        createScrollableBarChart('vendasPorProdutoServicoChart', vendasPorProdutoServicoData, 'Total Vendido');
+        // --- FIM DO NOVO CÓDIGO ---
+        
+        // ==================================================================
+        // GRÁFICO TOP 5 CIDADES (VERSÃO FINAL COM CORES FIXAS EM PRETO)
+        // ==================================================================
+        let topCidadesChartInstance = null; // Declarado apenas UMA VEZ.
+
+        function renderTopCidadesChart() {
+            const chartId = 'topCidadesChart';
+            const ctx = document.getElementById(chartId);
+            if (!ctx) return;
+            
+            if (topCidadesChartInstance) {
+                topCidadesChartInstance.destroy();
+            }
+
+            const topCidadesData = JSON.parse('{{ top_cidades_json|escapejs }}');
+
+            topCidadesChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: topCidadesData.labels,
+                    datasets: [{
+                        label: 'Total Vendido',
+                        data: topCidadesData.data,
+                        backgroundColor: 'rgba(118, 106, 204, 0.7)',
+                        borderColor: 'rgba(118, 106, 204, 1)',
+                        borderWidth: 1,
+                        barPercentage: 0.6
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { callbacks: { label: (ctx) => ' R$ ' + ctx.raw.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) } }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            ticks: { 
+                                color: '#333333',
+                                callback: (value) => 'R$ ' + (value/1000).toFixed(0) + 'k',
+                                font: { size: 10 } 
+                            },
+                            grid: { color: 'rgba(0, 0, 0, 0.1)' },
+                            title: {
+                                display: false,
+                                text: 'Valor Vendido (R$)',
+                                color: '#333333',
+                                font: { size: 14, weight: 'bold' }
+                            }
+                        },
+                        y: {
+                            ticks: { color: '#333333', font: { size: 10 } },
+                            grid: { color: 'rgba(0, 0, 0, 0.1)' },
+                            title: {
+                                display: false,
+                                text: 'Cidade',
+                                color: '#333333',
+                                font: { size: 14, weight: 'bold' }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Desenha o gráfico na primeira carga da página.
+        renderTopCidadesChart();
+
+    // Em faturamento_dashboard.html
+
+
+    });
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    try {
+
+        // --- 1. CÓDIGO DO GRÁFICO "PROGRESSO DE METAS" QUE SUMIU ---
+        const ctxMetas = document.getElementById('metasChart');
+        if (ctxMetas) {
+            const labelsMeses = {{ labels_meses_meta_json|safe }};
+            const metasData = {{ metas_data_final_json|safe }};
+            const faturamentoRealizadoData = {{ faturamento_data_meta_json|safe }};
+
+            new Chart(ctxMetas, {
+                type: 'bar',
+                data: {
+                    labels: labelsMeses,
+                    datasets: [
+                        { label: 'Meta', data: metasData, backgroundColor: 'rgba(127, 18, 22, 0.93)', order: 2 },
+                        { label: 'Realizado', data: faturamentoRealizadoData, backgroundColor: '#28a745', order: 1 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { y: { 
+                        beginAtZero: true, 
+                        ticks: {font: { size: 10 }, callback: function(value) { return 'R$ ' + value.toLocaleString('pt-BR'); } } 
+                        }, 
+                        x: { 
+                            ticks: {
+                                font: { size: 10 } // <-- Altere o tamanho da fonte do eixo X aqui
+                            }
+                        }
+                    },
+                    
+                    plugins: {
+                        legend: { position: 'top' },
+                        tooltip: { callbacks: { label: function(context) { let label = context.dataset.label || ''; if (label) { label += ': '; } if (context.parsed.y !== null) { label += new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(context.parsed.y); } return label; } } }
+                    }
+                }
+            });
+        }
+
+        // --- 2. CÓDIGO DO GRÁFICO "VELOCÍMETRO" (O SEU CÓDIGO CORRETO) ---
+        const velocimetroCtx = document.getElementById('velocimetroChart');
+        if (velocimetroCtx) {
+            new Chart(velocimetroCtx, {
+                type: 'doughnut',
+                data: {
+                    datasets: [{
+                        data: [33.3, 33.3, 33.4],
+                        backgroundColor: ['#dc3545', '#ffc107', '#28a745'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    rotation: -90,
+                    circumference: 180,
+                    cutout: '70%',
+                    plugins: { legend: { display: false }, tooltip: { enabled: false } }
+                }
+            });
+        }
+
+    } catch (e) {
+        console.error("Erro ao renderizar os gráficos de metas:", e);
+    }
+});
+</script>
+
+    <div id="laudo-comercial-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <div id="laudo-comercial-texto">
+                <p>Gerando análise, por favor aguarde...</p>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

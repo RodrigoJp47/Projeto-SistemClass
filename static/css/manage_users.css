@@ -1,0 +1,450 @@
+/* static/css/manage_users.css */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+/* body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background-color: #000;
+    color: #fff;
+    display: flex;
+    min-height: 100vh;
+} */
+
+.main-content {
+    margin-left: 270px;
+    /* Espaço para o menu lateral */
+    padding: 20px;
+    width: calc(100% - 270px);
+    overflow-y: auto;
+}
+
+/* Estilos base para a página Gerenciar Usuários (Tema Escuro Padrão) */
+
+/* Garante fundo escuro padrão para o body desta página */
+body.manage-users-page {
+    background-color: #121212;
+    color: #FFFFFF;
+}
+
+/* Herda estilos do faturamento_dashboard.css, mas permite ajustes */
+.manage-users-page .main-content {
+    /* padding, margin-left, etc., herdados ou definidos em global/layout */
+    background-color: #121212;
+    /* Fundo do conteúdo principal */
+}
+
+.header {
+    margin-bottom: 10px;
+    margin-left: 10px;
+}
+
+
+
+/* Estilos para os cards */
+.manage-users-page .card {
+    background-color: #222;
+    /* Fundo do card escuro */
+    border: 1px solid #444;
+    /* Borda sutil */
+    color: #FFFFFF;
+    /* Texto padrão dentro do card */
+    margin-bottom: 1.5rem;
+    /* Espaçamento entre cards */
+    padding: 1.5rem;
+    /* Padding interno aumentado */
+    border-radius: 8px;
+    /* Bordas arredondadas */
+}
+
+.manage-users-page .card-title {
+    color: #FFFFFF;
+    /* Título branco */
+    font-size: 1.1rem;
+    /* Tamanho do título do card */
+    font-weight: 600;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #444;
+    /* Linha abaixo do título */
+}
+
+/* Formulários */
+.manage-users-page .manage-user-form {
+    margin-top: 1rem;
+}
+
+.manage-users-page .form-grid {
+    display: grid;
+    /* Duas colunas para o formulário principal */
+    grid-template-columns: 1fr 1fr;
+    /* Espaçamento vertical e horizontal */
+    gap: 1rem 1.5rem; 
+    margin-bottom: 1.5rem;
+}
+
+
+.manage-users-page .manage-user-form label {
+    /* Regra já existente, ok */
+    display: block;
+    margin-bottom: 0.3rem;
+    /* ... */
+}
+
+.manage-users-page .manage-user-form label {
+    display: block;
+    margin-bottom: 0.3rem;
+    font-size: 0.9rem;
+    color: #ccc;
+    /* Cinza claro para labels */
+    font-weight: 500;
+}
+
+.manage-users-page .manage-user-form input[type="text"],
+.manage-users-page .manage-user-form input[type="email"],
+.manage-users-page .manage-user-form input[type="password"] {
+    width: 100%;
+    padding: 0.6rem 0.8rem;
+    background-color: #333;
+    /* Fundo do input escuro */
+    color: #FFFFFF;
+    /* Texto branco */
+    border: 1px solid #555;
+    /* Borda sutil */
+    border-radius: 4px;
+    font-size: 0.95rem;
+}
+
+.manage-users-page .manage-user-form input:focus {
+    outline: none;
+    border-color: #0d6efd;
+    /* Azul ao focar (exemplo) */
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+.manage-users-page .form-errors {
+    color: #f8d7da;
+    /* Vermelho claro para erros */
+    font-size: 0.8rem;
+    margin-top: 0.2rem;
+}
+
+.manage-users-page .global-errors ul {
+    list-style: none;
+    padding: 0;
+    margin: 0.5rem 0 0 0;
+}
+
+/* Informações de Limite */
+.manage-users-page .user-limit-info {
+    font-size: 0.9rem;
+    color: #a0a0a0;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #444;
+}
+
+.manage-users-page .user-limit-info span {
+    margin-right: 1.5rem;
+}
+
+.manage-users-page .user-limit-info strong {
+    color: #FFFFFF;
+}
+
+.manage-users-page .user-limit-info .can-add strong {
+    color: #28a745;
+    /* Verde */
+}
+
+.manage-users-page .user-limit-info .limit-reached {
+    color: #ffc107;
+    /* Amarelo */
+    font-weight: bold;
+}
+
+/* Tabela de Funcionários */
+.manage-users-page .table-wrapper {
+    overflow-x: auto;
+    /* Rolagem horizontal se necessário */
+}
+
+.manage-users-page .styled-table {
+    width: 100%;
+    border-collapse: collapse;
+    color: #FFFFFF;
+    font-size: 0.9rem;
+}
+
+.manage-users-page .styled-table th,
+.manage-users-page .styled-table td {
+    padding: 0.8rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid #444;
+    vertical-align: middle;
+}
+
+.manage-users-page .styled-table thead th {
+    background-color: #333;
+    /* Cabeçalho escuro */
+    font-weight: 600;
+    position: sticky;
+    /* Cabeçalho fixo se a tabela rolar */
+    top: 0;
+}
+
+.manage-users-page .styled-table tbody tr:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    /* Leve clareamento no hover */
+}
+
+.manage-users-page .styled-table .actions-cell {
+    white-space: nowrap;
+    /* Impede que botões quebrem linha */
+}
+
+.manage-users-page .styled-table .actions-cell .btn {
+    margin: 0 2px;
+    /* Pequeno espaço entre botões */
+}
+
+.manage-users-page .styled-table .empty-row td {
+    text-align: center;
+    font-style: italic;
+    color: #a0a0a0;
+    padding: 1.5rem;
+}
+
+.manage-users-page .styled-table .inactive-row td {
+    opacity: 0.6;
+    font-style: italic;
+}
+
+/* Badges de Status */
+.manage-users-page .badge {
+    padding: 0.3em 0.6em;
+    font-size: 0.75em;
+    font-weight: 600;
+    border-radius: 4px;
+}
+
+.manage-users-page .status-active {
+    background-color: #28a745;
+    color: #fff;
+}
+
+.manage-users-page .status-inactive {
+    background-color: #6c757d;
+    color: #fff;
+}
+
+/* Botões Padrão (Reutilize suas classes .btn ou copie/adapte) */
+.manage-users-page .btn {
+    /* Estilo base de botão */
+    display: inline-block;
+    font-weight: 400;
+    line-height: 1.5;
+    color: #212529;
+    text-align: center;
+    text-decoration: none;
+    vertical-align: middle;
+    cursor: pointer;
+    user-select: none;
+    background-color: transparent;
+    border: 1px solid transparent;
+    padding: 0.375rem 0.75rem;
+    font-size: 12px;
+    border-radius: 0.25rem;
+    transition: color .15s ease-in-out, background-color .15s ease-in-out, border-color .15s ease-in-out, box-shadow .15s ease-in-out;
+}
+
+.manage-users-page .btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: .875rem;
+    border-radius: 0.2rem;
+}
+
+.manage-users-page .btn-primary {
+    color: #fff;
+    background-color: #198754;
+    border-color: #198754;
+}
+
+.manage-users-page .btn-primary:hover {
+    background-color: #2ce880;
+    border-color: #25dc77;
+}
+
+.manage-users-page .btn-success {
+    color: #fff;
+    background-color: #198754;
+    border-color: #198754;
+}
+
+.manage-users-page .btn-success:hover {
+    background-color: #157347;
+    border-color: #146c43;
+}
+
+.manage-users-page .btn-danger {
+    color: #fff;
+    background-color: #dc3545;
+    border-color: #dc3545;
+}
+
+.manage-users-page .btn-danger:hover {
+    background-color: #bb2d3b;
+    border-color: #b02a37;
+}
+
+.manage-users-page .btn-warning {
+    color: #000;
+    background-color: #ffc107;
+    border-color: #ffc107;
+}
+
+.manage-users-page .btn-warning:hover {
+    background-color: #ffca2c;
+    border-color: #ffc720;
+}
+
+.manage-users-page .btn-secondary {
+    color: #fff;
+    background-color: #6c757d;
+    border-color: #6c757d;
+}
+
+.manage-users-page .btn-secondary:hover {
+    background-color: #5c636a;
+    border-color: #565e64;
+}
+
+.manage-users-page .btn-info {
+    color: #000;
+    background-color: #0dcaf0;
+    border-color: #0dcaf0;
+}
+
+.manage-users-page .btn-info:hover {
+    background-color: #31d2f2;
+    border-color: #25cff2;
+}
+
+/* Mensagens do Django */
+.manage-users-page .messages .alert {
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border: 1px solid transparent;
+    border-radius: 0.25rem;
+}
+
+.manage-users-page .messages .alert-success {
+    color: #0f5132;
+    background-color: #d1e7dd;
+    border-color: #badbcc;
+}
+
+.manage-users-page .messages .alert-error {
+    color: #842029;
+    background-color: #f8d7da;
+    border-color: #f5c2c7;
+}
+
+.manage-users-page .messages .alert-warning {
+    color: #664d03;
+    background-color: #fff3cd;
+    border-color: #ffecb5;
+}
+
+.manage-users-page .messages .alert-info {
+    color: #055160;
+    background-color: #cff4fc;
+    border-color: #b6effb;
+}
+
+/* Centralização de texto (helper) */
+.manage-users-page .text-center {
+    text-align: center !important;
+}
+/* ... (no final do arquivo) ... */
+
+
+
+.manage-users-page .form-field-permissions {
+    /* Faz este item ocupar as 2 colunas do grid principal */
+    grid-column: 1 / -1; 
+    margin-top: 0.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid #444;
+}
+
+/* Label principal "Permissões de Acesso:" */
+.manage-users-page .form-field-permissions > label {
+    display: block;
+    margin-bottom: 1rem;
+    font-size: 1rem;
+    color: #ccc;
+    font-weight: 500;
+}
+
+/* O grid que divide Financeiro/Comercial */
+.permissions-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 20px;
+    background-color: #1a1a1a; /* Fundo ligeiramente diferente */
+    padding: 15px;
+    border-radius: 5px;
+    margin-top: 5px;
+}
+
+/* Título "Financeiro" / "Comercial" dentro do grid */
+.permission-column strong {
+    display: block;
+    margin-bottom: 10px;
+    font-size: 1rem;
+    color: #0d6efd; /* Cor primária (azul) */
+    border-bottom: 1px solid #444;
+    padding-bottom: 5px;
+}
+
+/* Container de cada checkbox individual */
+.form-field-permissions .form-check {
+    display: flex;
+    align-items: center;
+    gap: 8px; 
+    margin-bottom: 8px;
+    padding-left: 0; /* Remove o padding-left antigo */
+}
+
+/* O checkbox em si */
+.form-field-permissions .form-check input[type="checkbox"] {
+    width: auto; /* Tamanho automático */
+    margin: 0;
+    height: 1.1em;
+    accent-color: #198754; 
+}
+
+/* O label ao lado do checkbox */
+.form-field-permissions .form-check label {
+    margin: 0;
+    font-weight: normal; /* Peso normal */
+    color: #eee;
+    margin-bottom: 0; /* Reseta a margem */
+}
+
+/* Célula da tabela de permissões */
+.permissions-cell .badge {
+    margin-bottom: 3px;
+    margin-right: 3px; /* Adiciona espaço entre badges */
+}
+/* Ajustes Responsivos Específicos (se necessário, adicione dentro de @media) */
+@media (max-width: 768px) {
+    .manage-users-page .form-grid {
+        grid-template-columns: 1fr;
+        /* Coluna única em telas menores */
+    }
+}

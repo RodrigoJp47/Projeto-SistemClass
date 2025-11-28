@@ -1,0 +1,139 @@
+
+{% load static %}
+{% load humanize %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configurações - Gestão Financeira</title>
+    <link rel="stylesheet" href="{% static 'css/global.css' %}">
+    <link rel="stylesheet" href="{% static 'css/configuracoes.css' %}">
+    <link rel="stylesheet" href="{% static 'css/themes.css' %}">
+    <link rel="stylesheet" href="{% static 'css/sidebar.css' %}">
+</head>
+<body>
+   {% include 'accounts/_sidebar.html' %}
+    <div class="main-content">
+        <button id="menu-toggle">&#9776;</button>
+        <div class="config-header">
+            <h1 class="section-title">Configurações</h1>
+            
+        </div>
+        {% if messages %}
+            <div class="messages">
+                {% for message in messages %}
+                    <p class="{% if message.tags %}{{ message.tags }}{% endif %}">{{ message }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+        <div class="form-container">
+            <h3>Adicionar Conta Bancária</h3>
+            <form method="post">
+                {% csrf_token %}
+                <input type="text" name="bank_name" placeholder="Banco" required>
+                <input type="text" name="agency" placeholder="Agência" required>
+                <input type="text" name="account_number" placeholder="Conta" required>
+                <input type="text" name="initial_balance" placeholder="Saldo Inicial (Ex: 10.589,58)" required>
+                <button type="submit" name="create_bank_account">Criar</button>
+            </form>
+        </div>
+        <div class="form-container">
+            <h3>Importar Arquivo OFX</h3>
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                {{ ofx_form.as_p }}
+                <button type="submit" name="import_ofx">Importar</button>
+            </form>
+        </div>
+        <div class="table-container">
+            <h3>Contas Bancárias</h3>
+            <table class="bank-accounts-table">
+                <tr>
+                    <th>Banco</th>
+                    <th>Agência</th>
+                    <th>Conta</th>
+                    <th>Saldo Inicial</th>
+                    <th>Ações</th>
+                </tr>
+                {% for account in bank_accounts %}
+                <tr>
+                    <td>{{ account.bank_name }}</td>
+                    <td>{{ account.agency }}</td>
+                    <td>{{ account.account_number }}</td>
+                    <td>R$ {{ account.initial_balance|intcomma }}</td>
+                    <td><a href="{% url 'configuracoes' %}?edit={{ account.id }}">Editar</a></td>
+                </tr>
+                {% endfor %}
+            </table>
+            
+        </div>
+        {% if edit_account %}
+        <div class="form-container">
+            <h3>Editar Conta Bancária</h3>
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="account_id" value="{{ edit_account.id }}">
+                <input type="text" name="bank_name" value="{{ edit_account.bank_name }}" required>
+                <input type="text" name="agency" value="{{ edit_account.agency }}" required>
+                <input type="text" name="account_number" value="{{ edit_account.account_number }}" required>
+                <input type="text" name="initial_balance" value="{{ edit_account.initial_balance }}" required>
+                <button type="submit" name="edit_bank_account">Salvar</button>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+    <script src="{% static 'js/theme.js' %}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const menuToggleButton = document.getElementById('menu-toggle');
+            const sidebar = document.querySelector('.sidebar');
+
+            if (menuToggleButton && sidebar) {
+                menuToggleButton.addEventListener('click', function() {
+                    sidebar.classList.toggle('mobile-open');
+                });
+            }
+        // --- INÍCIO DO SCRIPT DO MENU ---
+        function setupSubmenuToggle(toggleId, submenuId) {
+            const toggleButton = document.getElementById(toggleId);
+            const submenu = document.getElementById(submenuId);
+            if (toggleButton && submenu) {
+                toggleButton.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    submenu.style.display = submenu.style.display === 'block' ? 'none' : 'block';
+                });
+            }
+        }
+        setupSubmenuToggle('financeiro-toggle', 'financeiro-submenu');
+        setupSubmenuToggle('comercial-toggle', 'comercial-submenu');
+
+        // Expande o submenu que contém o link ativo na página atual
+        const activeLink = document.querySelector('.sidebar .submenu a.active');
+        if (activeLink) {
+            const parentSubmenu = activeLink.closest('.submenu');
+            if (parentSubmenu) {
+                parentSubmenu.style.display = 'block';
+            }
+        }
+        // Lógica para o menu de dashboards retrátil
+            const dashboardToggle = document.getElementById('dashboard-toggle');
+            const dashboardSubmenu = document.getElementById('dashboard-submenu');
+
+            if (dashboardToggle && dashboardSubmenu) {
+                dashboardToggle.addEventListener('click', function(event) {
+                    event.preventDefault(); // Impede o link de navegar para '#'
+                    
+                    // Alterna a exibição do submenu
+                    if (dashboardSubmenu.style.display === 'block') {
+                        dashboardSubmenu.style.display = 'none';
+                    } else {
+                        dashboardSubmenu.style.display = 'block';
+                    }
+                });
+            }
+            
+        });    
+    </script>
+</body>
+</html>

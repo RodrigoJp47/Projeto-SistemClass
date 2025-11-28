@@ -1,0 +1,304 @@
+/*============================================================================*/
+/* ESTILOS GERAIS E ESTRUTURA PRINCIPAL                                       */
+/*============================================================================*/
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background-color: #000;
+    color: #fff;
+    display: flex;
+    min-height: 100vh;
+}
+
+.main-content {
+    margin-left: 270px; /* Espaço para o menu lateral */
+    padding: 20px;
+    width: calc(100% - 270px);
+    overflow-y: auto;
+}
+
+
+/*============================================================================*/
+/* CONTAINER DE FILTROS                                                       */
+/*============================================================================*/
+.filter-container {
+    margin-top: 20px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.filter-container label {
+    font-size: 11px;
+    margin-right: 5px;
+}
+
+.filter-container select,
+.filter-container input[type="date"],
+.filter-container button {
+    padding: 4px;
+    background-color: #333;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    font-size: 12px;
+}
+
+.filter-container button {
+    background-color: rgb(15, 91, 15);
+    color: #fff;
+    cursor: pointer;
+    padding: 4px 14px;
+}
+
+.filter-container button:hover {
+    background-color: rgb(38, 156, 38);
+}
+
+#custom-date {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/*============================================================================*/
+/* CARDS DE ESTATÍSTICAS (KPIs)                                               */
+/*============================================================================*/
+.stats-row {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.stat-card {
+    background-color: #222;
+    padding: 20px;
+    border-radius: 8px;
+    flex: 1;
+    text-align: center;
+}
+
+.stat-card h4 {
+    margin: 0 0 10px 0;
+    font-size: 14px;
+    color: #ccc;
+    font-weight: normal;
+}
+
+.stat-card hr {
+    border: 0;
+    height: 1px;
+    background: #444;
+    margin-bottom: 15px;
+}
+
+.stat-card p {
+    margin: 0;
+    font-size: 12px;
+    font-weight: bold;
+    color: #fff;
+}
+
+/*============================================================================*/
+/* GRÁFICOS                                                                   */
+/*============================================================================*/
+.charts-row {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.chart-container {
+    flex: 1;
+    background-color: #222;
+    padding: 20px;
+    border-radius: 8px;
+}
+
+.chart-container h3 {
+    margin: 0 0 15px 0;
+    font-size: 14px;
+    text-align: center;
+}
+
+/* Classe para controlar a altura e o posicionamento dos gráficos */
+.chart-wrapper {
+    height: 200px;
+    position: relative;
+}
+
+canvas {
+    max-width: 100%;
+}
+
+/*============================================================================*/
+/* TABELA DE CONTAS                                                           */
+/*============================================================================*/
+.accounts-table-container {
+    background-color: #222;
+    padding: 20px;
+    border-radius: 8px;
+    margin-top: 20px;
+}
+
+.accounts-table-container h3 {
+    margin: 0 0 10px 0;
+    font-size: 14px;
+    text-align: center;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    color: #fff;
+}
+
+th, td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid #444;
+    font-size: 11px;
+}
+
+th {
+    background-color: #b03b09;
+    font-weight: bold;
+}
+
+/* Alinha a última coluna da tabela (valores) à direita */
+td:last-child,
+th:last-child {
+    text-align: right;
+}
+
+/* Estilo para o botão de exportar */
+.btn-export {
+    background-color: #1D6F42; /* Verde escuro */
+    color: white;
+    padding: 5px 10px;
+    text-decoration: none;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+}
+.btn-export:hover {
+    background-color: #165934; /* Verde mais escuro */
+}
+/* Adicione esta nova regra para o rodapé da tabela */
+tfoot tr {
+    background-color: #003366; /* Mesma cor do cabeçalho h3 */
+}
+
+/* ============================================================================ */
+/* ESTILOS PARA A PAGINAÇÃO DAS TABELAS                                       */
+/* ============================================================================ */
+
+/* Container principal dos links de paginação */
+.pagination .step-links {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px; /* Espaçamento entre os botões */
+}
+
+/* Estilo padrão para os links (Ex: "próxima", "última") */
+.pagination .step-links a {
+    color: #fff;
+    text-decoration: none;
+    padding: 6px 12px;
+    border: 1px solid #444;
+    border-radius: 4px;
+    transition: background-color 0.2s, color 0.2s;
+    font-size: 14px;
+}
+
+/* Efeito ao passar o mouse sobre os links */
+.pagination .step-links a:hover {
+    background-color: #1D6F42; /* Cor de destaque verde */
+    color: #fff; /* Texto preto */
+    border-color: rgb(30, 136, 30);
+}
+
+/* Estilo para o texto que mostra a página atual (Ex: "Página 1 de 4.") */
+.pagination .step-links .current {
+    padding: 6px 12px;
+    font-weight: bold;
+    font-size: 14px;
+    color: #fff; /* Texto preto */
+    background-color: #1D6F42; /* Cor de destaque verde */
+    border: 1px solid rgb(31, 147, 31);
+    border-radius: 4px;
+}
+
+/*============================================================================*/
+/* MEDIA QUERIES PARA RESPONSIVIDADE (MOBILE)                                 */
+/*============================================================================*/
+@media screen and (max-width: 768px) {
+    #menu-toggle {
+        display: block;
+    }
+
+    .main-content {
+        margin-left: 0;
+        width: 100%;
+        padding: 15px;
+    }
+
+    .sidebar {
+        transform: translateX(-100%);
+        transition: transform 0.3s ease-in-out;
+        border-right: 1px solid #444;
+    }
+
+    .sidebar.mobile-open {
+        transform: translateX(0);
+    }
+
+    .filter-container,
+    .filter-container form,
+    #custom-date {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .filter-container select,
+    .filter-container input,
+    .filter-container button {
+        width: 100%;
+    }
+
+    .stats-row {
+        flex-wrap: wrap;
+    }
+
+    .stat-card {
+        flex: 1 1 calc(50% - 10px); /* Ocupa 50% da largura, com espaço */
+    }
+
+    .charts-row {
+        flex-direction: column;
+    }
+
+    .accounts-table-container {
+        overflow-x: auto; /* Adiciona rolagem horizontal na tabela */
+    }
+
+    /* --- AJUSTE PARA PAGINAÇÃO VERTICAL NO MOBILE --- */
+    .pagination .step-links {
+        flex-direction: column; /* Empilha os links verticalmente */
+    }
+
+    .pagination .step-links a,
+    .pagination .step-links .current {
+        width: 80%; /* Faz os botões ocuparem 80% da largura para um visual melhor */
+        text-align: center; /* Centraliza o texto dentro dos botões */
+    }
+}

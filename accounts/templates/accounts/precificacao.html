@@ -1,0 +1,531 @@
+{% load static %}
+{% load humanize %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Precificação de Produtos e Serviços</title>
+    <link rel="stylesheet" href="{% static 'css/global.css' %}">
+    <link rel="stylesheet" href="{% static 'css/themes.css' %}">
+    <link rel="stylesheet" href="{% static 'css/sidebar.css' %}">
+    <link rel="stylesheet" href="{% static 'css/precificacao.css' %}">
+    <link rel="stylesheet" href="{% static 'css/layout-responsive.css' %}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    
+</head>
+<body class="precificacao-page">
+    
+    {% include 'accounts/_sidebar.html' %}
+
+    <div class="main-content">
+        {% include 'accounts/partials/bpo_banner.html' %}
+        <button id="menu-toggle">&#9776;</button>
+        <h1>Calculadora de Precificação Inteligente</h1>
+        <div style="text-align: center; margin-bottom: 20px;">
+            <button id="insights-btn" class="analise-btn">Exibir Insights</button>
+        </div>
+
+        <div id="insights-container" class="analise-container" style="display: none;">
+            <div class="analise-section">
+                <h4>Entendendo o Cálculo da Precificação</h4>
+                <p>O objetivo desta calculadora é encontrar o preço de venda ideal que cubra todos os custos e ainda gere o lucro que você deseja. A lógica funciona como se o seu preço de venda fosse uma pizza de 100%.</p>
+                <ul>
+                    <li><strong>1. Ponto de Partida:</strong> Tudo começa com o <strong>Custo do Produto/Serviço</strong>. Este é o valor que você precisa recuperar para não ter prejuízo.</li>
+                    <li><strong>2. As Fatias Percentuais:</strong> Os campos de Despesas, Comissão, Impostos e a sua Margem de Lucro são as "fatias" que você está reservando do preço final.</li>
+                    <li><strong>3. A Soma:</strong> A calculadora soma todos esses percentuais. Por exemplo: 20% (Despesas) + 5% (Comissão) + 7% (Impostos) + 25% (Lucro) = 57%.</li>
+                    <li><strong>4. A Mágica do Cálculo (Markup Divisor):</strong> Se 57% do preço já estão comprometidos, a calculadora entende que a fatia restante da pizza (100% - 57% = 43%) precisa ser grande o suficiente para cobrir o Custo do Produto. Ela então faz a conta para descobrir qual é o Preço de Venda (100%) onde 43% desse valor é exatamente igual ao seu Custo.</li>
+                </ul>
+            </div>
+            <div class="analise-section">
+                <h4>O Ponto Chave: A Margem de Lucro Desejada (%)</h4>
+                <p>Este é o campo mais importante e o seu principal objetivo. Diferente do que muitos pensam, não é um valor "adicionado" sobre o custo, mas sim **uma fatia do preço de venda final.**</p>
+                <ul>
+                    <li><strong>Exemplo Prático:</strong> Se você define uma margem de <strong>20%</strong> e o preço final calculado é <strong>R$ 100,00</strong>, seu lucro líquido naquela venda será de <strong>R$ 20,00</strong>.</li>
+                    <li><strong>Por que não pode ser 100%?</strong> Porque se 100% do preço final fosse lucro, não sobraria dinheiro para pagar o Custo do Produto, as Despesas, os Impostos e a Comissão. A soma de todas as fatias percentuais deve ser sempre **menor que 100%**.</li>
+                </ul>
+                 <p>Use esta ferramenta para simular cenários. Se o preço final ficou muito alto, talvez o problema não seja o lucro desejado, mas sim um percentual de Despesas Fixas muito elevado. A calculadora te ajuda a enxergar isso.</p>
+            </div>
+        </div>
+
+        <div class="pricing-container">
+            <div class="pricing-calculator">
+                <h3>Definir Preço de Venda</h3>
+                <p class="base-period-info">Sugestões baseadas na análise dos últimos 90 dias.</p>
+
+                <div class="form-group">
+                    <label for="produto-select">Selecione um Produto ou Serviço</label>
+                    <select id="produto-select">
+                        <option value="">-- Comece selecionando um item --</option>
+                        {% for produto in produtos %}
+                        <option value="{{ produto.id }}">{{ produto.nome }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="vendedor-select">Selecione um Vendedor (Opcional)</label>
+                    <select id="vendedor-select">
+                        <option value="">-- Sem comissão --</option>
+                        {% for vendedor in vendedores %}
+                        <option value="{{ vendedor.id }}">{{ vendedor.nome }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="custo-produto">1. Custo do Produto/Serviço</label>
+                    <div class="input-group">
+                        <span class="input-group-text">R$</span>
+                        <input type="number" id="custo-produto" placeholder="0,00" step="0.01" readonly>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="despesas-fixas">
+                        2. Despesas Fixas (%)
+                        <span class="info-icon" data-tooltip="Este valor é uma sugestão calculada com base na proporção das suas despesas fixas sobre a receita líquida dos últimos 90 dias.">i</span>
+                    </label>
+                    <input type="number" id="despesas-fixas" placeholder="Ex: 10" step="0.1">
+                </div>
+
+                <div class="form-group">
+                    <label for="comissao-vendas">3. Comissão de Vendas (%)</label>
+                    <input type="number" id="comissao-vendas" placeholder="Ex: 5" step="0.1">
+                </div>
+
+                <div class="form-group">
+                    <label for="impostos">
+                        4. Impostos sobre a Venda (%)
+                        <span class="info-icon" data-tooltip="Este valor é uma sugestão calculada com base na proporção dos seus impostos (deduções da receita) sobre a receita bruta dos últimos 90 dias.">i</span>
+                    </label>
+                    <input type="number" id="impostos" placeholder="Ex: 4.5" step="0.1">
+                </div>
+
+                <div class="form-group">
+                    <label for="margem-lucro">
+                        5. Margem de Lucro Desejada (%)
+                        <span class="info-icon" data-tooltip="Este é o seu objetivo de lucro. Defina qual porcentagem do Preço de Venda Final deve se transformar em lucro líquido, após a cobertura de todos os custos (produto, despesas, impostos, comissão). Ex: Se o preço final for R$ 100 e a margem 20%, seu lucro será de R$ 20.">i</span>
+                    </label>
+                    <input type="number" id="margem-lucro" placeholder="Ex: 20" step="0.1">
+                </div>
+            </div>
+
+            <div class="price-breakdown">
+                <h3>Resultado da Precificação</h3>
+                
+                <div id="results-content" style="display: none;">
+                    <div class="result-item">
+                        <span>(+) Custo do Produto</span>
+                        <span id="res-custo-produto">R$ 0,00</span>
+                    </div>
+                    <div class="result-item">
+                        <span>(+) Despesas Fixas</span>
+                        <span id="res-despesas-fixas">R$ 0,00</span>
+                    </div>
+                    <div class="result-item">
+                        <span>(+) Comissão de Vendas</span>
+                        <span id="res-comissao">R$ 0,00</span>
+                    </div>
+                    <div class="result-item">
+                        <span>(+) Impostos</span>
+                        <span id="res-impostos">R$ 0,00</span>
+                    </div>
+                    <div class="result-item">
+                        <span><b>(+) Lucro</b></span>
+                        <span id="res-lucro"><b>R$ 0,00</b></span>
+                    </div>
+
+                    <div class="final-price-display">
+                        <p>Preço de Venda Sugerido</p>
+                        <h2 id="preco-sugerido">R$ 0,00</h2>
+                    </div>
+                    <div id="chart-container" class="chart-and-legend-container">
+                        <div id="chart-legend" class="chart-legend">
+                            </div>
+                        <div class="chart-wrapper">
+                            <canvas id="priceCompositionChart"></canvas>
+                        </div>
+                        <div id="action-buttons-container" class="action-buttons-container" style="display: none;">
+                            <button id="save-price-btn" class="btn-secondary">Apenas Salvar Histórico</button>
+                            <button id="update-price-btn" class="btn-primary">Salvar e Atualizar Preço</button>
+                        </div>
+                    </div>
+                </div>
+
+                <p id="initial-message">Selecione um produto e preencha os campos para ver o resultado.</p>
+            </div>
+        </div>
+        <div class="history-table-container">
+            <h3>Histórico de Precificações</h3>
+            <form method="get" class="filter-form" style="margin-bottom: 20px;">
+                <div class="form-group" style="flex-grow: 1;">
+                    <label for="search_history">Buscar por Nome do Produto</label>
+                    <input type="text" name="q" id="search_history" value="{{ search_query|default:'' }}" placeholder="Digite o nome do produto...">
+                </div>
+                <button type="submit" style="margin-top: 0; padding: 10px 15px;">Buscar</button>
+            </form>
+            <div class="table-scroll-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Produto</th>
+                            <th>Custo (R$)</th>
+                            <th>Desp. Fixas (%)</th>
+                            <th>Comissão (%)</th>
+                            <th>Impostos (%)</th>
+                            <th>Lucro (%)</th>
+                            <th>Preço Final (R$)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in historico_page_obj %} {# <-- MUDANÇA AQUI #}
+                        <tr>
+                            <td>{{ item.created_at|date:"d/m/Y H:i" }}</td>
+                            <td>{{ item.produto.nome }}</td> {# <-- AGORA VAI FUNCIONAR #}
+                            <td>{{ item.preco_custo|floatformat:2|intcomma }}</td>
+                            <td>{{ item.perc_despesas_fixas|floatformat:2 }}</td>
+                            <td>{{ item.perc_comissao|floatformat:2 }}</td>
+                            <td>{{ item.perc_impostos|floatformat:2 }}</td>
+                            <td>{{ item.perc_lucro|floatformat:2 }}</td>
+                            <td class="final-price-cell">{{ item.preco_venda_sugerido|floatformat:2|intcomma }}{% if item.is_price_updated %}<span class="status-icon updated" title="Este preço foi atualizado no cadastro do produto.">✓</span>{% endif %}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8">
+                                {% if search_query %}
+                                    Nenhum registro encontrado para "{{ search_query }}".
+                                {% else %}
+                                    Nenhum registro de precificação salvo.
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="pagination">
+                {% if historico_page_obj.has_other_pages %}
+                    {% if historico_page_obj.has_previous %}
+                        <a href="?page=1&q={{ search_query|default:'' }}">&laquo; Primeira</a>
+                        <a href="?page={{ historico_page_obj.previous_page_number }}&q={{ search_query|default:'' }}">Anterior</a>
+                    {% endif %}
+                    <span class="current">Página {{ historico_page_obj.number }} de {{ historico_page_obj.paginator.num_pages }}.</span>
+                    {% if historico_page_obj.has_next %}
+                        <a href="?page={{ historico_page_obj.next_page_number }}&q={{ search_query|default:'' }}">Próxima</a>
+                        <a href="?page={{ historico_page_obj.paginator.num_pages }}&q={{ search_query|default:'' }}">Última &raquo;</a>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <script src="{% static 'js/theme.js' %}"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        Chart.register(ChartDataLabels);
+        // Lógica do menu hambúrguer e submenus (já existente)
+        const menuToggleButton = document.getElementById('menu-toggle');
+        const sidebar = document.querySelector('.sidebar');
+        if (menuToggleButton && sidebar) {
+            menuToggleButton.addEventListener('click', function() {
+                sidebar.classList.toggle('mobile-open');
+            });
+        }
+        function setupSubmenuToggle(toggleId, submenuId) {
+            const toggleButton = document.getElementById(toggleId);
+            const submenu = document.getElementById(submenuId);
+            if (toggleButton && submenu) {
+                toggleButton.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    submenu.style.display = submenu.style.display === 'block' ? 'none' : 'block';
+                });
+            }
+        }
+        setupSubmenuToggle('financeiro-toggle', 'financeiro-submenu');
+        setupSubmenuToggle('comercial-toggle', 'comercial-submenu');
+        setupSubmenuToggle('configuracoes-toggle', 'configuracoes-submenu');
+        const activeLink = document.querySelector('.sidebar .submenu a.active');
+        if (activeLink) {
+            const parentSubmenu = activeLink.closest('.submenu');
+            if (parentSubmenu) {
+                parentSubmenu.style.display = 'block';
+            }
+        }
+        
+        // --- INÍCIO DA LÓGICA ATUALIZADA DA CALCULADORA ---
+
+        const produtos = JSON.parse('{{ produtos_json|escapejs }}');
+        const vendedores = JSON.parse('{{ vendedores_json|escapejs }}');
+
+        // Elementos do DOM
+        const produtoSelect = document.getElementById('produto-select');
+        const vendedorSelect = document.getElementById('vendedor-select');
+        const custoInput = document.getElementById('custo-produto');
+        const despesasFixasInput = document.getElementById('despesas-fixas');
+        const comissaoInput = document.getElementById('comissao-vendas');
+        const impostosInput = document.getElementById('impostos');
+        const margemLucroInput = document.getElementById('margem-lucro');
+        
+        // Elementos de resultado
+        const resultsContainer = document.getElementById('results-content');
+        const initialMessage = document.getElementById('initial-message');
+        const resCusto = document.getElementById('res-custo-produto');
+        const resDespesas = document.getElementById('res-despesas-fixas');
+        const resComissao = document.getElementById('res-comissao');
+        const resImpostos = document.getElementById('res-impostos');
+        const resLucro = document.getElementById('res-lucro');
+        const precoSugerido = document.getElementById('preco-sugerido');
+
+        // **NOVO: Elementos do Gráfico e Legenda**
+        const chartContainer = document.getElementById('chart-container');
+        const chartLegend = document.getElementById('chart-legend');
+        const chartCanvas = document.getElementById('priceCompositionChart');
+        let priceChart; // Variável para armazenar a instância do gráfico
+        
+        despesasFixasInput.value = '{{ suggested_fixed_cost_perc }}';
+        impostosInput.value = '{{ suggested_tax_perc }}';
+
+        function formatCurrency(value) {
+            return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+        }
+
+        // **NOVA FUNÇÃO: Atualiza a legenda personalizada**
+        function updateCustomLegend(labels, data, colors, total) {
+            chartLegend.innerHTML = '';
+            const ul = document.createElement('ul');
+            labels.forEach((label, index) => {
+                const percentage = total > 0 ? (data[index] / total * 100) : 0;
+                const li = document.createElement('li');
+                li.innerHTML = `
+                    <span class="legend-color-box" style="background-color: ${colors[index]}"></span>
+                    <span class="legend-label">${label} (${percentage.toFixed(2).replace('.',',')}%)</span>
+                    <span class="legend-value">${formatCurrency(data[index])}</span>
+                `;
+                ul.appendChild(li);
+            });
+            chartLegend.appendChild(ul);
+        }
+
+        function calculatePrice() {
+            const buttonsContainer = document.getElementById('action-buttons-container');
+            const saveBtn = document.getElementById('save-price-btn');
+            
+            // Adiciona .replace(',', '.') para tratar decimais
+            const custo = parseFloat(custoInput.value.replace(',', '.')) || 0;
+            if (custo === 0) {
+                resultsContainer.style.display = 'none';
+                chartContainer.style.display = 'none'; 
+                initialMessage.style.display = 'block';
+                return;
+            }
+
+            // Adiciona .replace(',', '.') para tratar decimais em todos os campos
+            const percDespesas = parseFloat(despesasFixasInput.value.replace(',', '.')) || 0;
+            const percComissao = parseFloat(comissaoInput.value.replace(',', '.')) || 0;
+            const percImpostos = parseFloat(impostosInput.value.replace(',', '.')) || 0;
+            const percLucro = parseFloat(margemLucroInput.value.replace(',', '.')) || 0;
+            const somaPercentuais = percDespesas + percComissao + percImpostos + percLucro;
+
+            if (somaPercentuais >= 100) {
+                resultsContainer.style.display = 'block';
+                chartContainer.style.display = 'none'; 
+                initialMessage.style.display = 'none';
+                precoSugerido.textContent = "Inválido";
+                resCusto.textContent = formatCurrency(custo);
+                resDespesas.textContent = "N/A";
+                resComissao.textContent = "N/A";
+                resImpostos.textContent = "N/A";
+                resLucro.textContent = "N/A";
+                if (buttonsContainer) buttonsContainer.style.display = 'none';
+                return;
+            }
+
+            const precoFinal = custo / (1 - (somaPercentuais / 100));
+            const valorDespesas = precoFinal * (percDespesas / 100);
+            const valorComissao = precoFinal * (percComissao / 100);
+            const valorImpostos = precoFinal * (percImpostos / 100);
+            const valorLucro = precoFinal * (percLucro / 100);
+
+            resultsContainer.style.display = 'block';
+            chartContainer.style.display = 'flex'; 
+            initialMessage.style.display = 'none';
+
+            resCusto.textContent = formatCurrency(custo);
+            resDespesas.textContent = formatCurrency(valorDespesas);
+            resComissao.textContent = formatCurrency(valorComissao);
+            resImpostos.textContent = formatCurrency(valorImpostos);
+            resLucro.textContent = formatCurrency(valorLucro);
+            precoSugerido.textContent = formatCurrency(precoFinal);
+            
+            if (buttonsContainer) buttonsContainer.style.display = 'flex'; 
+
+            const chartLabels = ['Custo do Produto', 'Despesas Fixas', 'Comissão', 'Impostos', 'Lucro'];
+            const chartData = [custo, valorDespesas, valorComissao, valorImpostos, valorLucro];
+            const backgroundColors = ['#39c5efff', '#58508d', '#bc5090', '#ff6361', '#ffa600'];
+            
+            if (priceChart) { priceChart.destroy(); } 
+            
+            priceChart = new Chart(chartCanvas.getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: chartLabels,
+                    datasets: [{
+                        data: chartData,
+                        backgroundColor: backgroundColors,
+                        borderWidth: 0,
+                    }]
+                },
+                // --- INÍCIO DO BLOCO 'OPTIONS' COMPLETO E CORRIGIDO ---
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '60%',
+                    plugins: {
+                        datalabels: {
+                            display: false, // Remove os números de cima do gráfico
+                        },
+                        legend: { 
+                            display: false // Desabilita a legenda padrão do Chart.js
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.raw || 0;
+                                    const total = context.chart.getDatasetMeta(0).total;
+                                    const percentage = total > 0 ? (value / total * 100) : 0;
+                                    return `${label}: ${formatCurrency(value)} (${percentage.toFixed(2).replace('.',',')}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+                // --- FIM DO BLOCO 'OPTIONS' COMPLETO E CORRIGIDO ---
+            });
+            updateCustomLegend(chartLabels, chartData, backgroundColors, precoFinal);
+        }
+
+        // Event Listeners (sem alterações, apenas garantindo que chamem a função atualizada)
+        produtoSelect.addEventListener('change', function() {
+            const selectedId = this.value;
+            custoInput.value = '';
+            if (selectedId) {
+                const produto = produtos.find(p => p.id == selectedId);
+                if (produto) {
+                    custoInput.value = produto.preco_custo.toFixed(2);
+                }
+            }
+            calculatePrice();
+        });
+
+        vendedorSelect.addEventListener('change', function() {
+            const selectedId = this.value;
+            comissaoInput.value = '';
+            if (selectedId) {
+                const vendedor = vendedores.find(v => v.id == selectedId);
+                if (vendedor) {
+                    comissaoInput.value = vendedor.comissao.toFixed(2);
+                }
+            }
+            calculatePrice();
+        });
+
+        [despesasFixasInput, comissaoInput, impostosInput, margemLucroInput].forEach(input => {
+            input.addEventListener('input', calculatePrice);
+        });
+
+        document.querySelectorAll('.info-icon').forEach(icon => {
+            const tooltipText = icon.getAttribute('data-tooltip');
+            const tooltip = document.createElement('div');
+            tooltip.className = 'tooltip-text';
+            tooltip.textContent = tooltipText;
+            icon.appendChild(tooltip);
+        });
+
+        // ADICIONE O BLOCO ABAIXO
+        // --- LÓGICA PARA O BOTÃO DE INSIGHTS ---
+        const insightsBtn = document.getElementById('insights-btn');
+        const insightsContainer = document.getElementById('insights-container');
+
+        if (insightsBtn && insightsContainer) {
+            insightsBtn.addEventListener('click', function() {
+                const isHidden = insightsContainer.style.display === 'none';
+                insightsContainer.style.display = isHidden ? 'block' : 'none';
+                this.textContent = isHidden ? 'Ocultar Insights' : 'Exibir Insights';
+            });
+        }
+        // FIM DO BLOCO
+        
+        calculatePrice();
+
+        // ... (código do botão de insights) ...
+
+        // ADICIONE O BLOCO ABAIXO
+        // --- LÓGICA PARA SALVAR E ATUALIZAR PRECIFICAÇÃO ---
+        const savePriceBtn = document.getElementById('save-price-btn');
+        const updatePriceBtn = document.getElementById('update-price-btn');
+        const buttonsContainer = document.getElementById('action-buttons-container');
+
+        // Função genérica para enviar os dados para o backend
+        function sendPriceData(url) {
+            const dataToSave = {
+                produto_id: produtoSelect.value,
+                // Adiciona .replace(',', '.') para garantir o envio correto
+                preco_custo: parseFloat(custoInput.value.replace(',', '.')) || 0,
+                perc_despesas_fixas: parseFloat(despesasFixasInput.value.replace(',', '.')) || 0,
+                perc_comissao: parseFloat(comissaoInput.value.replace(',', '.')) || 0,
+                perc_impostos: parseFloat(impostosInput.value.replace(',', '.')) || 0,
+                perc_lucro: parseFloat(margemLucroInput.value.replace(',', '.')) || 0,
+                preco_venda_sugerido: parseFloat(precoSugerido.textContent.replace('R$', '').replace(/\./g, '').replace(',', '.')) || 0
+            };
+
+            if (!dataToSave.produto_id) {
+                alert('Por favor, selecione um produto antes de salvar.');
+                return;
+            }
+
+            const csrfToken = '{{ csrf_token }}';
+
+            fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+                body: JSON.stringify(dataToSave)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert(data.message);
+                    window.location.reload(); // Recarrega a página para atualizar o histórico
+                } else {
+                    alert(`Erro: ${data.message}`);
+                }
+            })
+            .catch(error => {
+                console.error('Erro:', error);
+                alert('Ocorreu um erro de comunicação ao salvar.');
+            });
+        }
+
+        // Event listener para o botão "Apenas Salvar Histórico"
+        if (savePriceBtn) {
+            savePriceBtn.addEventListener('click', function() {
+                sendPriceData("{% url 'precificacao' %}");
+            });
+        }
+
+        // Event listener para o novo botão "Salvar e Atualizar Preço"
+        if (updatePriceBtn) {
+            updatePriceBtn.addEventListener('click', function() {
+                if (confirm('Tem certeza que deseja salvar esta precificação e ATUALIZAR o preço de venda deste produto no cadastro?')) {
+                    sendPriceData("{% url 'salvar_e_atualizar_precificacao' %}");
+                }
+            });
+        }
+    });
+    </script>
+</body>
+</html>

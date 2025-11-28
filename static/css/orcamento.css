@@ -1,0 +1,208 @@
+/* static/css/orcamento.css (VERSÃO ATUALIZADA) */
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+.main-content {
+    /* Mantido o margin-left original de 290px para acomodar a sidebar */
+    margin-left: 270px;
+    padding: 20px;
+    width: calc(100% - 270px);
+    overflow-y: auto;
+}
+
+.orcamento-form-container,
+.orcamento-table-container {
+    background-color: #222;
+    padding: 25px;
+    border-radius: 8px;
+    border: 1px solid #444;
+    margin-bottom: 30px;
+}
+
+.orcamento-form-container h3,
+.orcamento-table-container h3 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #444;
+    padding-bottom: 15px;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 20px;
+    align-items: flex-end;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.form-group input,
+.form-group select {
+    width: 100%;
+    padding: 10px;
+    background-color: #333;
+    border: 1px solid #555;
+    border-radius: 5px;
+    color: #fff;
+    font-size: 14px;
+}
+
+.table-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.filter-form {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.filter-form label {
+    font-size: 14px;
+}
+
+.table-scroll-wrapper {
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+th, td {
+    padding: 10px 8px;
+    text-align: right;
+    border: 1px solid #444;
+}
+
+/* --- ESTILOS DO NOVO CABEÇALHO --- */
+thead th {
+    background-color: #333;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    text-align: center;
+    vertical-align: middle;
+    font-size: 11px;
+    text-transform: uppercase;
+}
+
+thead .month-header th {
+    font-size: 12px;
+}
+
+/* Coluna Categoria */
+th.category-col {
+    text-align: left;
+    min-width: 180px;
+    position: sticky;
+    left: 0;
+    z-index: 3; /* Mais alto que as outras colunas */
+}
+
+td.category-name-cell {
+    text-align: left;
+    font-weight: bold;
+    background-color: #2a2a2a;
+    position: sticky;
+    left: 0;
+    z-index: 1;
+}
+
+/* --- ESTILOS DAS NOVAS COLUNAS --- */
+.planejado-col {
+    background-color: rgba(52, 152, 219, 0.1);
+    color: #3498db;
+    border-left: 2px solid #444; /* Borda para separar os meses */
+}
+
+.realizado-col {
+    background-color: rgba(231, 76, 60, 0.1);
+    color: #e74c3c;
+}
+
+/* Cor especial para o total realizado */
+tbody .realizado-col.over-budget {
+    color: #ff9f43; /* Laranja para valores acima do orçado */
+    font-weight: bold;
+}
+
+/* Colunas de Total Anual */
+.total-planejado-col {
+    border-left: 2px solid #666;
+    background-color: rgba(44, 62, 80, 0.3);
+    font-weight: bold;
+}
+.total-realizado-col {
+    background-color: rgba(44, 62, 80, 0.3);
+    font-weight: bold;
+}
+
+
+/* Rodapé */
+tfoot tr {
+    font-weight: bold;
+    background-color: #2c3e50;
+}
+
+.legend {
+    margin-top: 15px;
+    text-align: right;
+    font-size: 12px;
+}
+
+.legend-item {
+    display: inline-block;
+    margin-left: 20px;
+}
+.legend-item::before {
+    content: '';
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    margin-right: 6px;
+    border-radius: 2px;
+    vertical-align: middle;
+}
+.legend-item.planejado::before { background-color: #3498db; }
+.legend-item.realizado::before { background-color: #e74c3c; }
+
+/* Adicionado para ajustar o espaçamento do título principal */
+.orcamento-page .main-content h1 {
+    margin-bottom: 25px; /* Adiciona um espaço abaixo do título */
+    margin-left: 5px;    /* Adiciona um pequeno espaço à esquerda */
+}
+
+/* --- ESTILOS PARA OS GRÁFICOS DE ORÇAMENTO --- */
+.chart-container {
+    position: relative;
+    /* Define uma altura fixa para o gráfico */
+    height: 300px; 
+    width: 100%;
+    /* Adiciona um espaço acima do gráfico */
+    margin-top: 25px; 
+    padding: 15px;
+    background-color: #2a2a2a; 
+    border-radius: 8px;
+    border: 1px solid #444;
+}
+@media (max-width: 992px) {
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+}

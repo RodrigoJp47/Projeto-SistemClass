@@ -1,0 +1,346 @@
+{% load static %}
+{% load humanize %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastros Comerciais</title>
+    <link rel="stylesheet" href="{% static 'css/global.css' %}">
+    <link rel="stylesheet" href="{% static 'css/comercial_cadastro.css' %}">
+    <link rel="stylesheet" href="{% static 'css/themes.css' %}">
+    <link rel="stylesheet" href="{% static 'css/sidebar.css' %}">
+</head>
+<body class="cadastros-page">
+    
+    {% include 'accounts/_sidebar.html' %}
+
+    <div class="main-content">
+        {% include 'accounts/partials/bpo_banner.html' %}
+        <button id="menu-toggle">&#9776;</button>
+        <h1>Cadastros Comerciais</h1>
+        {% if messages %}
+            <div class="messages-container" style="margin-bottom: 20px;">
+                {% for message in messages %}
+                    <div class="message {{ message.tags }}" style="padding: 15px; border-radius: 5px; margin-bottom: 10px; 
+                        {% if message.tags == 'success' %}background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb;
+                        {% elif message.tags == 'error' or message.tags == 'warning' %}background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+        
+        <div class="form-container">
+            <h3>Cadastrar Novo Produto ou Serviço</h3>
+            <form method="post">
+                <input type="hidden" name="form_type" value="produto">
+                {% csrf_token %}
+                <div class="form-grid">
+                    {% for field in produto_form %}
+                    <div class="form-group">
+                        {{ field.label_tag }}
+                        {{ field }}
+                        
+                        {% if field.errors %}
+                            <div style="color: red; font-size: 0.9em; margin-top: 5px;">
+                                {{ field.errors }}
+                            </div>
+                        {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+                <button type="submit">Salvar Produto/Serviço</button>
+            </form>
+        </div>
+
+        <div class="table-container">
+            <h3>Produtos e Serviços Cadastrados</h3>
+            
+            <form method="get" class="filter-form">
+                <div class="form-group"><label for="search_product">Buscar por Nome ou Código</label><input type="text" name="search_product" id="search_product" value="{{ search_product|default:'' }}"></div>
+                <div class="form-group"><label for="start_date">Data Inicial</label><input type="date" name="start_date" id="start_date" value="{{ start_date|default:'' }}"></div>
+                <div class="form-group"><label for="end_date">Data Final</label><input type="date" name="end_date" id="end_date" value="{{ end_date|default:'' }}"></div>
+                <button type="submit" style="margin-top: 0; padding: 10px 15px;">Filtrar Produtos</button>
+            </form>
+
+            <form method="POST" class="delete-form" data-form-type="produtos">
+                {% csrf_token %}
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <h3 style="margin-bottom: 0; border: none;">Lista de Itens</h3>
+                    <button type="submit" name="delete_selected_products" class="delete-btn" style="margin-top: 0;">Excluir Selecionados</button>
+                </div>
+                <div class="table-scroll-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th><input type="checkbox" class="select-all" data-target-class="product-check"></th>
+                                <th>Nome</th>
+                                <th>Código</th>
+                                <th>Tipo</th>
+                                <th>Preço Custo</th>
+                                <th>Preço Venda</th>
+                                <th>Estoque</th>
+                                <th>Ações</th> </tr>
+                        </thead>
+                        <tbody>
+                            {% for produto in produtos %}
+                            <tr>
+                                <td><input type="checkbox" class="product-check" name="product_ids" value="{{ produto.id }}"></td>
+                                <td>{{ produto.nome }}</td>
+                                <td>{{ produto.codigo|default:"N/A" }}</td>
+                                <td>{{ produto.get_tipo_display }}</td>
+                                <td>R$ {{ produto.preco_custo|intcomma }}</td>
+                                <td>R$ {{ produto.preco_venda|intcomma }}</td>
+                                <td>{{ produto.estoque_atual|default:"N/A" }}</td>
+                                <td>
+                                    <a href="{% url 'editar_produto' produto.pk %}" class="action-btn edit-btn">Editar</a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <td colspan="8">Nenhum produto ou serviço encontrado.</td>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+            </form>
+            
+            <div class="pagination">{% if produtos.has_other_pages %}{% if produtos.has_previous %}<a href="?produto_page=1&start_date={{ start_date|default:'' }}&end_date={{ end_date|default:'' }}&search_product={{ search_product|default:'' }}">&laquo; Primeira</a><a href="?produto_page={{ produtos.previous_page_number }}&start_date={{ start_date|default:'' }}&end_date={{ end_date|default:'' }}&search_product={{ search_product|default:'' }}">Anterior</a>{% endif %}<span class="current">Página {{ produtos.number }} de {{ produtos.paginator.num_pages }}.</span>{% if produtos.has_next %}<a href="?produto_page={{ produtos.next_page_number }}&start_date={{ start_date|default:'' }}&end_date={{ end_date|default:'' }}&search_product={{ search_product|default:'' }}">Próxima</a><a href="?produto_page={{ produtos.paginator.num_pages }}&start_date={{ start_date|default:'' }}&end_date={{ end_date|default:'' }}&search_product={{ search_product|default:'' }}">Última &raquo;</a>{% endif %}{% endif %}</div>
+        </div>
+
+        <div class="form-container">
+            <h3>Cadastrar Novo Vendedor</h3>
+            <form method="post">
+                <input type="hidden" name="form_type" value="vendedor">
+                {% csrf_token %}
+                <div class="form-grid">
+                    {% for field in vendedor_form %}
+                    <div class="form-group">
+                        {{ field.label_tag }}
+                        {{ field }}
+                        {% if field.errors %}
+                            <div style="color: red; font-size: 0.9em; margin-top: 5px;">
+                                {{ field.errors }}
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+                </div>
+                <button type="submit">Salvar Vendedor</button>
+            </form>
+        </div>
+         <div class="table-container">
+            <form method="POST" class="delete-form" data-form-type="vendedores">
+                {% csrf_token %}
+                <div style="display: flex; justify-content: space-between; align-items: center;"><h3 style="margin-bottom: 0;">Vendedores Cadastrados</h3><button type="submit" name="delete_selected_sellers" class="delete-btn" style="margin-top: 0;">Excluir Selecionados</button></div>
+                <div class="table-scroll-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th><input type="checkbox" class="select-all" data-target-class="seller-check"></th>
+                                <th>Nome</th>
+                                <th>Email</th>
+                                <th>Telefone</th>
+                                <th>Comissão</th>
+                                <th>Ações</th> </tr>
+                        </thead>
+                        <tbody>
+                            {% for vendedor in vendedores %}
+                            <tr>
+                                <td><input type="checkbox" class="seller-check" name="seller_ids" value="{{ vendedor.id }}"></td>
+                                <td>{{ vendedor.nome }}</td>
+                                <td>{{ vendedor.email }}</td>
+                                <td>{{ vendedor.telefone|default:"N/A" }}</td>
+                                <td>{{ vendedor.comissao_percentual }}%</td>
+                                <td>
+                                    <a href="{% url 'editar_vendedor' vendedor.pk %}" class="action-btn edit-btn">Editar</a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <td colspan="6">Nenhum vendedor encontrado.</td>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+            </form>
+            <div class="pagination">{% if vendedores.has_other_pages %}{% if vendedores.has_previous %}<a href="?vendedor_page=1&start_date={{ start_date|default:'' }}&end_date={{ end_date|default:'' }}">&laquo; Primeira</a><a href="?vendedor_page={{ vendedores.previous_page_number }}&start_date={{ start_date|default:'' }}&end_date={{ end_date|default:'' }}">Anterior</a>{% endif %}<span class="current">Página {{ vendedores.number }} de {{ vendedores.paginator.num_pages }}.</span>{% if vendedores.has_next %}<a href="?vendedor_page={{ vendedores.next_page_number }}&start_date={{ start_date|default:'' }}&end_date={{ end_date|default:'' }}">Próxima</a><a href="?vendedor_page={{ vendedores.paginator.num_pages }}&start_date={{ start_date|default:'' }}&end_date={{ end_date|default:'' }}">Última &raquo;</a>{% endif %}{% endif %}</div>
+        </div>
+        <div class="table-container" style="margin-top: 40px;">
+            <h3>Clientes Cadastrados</h3>
+            
+            <form method="get" class="filter-form" style="margin-bottom: 15px;">
+                <div class="form-group" style="flex-grow: 1;">
+                    <input type="text" name="search_client" placeholder="Buscar por Nome, CPF ou E-mail" value="{{ search_client|default:'' }}">
+                </div>
+                <input type="hidden" name="start_date" value="{{ start_date|default:'' }}">
+                <input type="hidden" name="end_date" value="{{ end_date|default:'' }}">
+                <button type="submit" style="margin-top: 0; padding: 10px 15px;">Buscar Cliente</button>
+            </form>
+
+            <form method="POST" class="delete-form" data-form-type="clientes">
+                {% csrf_token %}
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h4 style="margin-bottom: 0; color: #666;">Lista de Clientes</h4>
+                    <button type="submit" name="delete_selected_clients" class="delete-btn" style="margin-top: 0;">Excluir Selecionados</button>
+                </div>
+                
+                <div class="table-scroll-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th><input type="checkbox" class="select-all" data-target-class="client-check"></th>
+                                <th>Nome / Razão Social</th>
+                                <th>CPF / CNPJ</th>
+                                <th>Cidade/UF</th>
+                                <th>Telefone</th>
+                                <th>Ações</th> 
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for cliente in clientes %}
+                            <tr>
+                                <td><input type="checkbox" class="client-check" name="client_ids" value="{{ cliente.id }}"></td>
+                                <td>{{ cliente.nome }}</td>
+                                <td>{{ cliente.cpf_cnpj }}</td>
+                                <td>{{ cliente.cidade|default:"-" }}/{{ cliente.uf|default:"-" }}</td>
+                                <td>{{ cliente.telefone|default:"-" }}</td>
+                                <td>
+                                    <a href="{% url 'editar_cliente' cliente.pk %}" class="action-btn edit-btn">Editar</a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="6">Nenhum cliente encontrado.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </form>
+            
+            <div class="pagination">
+                {% if clientes.has_other_pages %}
+                    {% if clientes.has_previous %}
+                        <a href="?cliente_page={{ clientes.previous_page_number }}&search_client={{ search_client }}">&laquo; Anterior</a>
+                    {% endif %}
+                    <span class="current">Página {{ clientes.number }} de {{ clientes.paginator.num_pages }}</span>
+                    {% if clientes.has_next %}
+                        <a href="?cliente_page={{ clientes.next_page_number }}&search_client={{ search_client }}">Próxima &raquo;</a>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <script src="{% static 'js/theme.js' %}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const menuToggleButton = document.getElementById('menu-toggle');
+            const sidebar = document.querySelector('.sidebar');
+
+            if (menuToggleButton && sidebar) {
+                menuToggleButton.addEventListener('click', function() {
+                    sidebar.classList.toggle('mobile-open');
+                });
+            }
+            // --- INÍCIO DO SCRIPT DO MENU ---
+            function setupSubmenuToggle(toggleId, submenuId) {
+                const toggleButton = document.getElementById(toggleId);
+                const submenu = document.getElementById(submenuId);
+                if (toggleButton && submenu) {
+                    toggleButton.addEventListener('click', function(event) {
+                        event.preventDefault();
+                        submenu.style.display = submenu.style.display === 'block' ? 'none' : 'block';
+                    });
+                }
+            }
+            setupSubmenuToggle('financeiro-toggle', 'financeiro-submenu');
+            setupSubmenuToggle('comercial-toggle', 'comercial-submenu');
+            setupSubmenuToggle('configuracoes-toggle', 'configuracoes-submenu');
+            // --- INÍCIO DO SCRIPT DE MÁSCARA DE MOEDA (VERSÃO ATUALIZADA) ---
+
+            
+
+            // Seleciona os dois campos de preço
+            const precoVendaInput = document.getElementById('id_preco_venda');
+            const precoCustoInput = document.getElementById('id_preco_custo');
+            const inputsDePreco = [precoVendaInput, precoCustoInput];
+
+            // Função que formata um campo de input
+            const formatPriceInput = (inputElement) => {
+                if (!inputElement) return;
+
+                // Força o tipo para 'text' e melhora a experiência mobile
+                inputElement.type = 'text'; 
+                inputElement.setAttribute('inputmode', 'decimal'); 
+
+                let value = inputElement.value.replace(/\D/g, '');
+                if (value === '') {
+                    inputElement.value = '';
+                    return;
+                }
+                const numberValue = parseFloat(value) / 100;
+                inputElement.value = numberValue.toLocaleString('pt-BR', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                });
+            };
+
+            // Aplica a formatação e os "ouvintes" para ambos os campos
+            inputsDePreco.forEach(input => {
+                if (input) {
+                    input.addEventListener('input', (e) => formatPriceInput(e.target));
+                    // Formata o valor inicial caso a página recarregue com dados (ex: erro de formulário)
+                    formatPriceInput(input);
+                }
+            });
+
+            // Lógica para desformatar ANTES de enviar o formulário
+            const produtoForm = precoVendaInput ? precoVendaInput.closest('form') : null;
+            if (produtoForm) {
+                produtoForm.addEventListener('submit', () => {
+                    inputsDePreco.forEach(input => {
+                        if (input && input.value) {
+                            const formattedValue = input.value;
+                            const valueWithoutDots = formattedValue.replace(/\./g, '');
+                            const unformattedValue = valueWithoutDots.replace(',', '.');
+                            input.value = unformattedValue;
+                        }
+                    });
+                });
+            }
+            // --- FIM DO SCRIPT DE MÁSCARA DE MOEDA ---
+
+            // Expande o submenu que contém o link ativo na página atual
+            const activeLink = document.querySelector('.sidebar .submenu a.active');
+            if (activeLink) {
+                const parentSubmenu = activeLink.closest('.submenu');
+                if (parentSubmenu) {
+                    parentSubmenu.style.display = 'block';
+                }
+            }
+            document.querySelectorAll('.select-all').forEach(headerCheckbox => {
+                headerCheckbox.addEventListener('change', function() {
+                    const targetClass = this.getAttribute('data-target-class');
+                    const form = this.closest('form');
+                    form.querySelectorAll(`.${targetClass}`).forEach(rowCheckbox => {
+                        rowCheckbox.checked = this.checked;
+                    });
+                });
+            });
+            document.querySelectorAll('.delete-form').forEach(form => {
+                form.addEventListener('submit', function(event) {
+                    const checkedBoxes = this.querySelectorAll('input[type=checkbox]:checked:not(.select-all)');
+                    if (checkedBoxes.length === 0) {
+                        alert('Por favor, selecione pelo menos um item para excluir.');
+                        event.preventDefault();
+                        return;
+                    }
+                    if (!confirm('Tem certeza que deseja excluir os itens selecionados? Esta ação não pode ser desfeita.')) {
+                        event.preventDefault();
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,97 @@
+/* /static/css/global.css */
+
+/* ========================================================================== */
+/* DEFINIÇÕES GLOBAIS DE DESIGN (VARIÁVEIS)                                   */
+/* ========================================================================== */
+:root {
+    /* --- Paleta de Cores --- */
+    --color-text-primary: #212529;   /* Preto suave para textos principais */
+    --color-text-secondary: #6C757D; /* Cinza para textos secundários e títulos */
+    --color-text-light: #FFFFFF;     /* Branco para textos em fundos escuros */
+
+    --color-background-light: #FFFFFF; /* Fundo principal claro */
+    --color-background-ice: #F8F9FA;   /* Branco gelo para cards */
+    --color-background-dark: #000000;  /* Fundo principal escuro */
+    --color-background-dark-soft: #1c1c1c; /* Preto suave (usado na tabela) */
+
+    --color-border: #DEE2E6;     /* Cor padrão das bordas */
+    --color-accent-purple: #8E44AD; /* Roxo principal do tema */
+    --color-accent-green: #0f0;      /* Verde do menu ativo */
+    --color-accent-blue: #2E86C1;    /* Azul do mapa */
+
+    /* --- Tipografia (Tamanhos de Fonte) --- */
+    --font-size-base: 12px;      /* Tamanho base para parágrafos */
+    --font-size-sm: 10px;        /* Pequeno */
+    --font-size-lg: 14px;        /* Grande */
+
+    --font-size-h1: 18px;        /* Título Principal (H1) */
+    --font-size-h2: 16px;        /* Título de Seção (H2) */
+    --font-size-h3: 14px;        /* Subtítulo (H3) */
+    --font-size-h4: 12px;        /* Título de Card (H4) */
+
+    /* --- Medidas e Bordas --- */
+    --border-radius-md: 8px;     /* Arredondamento padrão para cards */
+    --border-radius-lg: 12px;    /* Arredondamento maior */
+    --spacing-md: 20px;          /* Espaçamento padrão (gaps, paddings) */
+    --spacing-sm: 15px;          /* Espaçamento pequeno */
+}
+
+/* ========================================================================== */
+/* ESTILOS GLOBAIS DE ELEMENTOS                                               */
+/* ========================================================================== */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+/* Em static/css/global.css */
+body {
+    font-family: Arial, sans-serif;
+    /* Linhas alteradas para o padrão escuro */
+    background-color: #121212; /* Um fundo escuro padrão para o conteúdo */
+    color: var(--color-text-light); /* Texto branco padrão */
+    font-size: var(--font-size-base);
+    margin: 0;
+}
+
+h1 { font-size: var(--font-size-h1); }
+h2 { font-size: var(--font-size-h2); }
+h3 { font-size: var(--font-size-h3); }
+h4 { font-size: var(--font-size-h4); }
+
+/* ========================================================================== */
+/* COMPONENTES GLOBAIS REUTILIZÁVEIS                                          */
+/* ========================================================================== */
+
+/* --- Estilo Base para todos os Cards --- */
+.card {
+    background-color: var(--color-background-ice);
+    padding: var(--spacing-sm);
+    border-radius: var(--border-radius-md);
+    border: 1px solid var(--color-border);
+    display: flex;
+    flex-direction: column;
+    text-align: center;
+}
+
+.card-title {
+    font-size: var(--font-size-h4);
+    color: var(--color-text-secondary);
+    margin: 0 0 15px 0;
+    font-weight: 600;
+}
+
+.card-value {
+    font-size: var(--font-size-h2);
+    font-weight: bold;
+    color: var(--color-text-primary);
+    margin: 0;
+}
+
+.chart-container {
+    flex-grow: 1; /* Faz o gráfico ocupar o espaço vertical disponível no card */
+    position: relative;
+    min-height: 200px; /* Altura mínima para evitar que o gráfico desapareça */
+}
+

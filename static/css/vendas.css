@@ -1,0 +1,447 @@
+:root {
+    --primary-color: #0f0;
+    --background-color: #000;
+    --surface-color: #222;
+    --text-color: #fff;
+    --border-color: #444;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background-color: #000;
+    color: #fff;
+    display: flex;
+    min-height: 100vh;
+}
+
+
+
+.main-content {
+    /* Mantido o margin-left original de 290px para acomodar a sidebar */
+    margin-left: 270px;
+    padding: 20px;
+    width: calc(100% - 270px);
+    overflow-y: auto;
+}
+
+
+
+
+
+.section-container {
+    background-color: var(--surface-color);
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+h3,
+h4 {
+    border-bottom: 2px solid var(--primary-color);
+    padding-bottom: 10px;
+    margin-top: 0;
+    margin-bottom: 20px;
+}
+
+.grid-2,
+.grid-3 {
+    display: grid;
+    gap: 20px;
+}
+
+.grid-2 {
+    grid-template-columns: 1fr 1fr;
+}
+
+.grid-3 {
+    grid-template-columns: 3fr 1fr 1fr;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group label {
+    margin-bottom: 5px;
+    font-size: 14px;
+}
+
+.form-group input,
+.form-group select {
+    padding: 10px;
+    /* Usa as variáveis de tema */
+    background-color: var(--surface-color); 
+    color: var(--text-color);
+    
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    width: 100%;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+th,
+td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+th {
+    background-color: #333;
+}
+
+.quantity-control {
+    display: flex;
+    align-items: center;
+}
+
+.quantity-control button {
+    padding: 2px 8px;
+    font-size: 16px;
+    margin: 0 5px;
+    background-color: #555;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+}
+
+.item-row input {
+    max-width: 80px;
+    text-align: center;
+}
+
+.totals-section {
+    text-align: right;
+    font-size: 1.1em;
+}
+
+.totals-section div {
+    margin-bottom: 10px;
+}
+
+.totals-section .total-liquido {
+    font-size: 1.3em;
+    font-weight: bold;
+    color: var(--primary-color);
+}
+
+.finalizar-venda-btn {
+    width: 100%;
+    padding: 12px;
+    font-size: 1.1em;
+    font-weight: bold;
+    background-color: var(--primary-color);
+    color: var(--background-color);
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: 20px;
+}
+
+.finalizar-venda-btn:hover {
+    background-color: #0c0;
+}
+
+.delete-btn {
+    background-color: #c00;
+    color: #fff;
+}
+
+.delete-btn:hover {
+    background-color: #a00;
+}
+
+
+
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.7);
+}
+
+.modal-content {
+    background-color: var(--surface-color);
+    margin: 15% auto;
+    padding: 25px;
+    border: 1px solid var(--border-color);
+    width: 80%;
+    max-width: 500px;
+    border-radius: 8px;
+    position: relative;
+}
+
+.modal-content h3 {
+    margin-top: 0;
+}
+
+.close-btn {
+    color: #aaa;
+    position: absolute;
+    top: 10px;
+    right: 20px;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close-btn:hover,
+.close-btn:focus {
+    color: var(--text-color);
+}
+
+.filter-form {
+    display: flex;
+    gap: 15px;
+    align-items: flex-end;
+    margin-bottom: 20px;
+}
+
+.pagination {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.pagination a,
+.pagination .current {
+    color: var(--primary-color);
+    padding: 8px 12px;
+    text-decoration: none;
+    border: 1px solid var(--primary-color);
+    margin: 0 4px;
+    border-radius: 4px;
+}
+
+.pagination .current {
+    background-color: var(--primary-color);
+    color: var(--background-color);
+}
+
+.pagination a:hover {
+    background-color: #0f02;
+}
+
+/* Em static/css/vendas.css, adicione este bloco */
+
+.main-content h1 {
+    margin-bottom: 20px;
+}
+
+/* Estilos para a lista de sugestões */
+    .autocomplete-results {
+        display: none;
+        position: absolute;
+        top: 100%; /*  Posiciona a lista abaixo do campo */
+        left: 0;
+        border: 1px solid #555;
+        background-color: #333;
+        z-index: 1001;
+        max-height: 200px;
+        overflow-y: auto;
+        width: 100%; /* Ocupa a largura do container pai */
+    }
+    .autocomplete-item {
+        padding: 10px;
+        cursor: pointer;
+        color: #fff;
+    }
+    .autocomplete-item:hover {
+        background-color: #444;
+    }
+    /* Container para posicionar a lista de resultados */
+    .autocomplete-container {
+        position: relative;
+    }
+
+/* Estilos para a caixa de sugestão de busca de produtos */
+.product-search-results {
+    position: absolute;
+    width: 100%;
+    background-color: #444;
+    border: 1px solid #555;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    z-index: 100;
+    max-height: 250px; /* Adicionado para evitar listas muito longas */
+    overflow-y: auto;   /* Adicionado para permitir rolagem */
+}
+
+.search-result-item {
+    padding: 10px;
+    cursor: pointer;
+    color: #fff;
+}
+
+.search-result-item:hover {
+    background-color: #555;
+}    
+
+/* Estilo para a linha de total na tabela de vendas */
+.total-row {
+    background-color: #333;
+    font-weight: bold;
+    color: #fff;
+}
+
+
+/* Estilo base para todos os botões */
+.btn {
+    display: inline-block;
+    padding: 5px 10px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    color: #000;
+    text-decoration: none;
+    text-align: center;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+/* Estilo para botões primários (Salvar, Filtrar, Voltar) */
+.btn-primary {
+    background-color: #0f0; /* Verde */
+    color: #000; /* Texto preto */
+    border-color: #0f0;
+}
+
+.btn-primary:hover {
+    background-color: #0c0; /* Verde mais escuro no hover */
+    border-color: #0c0;
+}
+
+.edit-btn {
+    background-color: #ffc107; /* Amarelo */
+    color: #000;
+    border: 1px solid #d39e00;
+}
+
+.edit-btn:hover {
+    background-color: #e0a800;
+}
+
+.delete-btn {
+    background-color: #c00; /* Vermelho */
+    color: #fff;
+    border: 1px solid #a00;
+}
+
+.delete-btn:hover {
+    background-color: #a00;
+}
+
+/* Adicione este bloco ao final do vendas.css */
+
+/* Em vendas.css, substitua pela regra abaixo */
+
+input:disabled,
+input[readonly] {
+    background-color: var(--border-color) !important; /* Fundo cinza escuro */
+    
+    /* Esta é a linha que corrige o problema: */
+    color: var(--text-color) !important; /* Força o texto a ser da cor principal (branco) */
+
+    opacity: 0.7; /* Aplica a opacidade no campo inteiro */
+    cursor: not-allowed;
+}
+
+/* --- RESPONSIVIDADE DO MENU (MOBILE) --- */
+@media screen and (max-width: 768px) {
+    #menu-toggle {
+        display: block;
+    }
+
+    .sidebar {
+        transform: translateX(-100%);
+        transition: transform 0.3s ease-in-out;
+        border-right: 1px solid #444;
+    }
+
+    .sidebar.mobile-open {
+        transform: translateX(0);
+    }
+
+
+
+    .main-content {
+        margin-left: 0;
+        /* Ocupa toda a largura */
+        width: 100%;
+        padding: 15px;
+    }
+
+    
+
+    .grid-2,
+    .grid-3 {
+        grid-template-columns: 1fr;
+        /* Muda os grids para uma única coluna */
+    }
+
+    /* Adiciona rolagem horizontal às tabelas */
+    .section-container table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+
+    .finalizar-venda-btn {
+        margin-top: 10px;
+    }
+
+
+    /*
+ * ===============================================================
+ * AJUSTES PARA A PÁGINA DE VENDAS (MOBILE)
+ * ===============================================================
+ */
+
+    /* 1. CORREÇÃO: Força os campos de "Nova Venda" a ficarem em uma única coluna */
+    .main-content>.section-container:first-of-type .grid-2 {
+        /* O !important continua necessário para sobrescrever o estilo inline do HTML */
+        grid-template-columns: 1fr !important;
+    }
+
+    /* 2. Coloca os filtros de data e o botão "Filtrar Vendas" um abaixo do outro */
+    .filter-form {
+        flex-direction: column;
+        /* Muda a direção do flex para vertical */
+        align-items: stretch;
+        /* Faz os campos e o botão ocuparem a largura total */
+    }
+
+    /* 3. Empilha os botões da paginação verticalmente (Este já estava funcionando) */
+    .pagination {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        /* Adiciona um espaçamento vertical entre os botões */
+    }
+
+    .pagination a,
+    .pagination .current {
+        margin: 0;
+        /* Remove a margem horizontal da versão desktop */
+    }
+
+}

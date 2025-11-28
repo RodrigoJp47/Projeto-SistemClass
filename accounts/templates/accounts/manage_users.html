@@ -1,0 +1,228 @@
+{% load static %}
+{% load humanize %}
+{% load mathfilters %} {# Você pode precisar instalar: pip install django-mathfilters #}
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciar Usuários</title>
+    <link rel="stylesheet" href="{% static 'css/global.css' %}">
+    <link rel="stylesheet" href="{% static 'css/sidebar.css' %}">
+    <link rel="stylesheet" href="{% static 'css/manage_users.css' %}">
+    <link rel="stylesheet" href="{% static 'css/themes.css' %}">
+    <link rel="stylesheet" href="{% static 'css/layout-responsive.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+</head>
+<body class="manage-users-page"> {# Classe específica da página #}
+
+    {% include 'accounts/_sidebar.html' %}
+
+    <div class="main-content">
+        {% include 'accounts/partials/bpo_banner.html' %} {# Banner de aviso BPO (se aplicável) #}
+        <button id="menu-toggle">&#9776;</button>
+
+        <div class="header"><h1>Gerenciar Usuários da Conta</h1></div>
+
+        {# Exibir Mensagens do Django (sucesso/erro) #}
+        {% if messages %}
+            <div class="messages mb-4">
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <div class="card mb-4"> {# Reutiliza estilo de card do faturamento #}
+            <div class="card-title">Alterar Minha Senha</div>
+            <form method="post" action="{% url 'manage_users' %}" class="manage-user-form">
+                {% csrf_token %}
+                <div class="form-grid">
+                    {{ password_form.old_password.label_tag }}
+                    {{ password_form.old_password }}
+                    {% if password_form.old_password.errors %}<div class="form-errors">{{ password_form.old_password.errors }}</div>{% endif %}
+
+                    {{ password_form.new_password1.label_tag }}
+                    {{ password_form.new_password1 }}
+                    {% if password_form.new_password1.errors %}<div class="form-errors">{{ password_form.new_password1.errors }}</div>{% endif %}
+
+                    {{ password_form.new_password2.label_tag }}
+                    {{ password_form.new_password2 }}
+                    {% if password_form.new_password2.errors %}<div class="form-errors">{{ password_form.new_password2.errors }}</div>{% endif %}
+                </div>
+                <button type="submit" name="change_password" class="btn btn-primary">Salvar Nova Senha</button>
+            </form>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-title">Adicionar Funcionário</div>
+            <div class="user-limit-info">
+                <span>Limite de funcionários: <strong>{{ employee_limit }}</strong></span>
+                <span>Atualmente cadastrados: <strong>{{ current_employee_count }}</strong></span>
+                {% if can_add_more %}
+                    <span class="can-add">Você pode adicionar mais <strong>{{ employee_limit|sub:current_employee_count }}</strong>.</span>
+                {% else %}
+                    <span class="limit-reached">Limite atingido!</span>
+                {% endif %}
+            </div>
+
+            {% if can_add_more %}
+                <form method="post" action="{% url 'manage_users' %}" class="manage-user-form" autocomplete="off">
+                    {% csrf_token %}
+                    <div class="form-grid">
+                        {{ employee_form.first_name.label_tag }}
+                        {{ employee_form.first_name }}
+                        {% if employee_form.first_name.errors %}<div class="form-errors">{{ employee_form.first_name.errors }}</div>{% endif %}
+
+                        {{ employee_form.email.label_tag }}
+                        {{ employee_form.email }}
+                        {% if employee_form.email.errors %}<div class="form-errors">{{ employee_form.email.errors }}</div>{% endif %}
+
+                        {{ employee_form.password.label_tag }}
+                        {{ employee_form.password }}
+                        {% if employee_form.password.errors %}<div class="form-errors">{{ employee_form.password.errors }}</div>{% endif %}
+
+                        {{ employee_form.password_confirm.label_tag }}
+                        {{ employee_form.password_confirm }}
+                        {% if employee_form.password_confirm.errors %}<div class="form-errors">{{ employee_form.password_confirm.errors }}</div>{% endif %}
+                        <div class="form-field-permissions">
+                            <label>Permissões de Acesso:</label>
+                            <div class="permissions-grid">
+                                <div class="permission-column">
+                                    <strong>Financeiro</strong>
+                                    <div class="form-check">{{ employee_form.can_access_home.label_tag }} {{ employee_form.can_access_home }}</div>
+                                    <div class="form-check">{{ employee_form.can_access_contas_pagar.label_tag }} {{ employee_form.can_access_contas_pagar }}</div>
+                                    <div class="form-check">{{ employee_form.can_access_contas_receber.label_tag }} {{ employee_form.can_access_contas_receber }}</div>
+                                    <div class="form-check">{{ employee_form.can_access_tarefas.label_tag }} {{ employee_form.can_access_tarefas }}</div>
+                                    <div class="form-check">{{ employee_form.can_access_orcamento_anual.label_tag }} {{ employee_form.can_access_orcamento_anual }}</div>
+                                    <div class="form-check">{{ employee_form.can_access_painel_financeiro.label_tag }} {{ employee_form.can_access_painel_financeiro }}</div>
+                                    <div class="form-check">{{ employee_form.can_access_fornecedores.label_tag }} {{ employee_form.can_access_fornecedores }}</div>
+                                    <div class="form-check">{{ employee_form.can_access_clientes_financeiro.label_tag }} {{ employee_form.can_access_clientes_financeiro }}</div>
+                                </div>
+                                <div class="permission-column">
+                                    <strong>Comercial</strong>
+                                    <div class="form-check">{{ employee_form.can_access_painel_vendas.label_tag }} {{ employee_form.can_access_painel_vendas }}</div>
+                                    <div class="form-check">{{ employee_form.can_access_notas_fiscais.label_tag }} {{ employee_form.can_access_notas_fiscais }}</div>
+                                    <div class="form-check">{{ employee_form.can_access_orcamentos_venda.label_tag }} {{ employee_form.can_access_orcamentos_venda }}</div>
+                                    <div class="form-check">{{ employee_form.can_access_contratos.label_tag }} {{ employee_form.can_access_contratos }}</div>
+                                    <div class="form-check">{{ employee_form.can_access_cadastros_comercial.label_tag }} {{ employee_form.can_access_cadastros_comercial }}</div>
+                                    <div class="form-check">{{ employee_form.can_access_vendas.label_tag }} {{ employee_form.can_access_vendas }}</div>
+                                    <div class="form-check">{{ employee_form.can_access_metas_comerciais.label_tag }} {{ employee_form.can_access_metas_comerciais }}</div>
+                                    <div class="form-check">{{ employee_form.can_access_precificacao.label_tag }} {{ employee_form.can_access_precificacao }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="submit" name="add_employee" class="btn btn-success"><i class="fas fa-plus"></i> Adicionar Funcionário</button>
+                </form>
+            {% else %}
+                {# Mensagem pode ser estilizada via CSS específico #}
+            {% endif %}
+            {% if employee_form.non_field_errors %}
+                <div class="form-errors global-errors">{{ employee_form.non_field_errors }}</div>
+            {% endif %}
+        </div>
+
+        <div class="card">
+            <div class="card-title">Funcionários Cadastrados</div>
+            <div class="table-wrapper"> {# Para rolagem se necessário #}
+                <table class="table styled-table"> {# Reutiliza estilo de tabela #}
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>Email</th>
+                            <th>Criado em</th>
+                            <th>Status</th>
+                            <th>Permissões</th>
+                            <th class="text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for link in current_employees %}
+                            <tr class="{% if not link.is_active %}inactive-row{% endif %}">
+                                <td>{{ link.employee.first_name|default:"-" }}</td>
+                                <td>{{ link.employee.email }}</td>
+                                <td>{{ link.created_at|date:"d/m/Y H:i" }}</td>
+                                <td>
+                                    {% if link.is_active %}
+                                        <span class="badge status-active">Ativo</span>
+                                    {% else %}
+                                        <span class="badge status-inactive">Inativo</span>
+                                    {% endif %}
+                                </td>
+                                <td class="permissions-cell">
+                                    {% if link.can_access_contas_pagar or link.can_access_contas_receber or link.can_access_tarefas or link.can_access_orcamento_anual or link.can_access_painel_financeiro or link.can_access_fornecedores or link.can_access_clientes_financeiro %}
+                                        <span class="badge status-active" title="Acessa o Financeiro">Financeiro</span>
+                                    {% endif %}
+                                    {% if link.can_access_painel_vendas or link.can_access_notas_fiscais or link.can_access_orcamentos_venda or link.can_access_contratos or link.can_access_cadastros_comercial or link.can_access_vendas or link.can_access_metas_comerciais or link.can_access_precificacao %}
+                                        <span class="badge status-active" title="Acessa o Comercial">Comercial</span>
+                                    {% endif %}
+                                    {% if not link.can_access_contas_pagar and not link.can_access_contas_receber and not link.can_access_tarefas and not link.can_access_orcamento_anual and not link.can_access_painel_financeiro and not link.can_access_fornecedores and not link.can_access_clientes_financeiro and not link.can_access_painel_vendas and not link.can_access_notas_fiscais and not link.can_access_orcamentos_venda and not link.can_access_contratos and not link.can_access_cadastros_comercial and not link.can_access_vendas and not link.can_access_metas_comerciais and not link.can_access_precificacao %}
+                                        <span class="badge status-inactive">Nenhuma</span>
+                                    {% endif %}
+
+                                </td>
+                                
+                                <td class="actions-cell text-center">
+                                    {# Formulário para Excluir #}
+                                    <form method="post" action="{% url 'manage_users' %}" style="display: inline;">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="employee_link_id" value="{{ link.id }}">
+                                        <button type="submit" name="delete_employee" class="btn btn-danger btn-sm" title="Excluir Permanentemente" onclick="return confirm('Atenção! Excluir este funcionário removerá permanentemente o acesso dele. Tem certeza?');">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                                </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center empty-row">Nenhum funcionário adicionado ainda.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="{% static 'js/theme.js' %}"></script>
+    <script>
+        // Lógica JS da Sidebar (copie do seu faturamento_dashboard.html se necessário)
+        document.addEventListener('DOMContentLoaded', function() {
+            // --- LÓGICA DO MENU E FILTROS ---
+            const menuToggleButton = document.getElementById('menu-toggle');
+            const sidebar = document.querySelector('.sidebar');
+
+            if (menuToggleButton && sidebar) {
+                menuToggleButton.addEventListener('click', function() {
+                    sidebar.classList.toggle('mobile-open');
+                });
+            }
+            function setupSubmenuToggle(toggleId, submenuId) {
+                const toggleButton = document.getElementById(toggleId);
+                const submenu = document.getElementById(submenuId);
+                if (toggleButton && submenu) {
+                    toggleButton.addEventListener('click', function(event) {
+                        event.preventDefault();
+                        submenu.style.display = submenu.style.display === 'block' ? 'none' : 'block';
+                    });
+                }
+            }
+            setupSubmenuToggle('financeiro-toggle', 'financeiro-submenu');
+            setupSubmenuToggle('comercial-toggle', 'comercial-submenu');
+            setupSubmenuToggle('configuracoes-toggle', 'configuracoes-submenu');
+
+            const activeLink = document.querySelector('.sidebar a.active');
+            if (activeLink) {
+                const parentSubmenu = activeLink.closest('.submenu');
+                if (parentSubmenu) parentSubmenu.style.display = 'block';
+            }
+            // Fim da lógica do menu e sub menu completo
+            
+        });
+    </script>
+
+</body>
+</html>

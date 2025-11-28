@@ -1,0 +1,467 @@
+{% load static %}
+{% load humanize %}
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perfil da Empresa</title>
+    <link rel="stylesheet" href="{% static 'css/global.css' %}">
+    <link rel="stylesheet" href="{% static 'css/sidebar.css' %}">
+    <link rel="stylesheet" href="{% static 'css/company_profile.css' %}">
+    <link rel="stylesheet" href="{% static 'css/themes.css' %}">
+    <link rel="stylesheet" href="{% static 'css/layout-responsive.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+</head>
+
+<body class="company-profile-page">
+    {% include 'accounts/_sidebar.html' %}
+    <div class="main-content">
+        {% include 'accounts/partials/bpo_banner.html' %}
+        <button id="menu-toggle">&#9776;</button>
+        <div class="header">
+            <h1>Perfil da Empresa</h1>
+        </div>
+
+        {% if messages %}
+        <style>
+            .alert-box {
+                padding: 15px;
+                border-radius: 8px;
+                margin-bottom: 10px;
+                font-weight: 500;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                border: 1px solid transparent;
+            }
+
+            .msg-success {
+                background-color: #d1e7dd;
+                color: #0f5132;
+                border-color: #badbcc;
+            }
+
+            .msg-error {
+                background-color: #f8d7da;
+                color: #842029;
+                border-color: #f5c2c7;
+            }
+
+            .msg-warning {
+                background-color: #fff3cd;
+                color: #664d03;
+                border-color: #ffecb5;
+            }
+
+            .msg-info {
+                background-color: #cff4fc;
+                color: #055160;
+                border-color: #b6effb;
+            }
+        </style>
+        <div class="messages-container" style="margin-bottom: 20px;">
+            {% for message in messages %}
+            <div class="alert-box msg-{{ message.tags }}">
+                {% if 'success' in message.tags %}<i class="fas fa-check-circle" style="font-size: 1.2em;"></i>
+                {% elif 'error' in message.tags %}<i class="fas fa-times-circle" style="font-size: 1.2em;"></i>
+                {% elif 'warning' in message.tags %}<i class="fas fa-exclamation-triangle"
+                    style="font-size: 1.2em;"></i>
+                {% else %}<i class="fas fa-info-circle" style="font-size: 1.2em;"></i>{% endif %}
+                <span>{{ message }}</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="card mb-4">
+            <div class="card-title">Dados Cadastrais</div>
+            {% if profile_form.errors %}
+            <div
+                style="background-color: #f8d7da; color: #721c24; padding: 15px; margin-bottom: 20px; border: 1px solid #f5c6cb; border-radius: 5px;">
+                <h3 style="margin-top: 0; font-size: 1.1em;">⚠️ Não foi possível salvar:</h3>
+                {{ profile_form.non_field_errors }}
+                <ul style="margin-bottom: 0; padding-left: 20px;">
+                    {% for field in profile_form %}
+                    {% if field.errors %}
+                    <li><strong>{{ field.label }}:</strong> {{ field.errors|striptags }}</li>
+                    {% endif %}
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            <form method="post" action="{% url 'company_profile' %}" class="profile-form" enctype="multipart/form-data"
+                novalidate>
+                {% csrf_token %}
+                <div class="form-grid">
+                    <div class="form-group">
+                        {{ profile_form.nome_empresa.label_tag }}
+                        {{ profile_form.nome_empresa }}
+                    </div>
+                    <div class="form-group">
+                        {{ profile_form.nome_fantasia.label_tag }}
+                        {{ profile_form.nome_fantasia }}
+                    </div>
+                    <div class="form-group">
+                        {{ profile_form.cnpj.label_tag }}
+                        {{ profile_form.cnpj }}
+                    </div>
+                    <div class="form-group">
+                        {{ profile_form.email_contato.label_tag }}
+                        {{ profile_form.email_contato }}
+                    </div>
+                    <div class="form-group">
+                        {{ profile_form.telefone_contato.label_tag }}
+                        {{ profile_form.telefone_contato }}
+                    </div>
+
+                    <div style="grid-column: 1 / -1; display: flex; gap: 20px; align-items: flex-start;">
+                        
+                        <div class="form-group" style="flex: 3; min-width: 0;">
+                            {{ profile_form.endereco.label_tag }}
+                            {{ profile_form.endereco }}
+                        </div>
+
+                        <div class="form-group" style="flex: 1; min-width: 0;">
+                            {{ profile_form.numero.label_tag }}
+                            {{ profile_form.numero }}
+                        </div>
+                        
+                    </div>
+
+                    <div class="form-group">
+                        {{ profile_form.bairro.label_tag }}
+                        {{ profile_form.bairro }}
+                    </div>
+                    <div class="form-group">
+                        {{ profile_form.cidade.label_tag }}
+                        {{ profile_form.cidade }}
+                    </div>
+                    <div class="form-group small-field">
+                        {{ profile_form.estado.label_tag }}
+                        {{ profile_form.estado }}
+                    </div>
+                    <div class="form-group small-field">
+                        {{ profile_form.cep.label_tag }}
+                        {{ profile_form.cep }}
+                    </div>
+
+                    <div class="form-group">
+                        {{ profile_form.inscricao_estadual.label_tag }}
+                        {{ profile_form.inscricao_estadual }}
+                    </div>
+                    <div class="form-group">
+                        {{ profile_form.inscricao_municipal.label_tag }}
+                        {{ profile_form.inscricao_municipal }}
+                    </div>
+
+                    <div class="form-group">
+                        {{ profile_form.codigo_municipio.label_tag }}
+                        {{ profile_form.codigo_municipio }}
+                        <small style="display:block; font-size: 0.8em; color: #666;">
+                            <a href="https://www.ibge.gov.br/explica/codigos-dos-municipios.php"
+                                target="_blank">Consultar Código IBGE</a>
+                        </small>
+                    </div>
+
+                    <div class="card fiscal-card" style="grid-column: 1 / -1; margin-top: 30px; padding: 30px;">
+                        <h4 style="margin-bottom: 30px; border-bottom: 1px solid #eee; padding-bottom: 15px;">
+                            <i class="fas fa-file-invoice-dollar"></i> Configuração Fiscal (NFS-e)
+                        </h4>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 30px; margin-bottom: 25px;">
+
+                            <!-- Coluna 1 -->
+                            <div style="display: flex; flex-direction: column; gap: 20px;">
+                                <div>
+                                    <label class="label-with-icon"><i class="fas fa-building"></i> Regime
+                                        Tributário</label>
+                                    {{ profile_form.regime_tributario }}
+                                </div>
+                                <div>
+                                    <label class="label-with-icon"><i class="fas fa-check-circle"></i> Simples
+                                        Nacional?</label>
+                                    <div class="toggle-container"
+                                        style="display: flex; align-items: center; background: #fff; padding: 12px 15px; border: 1px solid #555; border-radius: 8px;">
+                                        <label class="switch" style="margin-bottom: 0;">
+                                            {{ profile_form.optante_simples_nacional }}
+                                            <span class="slider round"></span>
+                                        </label>
+                                        <label class="toggle-label"
+                                            style="margin-left: 15px; cursor: pointer; color: #333; font-weight: 500;"
+                                            for="{{ profile_form.optante_simples_nacional.id_for_label }}">
+                                            Sim, sou optante
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Coluna 2 -->
+                            <div style="display: flex; flex-direction: column; gap: 20px;">
+                                <div>
+                                    <label class="label-with-icon"><i class="fas fa-star"></i> Regime Especial
+                                        (NFS-e)</label>
+                                    {{ profile_form.regime_especial_tributacao }}
+                                </div>
+                                <div>
+                                    <label class="label-with-icon"><i class="fas fa-theater-masks"></i> Incentivador
+                                        Cultural?</label>
+                                    <div class="toggle-container"
+                                        style="display: flex; align-items: center; background: #fff; padding: 12px 15px; border: 1px solid #555; border-radius: 8px;">
+                                        <label class="switch" style="margin-bottom: 0;">
+                                            {{ profile_form.incentivador_cultural }}
+                                            <span class="slider round"></span>
+                                        </label>
+                                        <label class="toggle-label"
+                                            style="margin-left: 15px; cursor: pointer; color: #333; font-weight: 500;"
+                                            for="{{ profile_form.incentivador_cultural.id_for_label }}">
+                                            Sim
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Coluna 3 -->
+                            <div style="display: flex; flex-direction: column; gap: 20px;">
+                                <div>
+                                    <label class="label-with-icon"><i class="fas fa-percent"></i> Alíquota ISS</label>
+                                    {{ profile_form.aliquota_iss }}
+                                </div>
+                                <div>
+                                    <label class="label-with-icon"><i class="fas fa-envelope-open-text"></i> Automação
+                                        de Email</label>
+                                    <div class="toggle-container"
+                                        style="display: flex; align-items: center; background: #fff; padding: 12px 15px; border: 1px solid #555; border-radius: 8px;">
+                                        <label class="switch" style="margin-bottom: 0;">
+                                            {{ profile_form.enviar_email_automatico }}
+                                            <span class="slider round"></span>
+                                        </label>
+                                        <label class="toggle-label"
+                                            style="margin-left: 15px; cursor: pointer; color: #333; font-weight: 500;"
+                                            for="{{ profile_form.enviar_email_automatico.id_for_label }}">
+                                            Enviar nota por e-mail?
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <div style="margin-top: 10px;">
+                            <div
+                                style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; background: #2c2c2c; padding: 20px; border-radius: 8px; border: 1px solid #444;">
+                                <div>
+                                    <label class="label-with-icon" ><i
+                                            class="fas fa-key"></i> Certificado Digital (A1 .pfx)</label>
+                                    {{ profile_form.certificado_digital }}
+                                    <small style="color: #bbb; display: block; margin-top: 5px;">Deixe em branco para
+                                        manter o atual.</small>
+                                </div>
+                                <div>
+                                    <label class="label-with-icon" ><i
+                                            class="fas fa-lock"></i> Senha do Certificado</label>
+                                    {{ profile_form.senha_certificado }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card fiscal-card" style="grid-column: 1 / -1; margin-top: 20px;">
+                        <h4><i class="fas fa-sliders-h"></i> Configuração de Emissão e Layout</h4>
+
+                        <div class="form-group" style="margin-bottom: 20px;">
+                            <label class="label-with-icon"><i class="fas fa-image"></i> Logotipo da Empresa</label>
+                            {{ profile_form.arquivo_logo }}
+                            <small style="color: #888;">Logotipo para exibição no PDF da Nota Fiscal.</small>
+                        </div>
+
+                        <div
+                            style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; background-color: #fff; padding: 20px; border-radius: 8px; border: 1px solid #dee2e6;">
+                            <div>
+                                <h5
+                                    style="color: #0056b3; margin-bottom: 15px; border-bottom: 1px solid #dee2e6; padding-bottom: 5px;">
+                                    <i class="fas fa-box"></i> NFe (Produto)
+                                </h5>
+                                <div style="margin-bottom: 15px;">
+                                    {{ profile_form.proximo_numero_nfe.label_tag }}
+                                    {{ profile_form.proximo_numero_nfe }}
+                                </div>
+                                <div>
+                                    {{ profile_form.serie_nfe.label_tag }}
+                                    {{ profile_form.serie_nfe }}
+                                </div>
+                            </div>
+                            <div>
+                                <h5
+                                    style="color: #0056b3; margin-bottom: 15px; border-bottom: 1px solid #dee2e6; padding-bottom: 5px;">
+                                    <i class="fas fa-concierge-bell"></i> NFS-e (Serviço)
+                                </h5>
+                                <div style="margin-bottom: 15px;">
+                                    {{ profile_form.proximo_numero_nfse.label_tag }}
+                                    {{ profile_form.proximo_numero_nfse }}
+                                </div>
+                                <div>
+                                    {{ profile_form.serie_nfse.label_tag }}
+                                    {{ profile_form.serie_nfse }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="save-btn-container" style="grid-column: 1 / -1; text-align: right; margin-top: 20px;">
+                        <button type="submit" name="save_profile" class="btn-save-profile">
+                            <i class="fas fa-save"></i> Salvar Alterações
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-title">Anexar Documentos Extras</div>
+            <form method="post" action="{% url 'company_profile' %}" enctype="multipart/form-data"
+                class="document-form">
+                {% csrf_token %}
+                <div class="file-upload-row" style="display: flex; gap: 20px; align-items: flex-end; flex-wrap: wrap;">
+                    <div class="form-group-desc" style="flex: 2;">
+                        {{ doc_form.descricao.label_tag }}
+                        {{ doc_form.descricao }}
+                    </div>
+                    <div class="form-group-file" style="flex: 1;">
+                        {{ doc_form.arquivo.label_tag }}
+                        {{ doc_form.arquivo }}
+                    </div>
+                    <div style="margin-bottom: 2px;">
+                        <button type="submit" name="upload_document" class="btn btn-success" style="height: 42px;">
+                            <i class="fas fa-plus"></i> Anexar
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div class="card">
+            <div class="card-title">Documentos Anexados</div>
+            <div class="table-wrapper">
+                <table class="table styled-table">
+                    <thead>
+                        <tr>
+                            <th>Descrição</th>
+                            <th>Arquivo</th>
+                            <th>Data</th>
+                            <th class="text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for doc in documents %}
+                        <tr>
+                            <td>{{ doc.descricao }}</td>
+                            <td>
+                                <a href="{{ doc.arquivo.url }}" target="_blank" class="btn btn-link btn-sm" title="Ver">
+                                    <i class="fas fa-file-pdf"></i> Ver Arquivo
+                                </a>
+                            </td>
+                            <td>{{ doc.created_at|date:"d/m/Y H:i" }}</td>
+                            <td class="text-center">
+                                <form method="post" style="display: inline;">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="document_id" value="{{ doc.id }}">
+                                    <button type="submit" name="delete_document" class="btn btn-danger btn-sm"
+                                        onclick="return confirm('Excluir?');">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center" style="padding: 30px; color: #888;">Nenhum documento
+                                extra anexado.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <script src="{% static 'js/theme.js' %}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const menuToggleButton = document.getElementById('menu-toggle');
+            const sidebar = document.querySelector('.sidebar');
+            if (menuToggleButton && sidebar) {
+                menuToggleButton.addEventListener('click', function () {
+                    sidebar.classList.toggle('mobile-open');
+                });
+            }
+
+            function setupSubmenuToggle(toggleId, submenuId) {
+                const toggleButton = document.getElementById(toggleId);
+                const submenu = document.getElementById(submenuId);
+                if (toggleButton && submenu) {
+                    toggleButton.addEventListener('click', function (event) {
+                        event.preventDefault();
+                        submenu.style.display = submenu.style.display === 'block' ? 'none' : 'block';
+                    });
+                }
+            }
+            setupSubmenuToggle('financeiro-toggle', 'financeiro-submenu');
+            setupSubmenuToggle('comercial-toggle', 'comercial-submenu');
+            setupSubmenuToggle('configuracoes-toggle', 'configuracoes-submenu');
+
+            const activeLink = document.querySelector('.sidebar a.active');
+            if (activeLink) {
+                const parentSubmenu = activeLink.closest('.submenu');
+                if (parentSubmenu) parentSubmenu.style.display = 'block';
+            }
+
+
+        });
+
+        document.querySelector('form.profile-form').addEventListener('submit', function () {
+            document.getElementById('id_cidade').disabled = false;
+            document.getElementById('id_estado').disabled = false;
+            document.getElementById('id_codigo_municipio').disabled = false;
+        });
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const selectRegime = document.getElementById('id_regime_tributario');
+            const checkOptante = document.getElementById('id_optante_simples_nacional');
+
+            // Função para atualizar o botão baseado no dropdown
+            function atualizarBotao() {
+                const valor = selectRegime.value;
+                // Regimes 1 (Simples), 2 (Simples Excesso) e 4 (MEI) ligam o botão
+                if (['1', '2', '4'].includes(valor)) {
+                    checkOptante.checked = true;
+                } else {
+                    checkOptante.checked = false;
+                }
+            }
+
+            // Função para atualizar o dropdown baseado no botão
+            function atualizarDropdown() {
+                if (checkOptante.checked) {
+                    // Se marcou "Sim", joga para Simples Nacional (Padrão)
+                    selectRegime.value = '1';
+                } else {
+                    // Se desmarcou, joga para Regime Normal
+                    selectRegime.value = '3';
+                }
+            }
+
+            // Ouve as mudanças
+            selectRegime.addEventListener('change', atualizarBotao);
+            checkOptante.addEventListener('change', atualizarDropdown);
+
+            // Roda uma vez ao carregar para garantir que o visual bata com o banco
+            atualizarBotao();
+        });
+    </script>
+</body>
+
+</html>

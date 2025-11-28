@@ -1,0 +1,46 @@
+{% if request.is_managing %}
+<style>
+    .bpo-banner {
+        background-color: #fff3cd; /* Amarelo aviso bootstrap */
+        color: #664d03;
+        /* --- MODIFICADO ABAIXO --- */
+        padding: 0.5rem 1rem;    /* Padding vertical reduzido e horizontal ajustado */
+        /* --- ADICIONADO ABAIXO --- */
+        margin-bottom: 1rem;     /* Adiciona margem abaixo do banner (aprox. 16px) */
+        border-bottom: 1px solid #ffe69c;
+        position: sticky; /* Fica no topo */
+        top: 0;
+        z-index: 1031;
+        font-weight: 500;
+        box-sizing: border-box;
+    }
+    .bpo-banner strong {
+        color: #382b00; /* Cor um pouco mais escura para destaque */
+    }
+    .bpo-banner a.btn { /* Estilo específico para o botão no banner */
+        font-weight: 700;
+        color: #fff !important; /* Cor do texto do botão */
+        background-color: #dc3545; /* Cor de fundo do botão (vermelho) */
+        border-color: #dc3545;
+        padding: 0.1rem 0.5rem; /* Ajuste o padding para altura e largura */
+        font-size: 0.8rem; /* Tamanho da fonte do botão */
+        line-height: 1.5; /* Altura da linha para centralizar texto */
+        vertical-align: middle; /* Alinha verticalmente com o texto */
+        margin-left: 15px; /* Espaço à esquerda do botão */
+    }
+    .bpo-banner a.btn:hover {
+        background-color: #c82333; /* Vermelho mais escuro no hover */
+        border-color: #bd2130;
+    }
+    .bpo-banner i { /* Ícone dentro do botão */
+        margin-right: 5px;
+    }
+</style>
+
+<div class="bpo-banner text-center">
+    <strong>Atenção!</strong> Você está gerenciando a conta de <strong>{{ request.user.username }}</strong> (Cliente Final).
+    <a href="{% url 'stop_managing' %}" class="btn btn-danger btn-sm"> {# Adapte as classes do botão se necessário #}
+        <i class="fas fa-sign-out-alt"></i> Voltar p/ minha conta BPO {# Adapte o ícone #}
+    </a>
+</div>
+{% endif %}

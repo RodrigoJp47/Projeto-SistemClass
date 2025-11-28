@@ -1,0 +1,465 @@
+/* static/css/company_profile.css - VERSÃO CORRIGIDA (TEMA ESCURO) */
+
+/* Removemos o @import para evitar conflitos. */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+.main-content {
+    /* Mantido o margin-left original de 290px para acomodar a sidebar */
+    margin-left: 270px;
+    padding: 20px;
+    width: calc(100% - 270px);
+    overflow-y: auto;
+}
+
+/* Estilos de Card (Padrão Escuro) */
+.company-profile-page .card {
+    background-color: #222;
+    border: 1px solid #444;
+    border-radius: 8px;
+    margin-bottom: 25px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    color: #FFFFFF;
+    /* Texto padrão do card branco */
+}
+
+.company-profile-page .card-title {
+    color: #FFFFFF;
+    /* Título branco */
+    padding: 15px 20px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #444;
+    font-size: 1.1em;
+    font-weight: 600;
+}
+
+.company-profile-page .header {
+    padding-bottom: 15px;
+    border-bottom: 1px solid #444;
+    margin-bottom: 25px;
+}
+
+.company-profile-page .header h1 {
+    margin: 0;
+    color: #FFFFFF;
+    /* Título da página branco */
+}
+
+/* Grid para o formulário de perfil (Padrão Escuro) */
+.company-profile-page .profile-form .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    padding: 0 20px 20px 20px;
+    /* Adiciona padding */
+    max-width: 850px;
+    /* Limita a largura para não esticar demais */
+    margin: 0 auto;
+}
+
+.company-profile-page .profile-form .form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.company-profile-page .profile-form .form-group label {
+    margin-bottom: 5px;
+    font-size: 0.9em;
+    color: #ccc;
+    /* Label claro */
+}
+
+.company-profile-page .profile-form .form-group input,
+.company-profile-page .profile-form .form-group select {
+    width: 100%;
+    padding: 10px;
+    background-color: #333;
+    border: 1px solid #555;
+    border-radius: 5px;
+    color: #fff;
+    /* Texto do input claro */
+    box-sizing: border-box;
+}
+
+.company-profile-page .profile-form button[name="save_profile"] {
+    display: block;
+    /* Garante que o botão se comporte como bloco */
+    margin: 0 auto 20px;
+    /* Centraliza o botão (topo 0, auto laterais, baixo 20px) */
+    width: fit-content;
+    /* O botão terá o tamanho do texto */
+}
+
+/* Formulário de Documentos (Padrão Escuro) */
+.company-profile-page .document-form {
+    padding: 0 20px 20px 20px;
+}
+
+.company-profile-page .document-form .file-upload-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 15px;
+    width: 100%;
+}
+
+.company-profile-page .document-form .form-group-desc {
+    flex: 3;
+    min-width: 250px;
+}
+
+.company-profile-page .document-form .form-group-file {
+    flex: 2;
+    min-width: 200px;
+}
+
+.company-profile-page .document-form .file-upload-row .btn {
+    flex-shrink: 0;
+    margin-bottom: 1px;
+}
+
+.company-profile-page .document-form .form-group-desc label,
+.company-profile-page .document-form .form-group-file label {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 0.9em;
+    color: #ccc;
+    /* Label claro */
+}
+
+.company-profile-page .document-form .form-group-desc input {
+    width: 100%;
+    padding: 10px;
+    background-color: #333;
+    border: 1px solid #555;
+    border-radius: 5px;
+    color: #fff;
+    /* Texto do input claro */
+    box-sizing: border-box;
+}
+
+/* Tabela de Documentos (Padrão Escuro) */
+.company-profile-page .table-wrapper {
+    padding: 0 20px 20px 20px;
+    overflow-x: auto;
+}
+
+.company-profile-page .styled-table {
+    width: 100%;
+    border-collapse: collapse;
+    color: #FFFFFF;
+    /* Texto da tabela claro */
+}
+
+.company-profile-page .styled-table th,
+.company-profile-page .styled-table td {
+    padding: 12px 15px;
+    border-bottom: 1px solid #444;
+    text-align: left;
+}
+
+.company-profile-page .styled-table thead th {
+    background-color: #333;
+    /* Fundo do cabeçalho escuro */
+    color: #FFFFFF;
+}
+
+.company-profile-page .styled-table tbody tr:hover {
+    background-color: #2c2c2c;
+}
+
+.company-profile-page .styled-table .empty-row td {
+    color: #888;
+    /* Texto de "nenhum" mais suave */
+    text-align: center;
+    padding: 20px;
+}
+
+.company-profile-page .styled-table .actions-cell {
+    text-align: center;
+}
+
+/* --- NOVOS ESTILOS PARA REDESIGN FISCAL (CORRIGIDO PARA TEMA ESCURO) --- */
+
+/* Card Fiscal Moderno - PADRÃO ESCURO */
+.fiscal-card {
+    background-color: #222 !important; /* Fundo Escuro */
+    border: 1px solid #444 !important; /* Borda Escura */
+    border-radius: 12px !important;
+    padding: 25px !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2) !important;
+    margin-bottom: 30px !important;
+}
+
+.fiscal-card h4 {
+    color: #FFFFFF !important; /* Título Branco */
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 25px;
+    border-bottom: 2px solid #444 !important; /* Linha divisória escura */
+    padding-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.fiscal-card h4 i {
+    color: #3498db; /* Azul mais claro para contraste no escuro */
+}
+
+/* Labels com Ícones */
+.label-with-icon {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+    color: #ccc !important; /* Texto cinza claro */
+    margin-bottom: 8px;
+}
+
+.label-with-icon i {
+    color: #aaa; /* Ícone cinza mais claro */
+    width: 20px;
+    text-align: center;
+}
+
+/* Ajuste para o texto "Sim, sou optante" no escuro */
+.toggle-label {
+    color: #ccc !important;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+/* Container do Toggle com Label (Escuro) */
+.toggle-container {
+    display: flex;
+    align-items: center;
+    background: #333 !important; /* Fundo do input escuro */
+    padding: 10px 15px;
+    border: 1px solid #555 !important;
+    border-radius: 8px;
+    height: 100%;
+    min-height: 45px;
+}
+
+/* CORREÇÃO PARA BLOCOS INTERNOS (Certificado e NFe/NFSe) que tinham fundo branco inline */
+/* Isso força os blocos internos a ficarem escuros */
+.fiscal-card div[style*="background-color: #fff"],
+.fiscal-card div[style*="background: #fff"],
+.fiscal-card div[style*="background: #2c2c2c"] {
+    background-color: #2c2c2c !important;
+    border: 1px solid #444 !important;
+}
+
+/* Títulos internos (ex: NFe Produto) */
+.fiscal-card h5 {
+    background-color: transparent !important;
+    color: #8ab4f8 !important; /* Azul claro */
+    border-bottom: 1px solid #444 !important;
+}
+/* Labels com Ícones */
+.label-with-icon {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+    color: #495057 !important;
+    /* Texto escuro para fundo claro */
+    margin-bottom: 8px;
+}
+
+.label-with-icon i {
+    color: #6c757d;
+    width: 20px;
+    text-align: center;
+}
+
+/* Toggle Switch (Botão de Deslizar) */
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 26px;
+    margin-right: 10px;
+}
+
+.switch input {
+    opacity: 0;
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 2;
+    cursor: pointer;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    -webkit-transition: .4s;
+    transition: .4s;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    -webkit-transition: .4s;
+    transition: .4s;
+}
+
+input:checked+.slider {
+    background-color: #28a745;
+    /* Verde Sucesso */
+}
+
+input:focus+.slider {
+    box-shadow: 0 0 1px #28a745;
+}
+
+input:checked+.slider:before {
+    -webkit-transform: translateX(24px);
+    -ms-transform: translateX(24px);
+    transform: translateX(24px);
+}
+
+/* Rounded sliders */
+.slider.round {
+    border-radius: 34px;
+}
+
+.slider.round:before {
+    border-radius: 50%;
+}
+
+/* Container do Toggle com Label */
+.toggle-container {
+    display: flex;
+    align-items: center;
+    background: #fff;
+    padding: 10px 15px;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    height: 100%;
+    /* Para alinhar com inputs altos */
+    min-height: 45px;
+}
+
+.toggle-label {
+    font-weight: 500;
+    color: #343a40;
+    cursor: pointer;
+    user-select: none;
+}
+
+/* Botão Salvar Grande */
+.save-btn-container {
+    margin-top: 40px;
+    text-align: right;
+    grid-column: 1 / -1;
+}
+
+.btn-save-profile {
+    background-color: #0d6efd;
+    color: white;
+    padding: 12px 40px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 4px 6px rgba(13, 110, 253, 0.2);
+}
+
+.btn-save-profile:hover {
+    background-color: #0b5ed7;
+    transform: translateY(-1px);
+}
+
+
+/* ==========================================================================
+   RESPONSIVIDADE (MOBILE & TABLET)
+   ========================================================================== */
+
+@media screen and (max-width: 768px) {
+
+    /* 1. Ajusta o conteúdo principal para ocupar a tela toda (sem margem da sidebar) */
+    .main-content {
+        margin-left: 0;
+        width: 100%;
+        padding: 15px;
+    }
+
+    /* 2. Força o Grid do Formulário a ser 1 coluna só */
+    .company-profile-page .profile-form .form-grid {
+        grid-template-columns: 1fr;
+        padding: 0 10px 10px 10px;
+    }
+
+    /* 3. CORREÇÃO CRÍTICA: Quebra os Grids Internos (Fiscal Card e NFe) */
+    /* O !important é necessário para sobrescrever o estilo 'inline' do HTML */
+    .fiscal-card > div[style*="grid-template-columns"] {
+        grid-template-columns: 1fr !important; /* Força 1 coluna */
+        gap: 20px !important;
+    }
+
+    /* 4. Ajusta a linha de Logradouro (75%) e Número (25%) para empilhar */
+    /* Procura divs flexíveis dentro do form e muda a direção */
+    .profile-form div[style*="display: flex"] {
+        flex-direction: column !important;
+        gap: 15px !important;
+    }
+
+    /* Faz os campos internos (Logradouro e Número) ocuparem 100% da largura */
+    .profile-form div[style*="display: flex"] > div {
+        flex: 1 1 100% !important;
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    /* 5. Ajustes nos botões Toggle (Simples Nacional, etc) */
+    .toggle-container {
+        width: 100%; /* Garante que o container do switch ocupe a largura toda */
+        justify-content: space-between; /* Separa o switch do texto */
+    }
+
+    /* 6. Ajuste do Upload de Arquivos (Anexar Documentos) */
+    .company-profile-page .document-form .file-upload-row {
+        flex-direction: column;
+        align-items: stretch; /* Estica os inputs */
+    }
+    
+    .company-profile-page .document-form .btn {
+        width: 100%; /* Botão 'Anexar' largura total no mobile */
+        margin-top: 10px;
+    }
+
+    /* 7. Garante que tabelas tenham barra de rolagem horizontal se estourarem */
+    .table-wrapper {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    /* 8. Ajustes finos nos cards */
+    .company-profile-page .card, 
+    .fiscal-card {
+        padding: 15px !important; /* Reduz padding interno para ganhar espaço */
+    }
+}

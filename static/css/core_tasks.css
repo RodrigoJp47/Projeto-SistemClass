@@ -1,0 +1,103 @@
+/* Estilos que estavam no seu home.html */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+
+
+.main-content {
+    /* Mantido o margin-left original de 290px para acomodar a sidebar */
+    margin-left: 270px;
+    padding: 20px;
+    width: calc(100% - 270px);
+    overflow-y: auto;
+}
+.tasks-container {
+    max-width: 900px;
+    margin: 40px auto;
+    padding: 30px;
+    background-color: var(--color-background-light); /* Usa a cor do seu theme.css */
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    border: 1px solid var(--color-border); /* Usa a cor do seu theme.css */
+}
+
+.tasks-container h1 {
+    color: var(--color-text-primary); /* Usa a cor do seu theme.css */
+    border-bottom: 2px solid var(--color-border-light);
+    padding-bottom: 10px;
+}
+
+.tasks-container .form-group {
+    margin-bottom: 15px;
+}
+
+.tasks-container .form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: var(--color-text-secondary);
+}
+
+.tasks-container input[type="text"],
+.tasks-container input[type="email"],
+.tasks-container .form-control {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    box-sizing: border-box;
+    background-color: var(--color-background);
+    color: var(--color-text-primary);
+}
+
+.tasks-container .btn {
+    padding: 10px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 1em;
+}
+
+.tasks-container .btn-primary {
+    background-color: #3498db;
+    color: white;
+}
+
+.tasks-container .btn-primary:hover {
+    background-color: #2980b9;
+}
+
+/* Em: static/css/core_tasks.css */
+
+.tasks-container .nav-link {
+    background-color: #2980b9;
+    padding: 7px;
+    display: inline-block;
+    margin: 0 0 25px 0; /* Ajusta a margem para ficar só embaixo */
+    font-weight: bold;
+    color: var(--color-primary, #fff); /* Usa a cor primária do seu tema */
+    text-decoration: none; /* Remove o sublinhado */
+    transition: opacity 0.2s ease;
+}
+
+.tasks-container .nav-link:hover {
+    text-decoration: underline; /* Adiciona sublinhado ao passar o mouse */
+    opacity: 0.8;
+}
+
+/* --- @media query para Responsividade --- */
+@media (max-width: 768px) {
+    .tasks-container {
+        /* Em telas pequenas, remove a margem e a sombra */
+        margin: 0;
+        padding: 20px;
+        box-shadow: none;
+        border-radius: 0;
+        border: none;
+    }
+}

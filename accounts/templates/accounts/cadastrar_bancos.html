@@ -1,0 +1,148 @@
+{% load static %}
+{% load humanize %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastrar Bancos - Gestão Financeira</title>
+    <link rel="stylesheet" href="{% static 'css/global.css' %}">
+    <link rel="stylesheet" href="{% static 'css/sidebar.css' %}">
+    <link rel="stylesheet" href="{% static 'css/themes.css' %}">
+    {% comment %} Arquivo CSS dedicado para esta página {% endcomment %}
+    <link rel="stylesheet" href="{% static 'css/cadastrar_bancos.css' %}">
+    <link rel="stylesheet" href="{% static 'css/layout-responsive.css' %}">
+</head>
+<body class="cadastrar-bancos-page">
+    
+    {% include 'accounts/_sidebar.html' %}
+
+    <div class="main-content">
+        {% include 'accounts/partials/bpo_banner.html' %}
+        <button id="menu-toggle">&#9776;</button>
+
+        <div class="page-header">
+            <h1 class="section-title">Cadastrar Bancos</h1>
+        </div>
+
+        {% if messages %}
+            <div class="messages">
+                {% for message in messages %}
+                    <p class="{% if message.tags %}{{ message.tags }}{% endif %}">{{ message }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        {% if not edit_account %}
+        <div class="form-container">
+            <h3>Adicionar Nova Conta Bancária</h3>
+            <form method="post">
+                {% csrf_token %}
+                <div class="form-grid">
+                    <input type="text" name="bank_name" placeholder="Nome do Banco" required>
+                    <input type="text" name="agency" placeholder="Agência" required>
+                    <input type="text" name="account_number" placeholder="Número da Conta" required>
+                    <input type="date" name="opening_date" placeholder="Data de Abertura" required>
+                    <input type="text" name="initial_balance" placeholder="Saldo Inicial (Ex: 10.589,58)" required>
+                </div>
+                <button type="submit" name="create_bank_account">Criar Conta</button>
+            </form>
+        </div>
+        {% endif %}
+
+        {% if edit_account %}
+        <div class="form-container form-container-edit">
+            <h3>Editando Conta: {{ edit_account.bank_name }}</h3>
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="account_id" value="{{ edit_account.id }}">
+                 <div class="form-grid">
+                    <input type="text" name="bank_name" value="{{ edit_account.bank_name }}" required>
+                    <input type="text" name="agency" value="{{ edit_account.agency }}" required>
+                    <input type="text" name="account_number" value="{{ edit_account.account_number }}" required>
+                    <input type="date" name="opening_date" value="{{ edit_account.opening_date|date:'Y-m-d' }}" required>
+                    <input type="text" name="initial_balance" value="{{ edit_account.initial_balance|floatformat:2 }}" required>
+                </div>
+                <button type="submit" name="edit_bank_account">Salvar Alterações</button>
+                <a href="{% url 'cadastrar_bancos' %}" class="cancel-button">Cancelar Edição</a>
+            </form>
+        </div>
+        {% endif %}
+
+        <div class="table-container">
+            <h3>Contas Bancárias Cadastradas</h3>
+            <div class="table-wrapper">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Banco</th>
+                            <th>Agência</th>
+                            <th>Conta</th>
+                            <th>Data Abertura</th> <th>Saldo Atual</th>   <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for account in bank_accounts %}
+                        <tr>
+                            <td data-label="Banco">{{ account.bank_name }}</td>
+                            <td data-label="Agência">{{ account.agency }}</td>
+                            <td data-label="Conta">{{ account.account_number }}</td>
+                            <td data-label="Data Abertura">{{ account.opening_date|date:'d/m/Y' }}</td>
+                            <td data-label="Saldo Atual">R$ {{ account.current_balance|floatformat:2|intcomma }}</td>
+                            <td data-label="Ações">
+                                <a href="{% url 'cadastrar_bancos' %}?edit={{ account.id }}" class="action-btn edit-btn">Editar</a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6">Nenhuma conta bancária cadastrada.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <script src="{% static 'js/theme.js' %}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Script para o menu hambúrguer (mobile)
+            const menuToggleButton = document.getElementById('menu-toggle');
+            const sidebar = document.querySelector('.sidebar');
+
+            if (menuToggleButton && sidebar) {
+                menuToggleButton.addEventListener('click', function() {
+                    sidebar.classList.toggle('mobile-open');
+                });
+            }
+
+            // --- LÓGICA DOS SUBMENUS ---
+            function setupSubmenuToggle(toggleId, submenuId) {
+                const toggleButton = document.getElementById(toggleId);
+                const submenu = document.getElementById(submenuId);
+                if (toggleButton && submenu) {
+                    toggleButton.addEventListener('click', function(event) {
+                        event.preventDefault();
+                        submenu.style.display = submenu.style.display === 'block' ? 'none' : 'block';
+                    });
+                }
+            }
+
+            // Inicialização de cada submenu
+            setupSubmenuToggle('financeiro-toggle', 'financeiro-submenu');
+            setupSubmenuToggle('comercial-toggle', 'comercial-submenu');
+            setupSubmenuToggle('configuracoes-toggle', 'configuracoes-submenu');
+            
+
+            // Expande o submenu que contém o link ativo na página atual
+            const activeLink = document.querySelector('.sidebar .submenu a.active');
+            if (activeLink) {
+                const parentSubmenu = activeLink.closest('.submenu');
+                if (parentSubmenu) {
+                    parentSubmenu.style.display = 'block';
+                }
+            }
+        });    
+    </script>
+</body>
+</html>

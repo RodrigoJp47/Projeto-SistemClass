@@ -1,0 +1,101 @@
+{% load static %}
+{% load humanize %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastro de Empresa</title>
+    
+    <link rel="stylesheet" href="{% static 'css/global.css' %}">
+    <link rel="stylesheet" href="{% static 'css/sidebar.css' %}">
+    <link rel="stylesheet" href="{% static 'css/core_tasks.css' %}">
+    <link rel="stylesheet" href="{% static 'css/themes.css' %}">
+    <link rel="stylesheet" href="{% static 'css/layout-responsive.css' %}">
+</head>
+<body>
+    {% include 'accounts/_sidebar.html' %}
+    
+    <div class="main-content">
+
+        <button id="menu-toggle">&#9776;</button>
+    
+        <div class="tasks-container">
+            
+
+            <h1>Cadastro de Nova Empresa</h1>
+            <a href="{% url 'listar_empresas' %}" class="nav-link">Empresas cadastradas &rarr;</a>
+            
+            <form method="POST">
+                {% csrf_token %}
+                {% for field in form %}
+                    <div class="form-group">
+                        {{ field.label_tag }}
+                        {{ field }}
+                    </div>
+                {% endfor %}
+                <button type="submit" class="btn btn-primary">Cadastrar Empresa</button>
+            </form>
+        </div>
+    </div> <script src="{% static 'js/theme.js' %}"></script>
+    
+    <script>
+        // Lógica JS da Sidebar (copie do seu faturamento_dashboard.html se necessário)
+        document.addEventListener('DOMContentLoaded', function() {
+            // ===============================================================
+            // ▼▼▼ NOVO BLOCO DE CORREÇÃO (SOLUÇÃO VIA JAVASCRIPT) ▼▼▼
+            // ===============================================================
+            try {
+                // Pega a URL atual do navegador (ex: /tarefas/lista/)
+                const currentPath = window.location.pathname; 
+                
+                // Verifica se a URL começa com /tarefas/
+                if (currentPath.startsWith('/tarefas/')) {
+                    // Encontra o link da sidebar que aponta para a home de tarefas
+                    // Usamos um seletor de atributo que procura pelo link
+                    const taskLink = document.querySelector("a[href*='{% url 'tarefas_home' %}']");
+                    
+                    if (taskLink) {
+                        // Adiciona a classe 'active' a ele
+                        taskLink.classList.add('active');
+                    }
+                }
+            } catch (e) {
+                console.error("Erro ao tentar ativar o link de tarefas:", e);
+            }
+            // ===============================================================
+            // ▲▲▲ FIM DO NOVO BLOCO DE CORREÇÃO ▲▲▲
+            // --- LÓGICA DO MENU E FILTROS ---
+            const menuToggleButton = document.getElementById('menu-toggle');
+            const sidebar = document.querySelector('.sidebar');
+
+            if (menuToggleButton && sidebar) {
+                menuToggleButton.addEventListener('click', function() {
+                    sidebar.classList.toggle('mobile-open');
+                });
+            }
+            function setupSubmenuToggle(toggleId, submenuId) {
+                const toggleButton = document.getElementById(toggleId);
+                const submenu = document.getElementById(submenuId);
+                if (toggleButton && submenu) {
+                    toggleButton.addEventListener('click', function(event) {
+                        event.preventDefault();
+                        submenu.style.display = submenu.style.display === 'block' ? 'none' : 'block';
+                    });
+                }
+            }
+            setupSubmenuToggle('financeiro-toggle', 'financeiro-submenu');
+            setupSubmenuToggle('comercial-toggle', 'comercial-submenu');
+            setupSubmenuToggle('configuracoes-toggle', 'configuracoes-submenu');
+
+            const activeLink = document.querySelector('.sidebar a.active');
+            if (activeLink) {
+                const parentSubmenu = activeLink.closest('.submenu');
+                if (parentSubmenu) parentSubmenu.style.display = 'block';
+            }
+            // Fim da lógica do menu e sub menu completo
+            
+        });
+    </script>
+</body>
+</html>

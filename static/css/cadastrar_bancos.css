@@ -1,0 +1,135 @@
+/* static/css/cadastrar_bancos.css (VERSÃO FINAL E CORRIGIDA) */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+/* ▼▼▼ ESTE É O BLOCO QUE CORRIGE A SOBREPOSIÇÃO ▼▼▼ */
+.main-content {
+    margin-left: 270px;
+    padding: 20px;
+    width: calc(100% - 270px);
+    overflow-y: auto;
+}
+/* ▲▲▲ FIM DO BLOCO DE CORREÇÃO ▲▲▲ */
+
+.page-header {
+    border-bottom: 1px solid #444; /* Cor base do tema escuro */
+    padding-bottom: 15px;
+    margin-bottom: 30px;
+}
+
+.form-container,
+.table-container {
+    background-color: #222; /* Cor base do tema escuro */
+    padding: 25px;
+    border-radius: 8px;
+    margin-bottom: 30px;
+    border: 1px solid #333; /* Cor base do tema escuro */
+}
+
+/* ... (o resto do arquivo continua exatamente como na minha resposta anterior) ... */
+.form-container-edit {
+    border-color: #0f0;
+}
+
+.form-container h3,
+.table-container h3 {
+    color: #FFFFFF; /* Cor base do tema escuro */
+    margin-top: 0;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #444;
+    padding-bottom: 10px;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.form-container input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #444;
+    border-radius: 4px;
+    background-color: #333;
+    color: #FFFFFF;
+}
+
+.form-container button {
+    background-color: #0f0;
+    color: #000;
+    padding: 12px 25px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.2s;
+}
+
+.form-container button:hover {
+    background-color: #0c0;
+}
+
+.cancel-button {
+    display: inline-block;
+    padding: 12px 25px;
+    text-decoration: none;
+    border-radius: 4px;
+    margin-left: 10px;
+    background-color: #555;
+    color: #fff;
+}
+
+.table-wrapper {
+    overflow-x: auto;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.data-table th, .data-table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #444;
+}
+
+.data-table th {
+    background-color: #333;
+    color: #FFFFFF;
+}
+
+.data-table tbody tr:hover {
+    background-color: #2a2a2a;
+}
+
+.action-btn.edit-btn {
+    color: #0f0;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+/* Adicionar ao final do arquivo */
+
+/* Estilos para a caixa de mensagem de retorno */
+.messages p {
+    padding: 15px;
+    border-radius: 5px;
+    font-weight: bold;
+    margin: 0;
+}
+
+.messages .success {
+    background-color: #28a745; /* Fundo verde */
+    color: #FFFFFF; /* Texto branco */
+}
+
+.messages .error {
+    background-color: #dc3545; /* Fundo vermelho */
+    color: #FFFFFF; /* Texto branco */
+}
+

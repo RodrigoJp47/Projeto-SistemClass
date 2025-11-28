@@ -1,0 +1,451 @@
+{% load static %}
+{% load humanize %} <!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DRE - Gestão Financeira</title>
+    <link rel="stylesheet" href="{% static 'css/global.css' %}">
+    <link rel="stylesheet" href="{% static 'css/dre.css' %}">
+    <link rel="stylesheet" href="{% static 'css/themes.css' %}">
+    <link rel="stylesheet" href="{% static 'css/sidebar.css' %}">
+</head>
+<body>
+    
+    {% include 'accounts/_sidebar.html' %}
+    <div class="main-content">
+        {% include 'accounts/partials/bpo_banner.html' %}
+        <button id="menu-toggle">&#9776;</button>
+        <h1>Demonstração do Resultado do Exercício (DRE)</h1>
+        <div class="filter-container">
+            <form id="year-filter-form" method="get" style="display: flex; align-items: center; gap: 10px;">
+                <label for="year">Ano:</label>
+                <select name="year" id="year" onchange="this.form.submit()" style="padding: 8px; border-radius: 5px;">
+                    {% for year in available_years %}
+                        <option value="{{ year }}" {% if year == selected_year %}selected{% endif %}>{{ year }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" id="filter-button">Filtrar</button>
+            </form>
+        </div>
+
+        {# ▼▼▼ ADICIONE ESTE NOVO BLOCO DE CÓDIGO AQUI ▼▼▼ #}
+        <div class="regime-toggle-container">
+            <a href="?period={{ period }}&start_date={{ start_date }}&end_date={{ end_date }}&regime=caixa" 
+               class="regime-toggle-button {% if regime == 'caixa' %}active{% endif %}">
+               Regime de Caixa
+            </a>
+            <a href="?period={{ period }}&start_date={{ start_date }}&end_date={{ end_date }}&regime=competencia"
+               class="regime-toggle-button {% if regime == 'competencia' %}active{% endif %}">
+               Regime de Competência
+            </a>
+        </div>
+        {# ▲▲▲ FIM DO NOVO BLOCO DE CÓDIGO ▲▲▲ #}
+
+        <section class="dre-section" style="overflow-x: auto;">
+            <table class="dre-table">
+                <thead>
+                    <tr>
+                        <th rowspan="2">Descrição</th>
+                        <th rowspan="2" style="text-align: right;">Total (Período)</th>
+                        <th rowspan="2" style="text-align: right;">A.V. (%)</th>
+                        <th rowspan="2" style="text-align: right;">A.H. (%)</th>
+                        {% for month in month_labels %}
+                            <th colspan="3" style="text-align: center;">{{ month }}</th>
+                        {% endfor %}
+                    </tr>
+                    <tr>
+                        {% for month in month_labels %}
+                            <th style="min-width: 110px;">Valor (R$)</th>
+                            <th style="min-width: 80px;">A.V. (%)</th>
+                            <th style="min-width: 80px;">A.H. (%)</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in dre_data %}
+                        <tr {% if item.is_total %}class="total-row"{% endif %}>
+                            <td {% if not item.is_total %}class="expandable-label" data-target="#details-{{ item.key }}"{% endif %}>
+                                {{ item.label }}
+                            </td>
+                            <td style="text-align: right;">
+                                R$ {{ item.total_geral|floatformat:2|intcomma }}
+                            </td>
+                            <td style="text-align: right;">
+                                {{ item.av|floatformat:2 }}%
+                            </td>
+                            <td style="text-align: right;">
+                                {% if item.ah is not None %}
+                                    <span class="{% if item.ah >= 0 %}positivo{% else %}negativo{% endif %}">
+                                        {{ item.ah|floatformat:2 }}% 
+                                        {% if item.ah >= 0 %}↑{% else %}↓{% endif %}
+                                    </span>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            {% for month_data in item.monthly_data %}
+                                {# Coluna VALOR MENSAL com tooltip #}
+                                {% if month_data.details %}
+                                    <td class="has-details" style="text-align: right;">
+                                        R$ {{ month_data.total|floatformat:2|intcomma }}
+                                        <div class="tooltip">
+                                            <div class="tooltip-title">Detalhes da Categoria</div>
+                                            <ul>
+                                                {% for detail in month_data.details %}
+                                                    <li>
+                                                        <span>{{ detail.category }}</span>
+                                                        <span>R$ {{ detail.amount|floatformat:2|intcomma }}</span>
+                                                    </li>
+                                                {% endfor %}
+                                            </ul>
+                                        </div>
+                                    </td>
+                                {% else %}
+                                    <td style="text-align: right;">R$ {{ month_data.total|floatformat:2|intcomma }}</td>
+                                {% endif %}
+
+                                {# Nova Coluna: ANÁLISE VERTICAL MENSAL #}
+                                <td style="text-align: right; color: #aaa;">{{ month_data.av|floatformat:2 }}%</td>
+
+                                {# Nova Coluna: ANÁLISE HORIZONTAL MENSAL #}
+                                <td style="text-align: right;">
+                                    {% if month_data.ah is not None %}
+                                        <span class="{% if month_data.ah >= 0 %}positivo{% else %}negativo{% endif %}">
+                                            {{ month_data.ah|floatformat:2 }}% 
+                                            {% if month_data.ah >= 0 %}↑{% else %}↓{% endif %}
+                                        </span>
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                            {% endfor %}
+                        </tr>
+                        <tr class="dre-details-row" id="details-{{ item.key }}">
+                            <td colspan="100%"> {# O colspan faz a célula ocupar a largura inteira #}
+                                <div class="details-content">
+                                    <h4>Detalhes por Cliente/Fornecedor</h4>
+                                    {% if item.details_by_name %}
+                                        <ul>
+                                            {% for detail in item.details_by_name %}
+                                                <li>
+                                                    <span>{{ detail.name }}</span>
+                                                    <span class="detail-value">R$ {{ detail.total|floatformat:2|intcomma }}</span>
+                                                </li>
+                                            {% endfor %}
+                                        </ul>
+                                    {% else %}
+                                        <p>Nenhum detalhe disponível para este item.</p>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+        
+        <div style="text-align: center; margin: 30px 0;">
+            <button id="analise-btn" class="analise-btn">Iniciar Análise</button>
+        </div>
+        <div id="analise-container" class="analise-container" style="display: none;">
+            <div id="analise-resumo" class="analise-section">
+                <h3>Análise do Período</h3><p></p> 
+            </div>
+            <div id="analise-comparativo" class="analise-section">
+                <h3>Comparativo com Período Anterior</h3><p></p>
+            </div>
+            <div id="analise-benchmark" class="analise-section">
+                <h3>Benchmark de Mercado (Margem de Lucro Líquida)</h3>
+                <div style="margin-bottom: 15px;">
+                    <label for="sector-benchmark-select" style="font-size: 13px; color: #555; margin-right: 5px;">Selecione o seu setor para comparar:</label>
+                    <select id="sector-benchmark-select" style="padding: 5px; border-radius: 5px; border: 1px solid #ccc;">
+                        <option value="">Selecione...</option>
+                        <option value="Serviços">Serviços</option>
+                        <option value="Lojas e Comércio">Lojas e Comércio</option>
+                        <option value="Indústria">Indústria</option>
+                        <option value="Atacadista">Atacadista</option>
+                    </select>
+                </div>
+                <div class="benchmark-container">
+                    <div class="benchmark-item"><strong>Indústria:</strong> 6% a 8%</div>
+                    <div class="benchmark-item"><strong>Atacadista:</strong> 4% a 6%</div>
+                    <div class="benchmark-item"><strong>Lojas e Comércio:</strong> 10% a 15%</div>
+                    <div class="benchmark-item"><strong>Serviços:</strong> 20%</div>
+                </div>
+                <p id="benchmark-feedback" style="margin-top: 15px; font-weight: bold;"></p>
+            </div>
+            <div id="analise-feedback" class="analise-section">
+                <h3>Pontos de Destaque</h3>
+                <div class="feedback-columns">
+                    <div id="pontos-positivos"><h4>Pontos Positivos</h4><ul></ul></div>
+                    <div id="pontos-negativos"><h4>Pontos Negativos</h4><ul></ul></div>
+                </div>
+            </div>
+            
+            <div id="sugestoes-melhoria" class="analise-section">
+                <h3>Sugestão de Melhorias</h3>
+                <ul>
+                    
+                </ul>
+            </div>
+            
+        </div>
+    </div>
+    <script src="{% static 'js/theme.js' %}"></script>
+    <script>
+        // Todo o seu JavaScript existente permanece aqui, sem alterações.
+        document.addEventListener('DOMContentLoaded', function() {
+            const menuToggleButton = document.getElementById('menu-toggle');
+            const sidebar = document.querySelector('.sidebar');
+
+            if (menuToggleButton && sidebar) {
+                menuToggleButton.addEventListener('click', function() {
+                    sidebar.classList.toggle('mobile-open');
+                });
+            }
+            // --- INÍCIO DO SCRIPT DO MENU ---
+            function setupSubmenuToggle(toggleId, submenuId) {
+                const toggleButton = document.getElementById(toggleId);
+                const submenu = document.getElementById(submenuId);
+                if (toggleButton && submenu) {
+                    toggleButton.addEventListener('click', function(event) {
+                        event.preventDefault();
+                        submenu.style.display = submenu.style.display === 'block' ? 'none' : 'block';
+                    });
+                }
+            }
+            setupSubmenuToggle('financeiro-toggle', 'financeiro-submenu');
+            setupSubmenuToggle('comercial-toggle', 'comercial-submenu');
+            setupSubmenuToggle('configuracoes-toggle', 'configuracoes-submenu');
+
+            const activeLink = document.querySelector('.sidebar .submenu a.active');
+            if (activeLink) {
+                const parentSubmenu = activeLink.closest('.submenu');
+                if (parentSubmenu) {
+                    parentSubmenu.style.display = 'block';
+                }
+            }
+            
+            // --- INÍCIO DO SCRIPT DO FILTRO (AJUSTADO) ---
+            const periodSelect = document.getElementById('period');
+            const customDateDiv = document.getElementById('custom-date');
+            const filterForm = document.getElementById('filter-form');
+            const filterButton = document.getElementById('filter-button');
+
+            function toggleCustomDate() {
+                customDateDiv.style.display = periodSelect.value === 'custom' ? 'flex' : 'none';
+            }
+            
+            toggleCustomDate(); 
+            
+            periodSelect.addEventListener('change', function() {
+                toggleCustomDate();
+                if (this.value !== 'custom') {
+                    filterForm.submit();
+                }
+            });
+
+            filterButton.addEventListener('click', function(event) {
+                event.preventDefault(); 
+                if (periodSelect.value !== 'custom') {
+                    document.getElementById('start_date').value = '';
+                    document.getElementById('end_date').value = '';
+                }
+                filterForm.submit();
+            });
+
+
+            // --- SCRIPT PARA O TOOLTIP INTERATIVO ---
+            const detailCells = document.querySelectorAll('.has-details');
+
+            detailCells.forEach(cell => {
+                cell.addEventListener('click', function(event) {
+                    event.stopPropagation();
+                    
+                    document.querySelectorAll('.has-details.active').forEach(activeCell => {
+                        if (activeCell !== this) {
+                            activeCell.classList.remove('active');
+                        }
+                    });
+                    this.classList.toggle('active');
+                });
+            });
+
+            document.addEventListener('click', function() {
+                document.querySelectorAll('.has-details.active').forEach(activeCell => {
+                    activeCell.classList.remove('active');
+                });
+            });
+
+           // Em dre.html, dentro da tag <script>
+
+            const analiseBtn = document.getElementById('analise-btn');
+            const analiseContainer = document.getElementById('analise-container');
+
+            if (analiseBtn && document.getElementById('dre-data-json')) {
+                
+                // FUNÇÃO AGORA PROCURA PELO 'key' (Ex: 'RECEITAS_BRUTAS')
+                function findTotal(data, key) {
+                    const row = data.find(item => item.key === key);
+                    if (row) {
+                        return parseFloat(row.total_geral || 0);
+                    }
+                    return 0;
+                }
+
+                
+
+                // ▼▼▼ SUBSTITUA O BLOCO "addEventListener" ANTIGO POR ESTE NOVO BLOCO COMPLETO (NOS DOIS ARQUIVOS) ▼▼▼
+
+                analiseBtn.addEventListener('click', function() {
+                    if (analiseContainer.style.display === 'none' || analiseContainer.style.display === '') {
+                        
+                        // --- 1. COLETA E CÁLCULO DOS DADOS ---
+                        const dreData = JSON.parse(document.getElementById('dre-data-json').textContent);
+                        const dreDataAnterior = JSON.parse(document.getElementById('dre-data-anterior-json').textContent);
+
+                        const receitaBruta = findTotal(dreData, 'RECEITAS_BRUTAS');
+                        const deducao = findTotal(dreData, 'DEDUCAO_RECEITA_BRUTA');
+                        const custos = findTotal(dreData, 'CUSTOS_CSP_CMV');
+                        const despesasOperacionais = findTotal(dreData, 'DESPESAS_OPERACIONAIS');
+                        const depreciacao = findTotal(dreData, 'DEPRECIACAO');
+                        const naoOperacionais = findTotal(dreData, 'NAO_OPERACIONAIS');
+                        const tributacao = findTotal(dreData, 'TRIBUTACAO');
+                        const distribuicaoLucro = findTotal(dreData, 'DISTRIBUICAO_LUCRO_SOCIOS');
+                        const resultadoFinalAnterior = findTotal(dreDataAnterior, 'RESULTADO_FINAL');
+
+                        const receitaLiquida = receitaBruta - deducao;
+                        const lucroBruto = receitaLiquida - custos;
+                        const ebitda = lucroBruto - despesasOperacionais;
+                        const ebit = ebitda - depreciacao;
+                        const lair = ebit - naoOperacionais;
+                        const lucroLiquidoFinal = lair - tributacao;
+                        const resultadoFinal = lucroLiquidoFinal - distribuicaoLucro;
+                        
+                        // --- 2. CÁLCULO DE KPIs ---
+                        const margemBruta = receitaLiquida > 0 ? (lucroBruto / receitaLiquida) * 100 : 0;
+                        const margemEbitda = receitaLiquida > 0 ? (ebitda / receitaLiquida) * 100 : 0;
+                        const margemLiquida = receitaLiquida > 0 ? (lucroLiquidoFinal / receitaLiquida) * 100 : 0;
+                        const percentualCustos = receitaLiquida > 0 ? (custos / receitaLiquida) * 100 : 0;
+                        const percentualDespesasOp = receitaLiquida > 0 ? (despesasOperacionais / receitaLiquida) * 100 : 0;
+
+                        // --- 3. LÓGICA DE DIAGNÓSTICO (RESTAURADA) ---
+                        let positivos = [], negativos = [], sugestoes = [];
+
+                        if (resultadoFinal > 0) {
+                            positivos.push(`✅ **Resultado Positivo:** A operação gerou um resultado final (lucro retido) de R$ ${resultadoFinal.toLocaleString('pt-BR', {minimumFractionDigits: 2})}.`);
+                        } else {
+                            negativos.push(`❌ **Resultado Negativo:** A operação consumiu R$ ${Math.abs(resultadoFinal).toLocaleString('pt-BR', {minimumFractionDigits: 2})} do caixa no período.`);
+                        }
+                        if (margemBruta > 40) {
+                            positivos.push(`📈 **Boa Margem Bruta (${margemBruta.toFixed(1)}%):** Sua empresa é eficiente em controlar os custos diretos.`);
+                        } else if (margemBruta < 20 && receitaLiquida > 0) {
+                            negativos.push(`📉 **Baixa Margem Bruta (${margemBruta.toFixed(1)}%):** Os custos diretos estão consumindo grande parte da sua receita.`);
+                        }
+                        if (margemEbitda > 20) {
+                            positivos.push(`👍 **Excelente Geração de Caixa Operacional:** O EBITDA representa ${margemEbitda.toFixed(1)}% da sua receita líquida.`);
+                        } else if (ebitda < 0 && receitaLiquida > 0) {
+                            negativos.push(`🚨 **EBITDA Negativo:** Alerta! Sua operação principal não está gerando caixa.`);
+                        }
+                        if (margemLiquida > 10) {
+                            positivos.push(`💰 **Ótima Rentabilidade Final:** Sua margem líquida de ${margemLiquida.toFixed(1)}% é um forte indicador de saúde financeira.`);
+                        } else if (lucroLiquidoFinal < 0 && receitaLiquida > 0) {
+                            negativos.push(`📉 **Prejuízo no Período:** O lucro líquido foi negativo em R$ ${Math.abs(lucroLiquidoFinal).toLocaleString('pt-BR', {minimumFractionDigits: 2})}.`);
+                        }
+
+                        if (lucroLiquidoFinal <= 0 && receitaLiquida > 0) {
+                            sugestoes.push('O resultado foi negativo. É crucial identificar a causa raiz do prejuízo.');
+                            if (lucroBruto <= 0) {
+                                sugestoes.push('**Foco nos Custos:** A baixa margem bruta é o principal problema. Revise sua precificação, negocie com fornecedores e otimize processos.');
+                            } else if (ebitda <= 0) {
+                                sugestoes.push('**Foco nas Despesas Operacionais:** As despesas com vendas, marketing e administrativas estão consumindo todo o lucro. Faça um pente-fino nessas áreas.');
+                            } else {
+                                sugestoes.push('**Foco no Não-Operacional:** Sua operação é saudável, mas o resultado foi impactado por despesas financeiras, impostos ou outros.');
+                            }
+                        } else {
+                            if (percentualCustos > 60) sugestoes.push(`**Otimizar Custos (${percentualCustos.toFixed(1)}%):** Seus custos diretos estão elevados. Otimizar essa linha pode aumentar sua margem.`);
+                            if (percentualDespesasOp > 25) sugestoes.push(`**Controlar Despesas (${percentualDespesasOp.toFixed(1)}%):** Suas despesas operacionais representam uma fatia considerável da receita. Busque maior eficiência.`);
+                            if (sugestoes.length === 0 && positivos.length > 0) sugestoes.push('**Manter a Excelência:** O desempenho é sólido! O foco é manter a consistência e monitorar os KPIs.');
+                        }
+                        
+                        // --- 4. PREENCHIMENTO DO HTML (COMPLETO) ---
+                        
+                        document.querySelector('#analise-resumo p').innerHTML = `No período, sua operação alcançou uma <strong>Margem Bruta de ${margemBruta.toFixed(2).replace('.',',')}%</strong> e uma <strong>Margem Líquida final de ${margemLiquida.toFixed(2).replace('.',',')}%</strong>.`;
+                        
+                        const diferenca = resultadoFinal - resultadoFinalAnterior;
+                        const percentualDiferenca = resultadoFinalAnterior !== 0 ? (diferenca / Math.abs(resultadoFinalAnterior)) * 100 : (resultadoFinal !== 0 ? 100 : 0);
+                        let comparativoHTML = `O <strong>Resultado Final</strong> foi de <strong>R$ ${resultadoFinal.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</strong>. Em comparação com o período anterior, `;
+                        if (diferenca >= 0) comparativoHTML += `houve uma <span class="positivo">melhora de ${percentualDiferenca.toFixed(2).replace('.',',')}%</span>.`;
+                        else comparativoHTML += `houve uma <span class="negativo">piora de ${Math.abs(percentualDiferenca).toFixed(2).replace('.',',')}%</span>.`;
+                        document.querySelector('#analise-comparativo p').innerHTML = comparativoHTML;
+
+                        // Seção de Benchmark (lógica dinâmica que já estava correta)
+                        const sectorSelect = document.getElementById('sector-benchmark-select');
+                        const feedbackBenchmarkEl = document.getElementById('benchmark-feedback');
+                        function updateBenchmarkAnalysis() {
+                            if (!feedbackBenchmarkEl || !sectorSelect) return;
+                            const seu_setor = sectorSelect.value;
+                            const suaMargem = margemLiquida;
+                            let feedback = '';
+                            if (seu_setor === 'Serviços') {
+                                if (suaMargem >= 20) feedback = `<span class="positivo">Sua margem (${suaMargem.toFixed(1)}%) está dentro ou acima da média de 20% para Serviços.</span>`;
+                                else feedback = `<span class="negativo">Sua margem (${suaMargem.toFixed(1)}%) está abaixo da média de 20% para Serviços.</span>`;
+                            } else if (seu_setor === 'Lojas e Comércio') {
+                                if (suaMargem >= 10) feedback = `<span class="positivo">Sua margem (${suaMargem.toFixed(1)}%) está na faixa de 10-15% para Lojas e Comércio.</span>`;
+                                else feedback = `<span class="negativo">Sua margem (${suaMargem.toFixed(1)}%) está abaixo da faixa de 10-15% para Lojas e Comércio.</span>`;
+                            } else if (seu_setor === 'Indústria') {
+                                if (suaMargem >= 6) feedback = `<span class="positivo">Sua margem (${suaMargem.toFixed(1)}%) está na faixa de 6-8% para Indústria.</span>`;
+                                else feedback = `<span class="negativo">Sua margem (${suaMargem.toFixed(1)}%) está abaixo da faixa de 6-8% para Indústria.</span>`;
+                            } else if (seu_setor === 'Atacadista') {
+                                if (suaMargem >= 4) feedback = `<span class="positivo">Sua margem (${suaMargem.toFixed(1)}%) está na faixa de 4-6% para Atacadista.</span>`;
+                                else feedback = `<span class="negativo">Sua margem (${suaMargem.toFixed(1)}%) está abaixo da faixa de 4-6% para Atacadista.</span>`;
+                            } else {
+                                feedback = 'Selecione um setor para ver a comparação.';
+                            }
+                            feedbackBenchmarkEl.innerHTML = feedback;
+                        }
+                        if (sectorSelect) sectorSelect.addEventListener('change', updateBenchmarkAnalysis);
+                        updateBenchmarkAnalysis(); // Chama a função para o estado inicial
+
+                        // LÓGICA DE PREENCHIMENTO DOS PONTOS DE DESTAQUE (RESTAURADA)
+                        const positivosUl = document.querySelector('#pontos-positivos ul');
+                        const negativosUl = document.querySelector('#pontos-negativos ul');
+                        positivosUl.innerHTML = ''; 
+                        negativosUl.innerHTML = '';
+                        (positivos.length > 0 ? positivos : ['Nenhum ponto positivo de destaque neste período.']).forEach(txt => positivosUl.innerHTML += `<li>${txt}</li>`);
+                        (negativos.length > 0 ? negativos : ['Nenhum ponto negativo de destaque neste período.']).forEach(txt => negativosUl.innerHTML += `<li>${txt}</li>`);
+                        
+                        // LÓGICA DE PREENCHIMENTO DAS SUGESTÕES (RESTAURADA)
+                        const sugestoesUl = document.querySelector('#sugestoes-melhoria ul');
+                        sugestoesUl.innerHTML = '';
+                        (sugestoes.length > 0 ? sugestoes : ['Nenhuma sugestão específica necessária no momento. Continue monitorando!']).forEach(txt => sugestoesUl.innerHTML += `<li>${txt}</li>`);
+                        
+                        // Exibe o container
+                        analiseContainer.style.display = 'block';
+                        this.textContent = 'Ocultar Análise';
+                    } else {
+                        analiseContainer.style.display = 'none';
+                        this.textContent = 'Iniciar Análise';
+                    }
+                });
+            }
+            // Em dre.html, cole este código dentro do script principal
+
+            // --- SCRIPT PARA EXPANDIR DETALHES DA DRE ---
+            document.querySelectorAll('.expandable-label').forEach(label => {
+                label.addEventListener('click', function() {
+                    const targetId = this.dataset.target;
+                    const detailsRow = document.querySelector(targetId);
+                    if (detailsRow) {
+                        detailsRow.classList.toggle('expanded');
+                    }
+                });
+            });
+        });
+    </script>
+    {{ dre_data|json_script:"dre-data-json" }}
+    {{ dre_data_anterior|json_script:"dre-data-anterior-json" }}
+    {{ dre_cards_data|json_script:"dre-cards-data-json" }}
+</body>
+</html>

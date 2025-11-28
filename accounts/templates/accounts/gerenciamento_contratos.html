@@ -1,0 +1,364 @@
+{% load static %}
+{% load humanize %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão de Contratos</title> <link rel="stylesheet" href="{% static 'css/global.css' %}">
+    <link rel="stylesheet" href="{% static 'css/themes.css' %}">
+    <link rel="stylesheet" href="{% static 'css/sidebar.css' %}">
+    <link rel="stylesheet" href="{% static 'css/layout-responsive.css' %}"> <link rel="stylesheet" href="{% static 'css/contratos.css' %}"> <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+</head>
+
+<body class="contratos-page"> 
+    
+    {% include 'accounts/_sidebar.html' %} 
+    <div class="main-content"> 
+        {% include 'accounts/partials/bpo_banner.html' %}
+        <button id="menu-toggle">&#9776;</button> 
+        <div class="content-container">
+
+            <h1>Gestão de Contratos</h1> {% if messages %}
+                <div class="messages">
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <div class="form-container card">
+                <h3 class="card-header">{% if form.instance.id %}Editar Contrato{% else %}Novo Contrato{% endif %}</h3>
+                <form method="POST" enctype="multipart/form-data" class="card-body" id="main-contract-form">
+                    {% csrf_token %}
+                    {% if form.instance.id %}
+                        <input type="hidden" name="contract_id" value="{{ form.instance.id }}">
+                    {% endif %}
+
+                    <div class="form-row">
+                        <div class="form-group-inline" style="flex: 2;">
+                            {{ form.title.label_tag }}
+                            {{ form.title }}
+                        </div>
+                        <div class="form-group-inline" style="flex: 1;">
+                            {{ form.client.label_tag }}
+                            {{ form.client }}
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group-inline">
+                            {{ form.start_date.label_tag }}
+                            {{ form.start_date }}
+                        </div>
+                        <div class="form-group-inline">
+                            {{ form.end_date.label_tag }}
+                            {{ form.end_date }}
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group-inline">
+                            {{ form.value.label_tag }}
+                            <input type="text" name="value" id="id_value" 
+                                value="{% if form.is_bound %}{{ form.value.value }}{% elif form.instance.value %}{{ form.instance.value|floatformat:2|intcomma }}{% endif %}" 
+                                {% if form.value.field.required %}required{% endif %}>
+                        </div>
+                        <div class="form-group-inline">
+                            {{ form.status.label_tag }}
+                            {{ form.status }}
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group-inline">
+                            {{ form.document.label_tag }}
+                            {{ form.document }}
+                        </div>
+                    </div>
+
+                    {% if form.errors %}
+                        <div class="alert alert-danger" style="margin-top: 15px;">
+                            <strong>Erro ao salvar:</strong>
+                            <ul style="margin: 0; padding-left: 20px;">
+                            {% for field, errors in form.errors.items %}
+                                <li>{{ field|capfirst }}: {{ errors|join:", " }}</li>
+                            {% endfor %}
+                            </ul>
+                        </div>
+                    {% endif %}
+
+                    <div class="button-container" style="margin-top: 15px;">
+                        <button type="submit" class="btn btn-primary">Salvar Contrato</button>
+                        {% if form.instance.id %}
+                        <a href="{% url 'gerenciamento_contratos' %}" class="btn btn-secondary">Cancelar Edição</a>
+                        {% endif %}
+                    </div>
+                </form>
+            </div>
+
+            <div class="filter-container card">
+                <form method="GET" class="card-body">
+                    <div class="form-row">
+                        <div class="form-group-inline" style="flex: 2;"> <label for="search_term">Buscar por Título/Cliente:</label>
+                            <input type="text" name="search_term" id="search_term" value="{{ search_term|default:'' }}" class="form-field" placeholder="Digite o título ou nome do cliente...">
+                        </div>
+                        <div class="form-group-inline">
+                            <label for="start_date">Data Início (De):</label>
+                            <input type="date" name="start_date" id="start_date" value="{{ start_date|default:'' }}" class="form-field">
+                        </div>
+                        <div class="form-group-inline">
+                            <label for="end_date">Data Fim (Até):</label>
+                            <input type="date" name="end_date" id="end_date" value="{{ end_date|default:'' }}" class="form-field">
+                        </div>
+                        <div class="form-group-inline">
+                            <label for="status">Status:</label>
+                            <select name="status" id="status" class="form-field">
+                                <option value="all" {% if filter_status == 'all' %}selected{% endif %}>Todos</option>
+                                {% for value, display in status_choices %}
+                                    <option value="{{ value }}" {% if filter_status == value %}selected{% endif %}>{{ display }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group-inline" style="align-self: flex-end;">
+                            <button type="submit" class="btn btn-primary">Filtrar</button>
+                            <a href="{% url 'gerenciamento_contratos' %}" class="btn btn-secondary">Limpar</a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <div class="table-container card">
+                <form method="POST" id="bulk-delete-form">
+                    {% csrf_token %}
+                    <div class="card-header table-controls">
+                        <h3>Contratos Cadastrados</h3>
+                        <button type="submit" name="delete_selected_contracts" class="btn btn-danger btn-sm" onclick="return confirm('Tem certeza que deseja excluir os contratos selecionados?');">Excluir Selecionados</button>
+                    </div>
+                    <div class="table-scroll-wrapper"> <table class="styled-table">
+                            <thead>
+                                <tr>
+                                    <th><input type="checkbox" id="select-all-contracts" title="Selecionar todos"></th>
+                                    <th>Título</th>
+                                    <th>Cliente</th>
+                                    <th>Início</th>
+                                    <th>Término</th>
+                                    <th>Valor</th>
+                                    <th>Status</th>
+                                    <th>Documento</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for contract in contracts %}
+                                <tr class="{% if contract.status == 'CANCELADO' %}row-disabled{% elif contract.status == 'PENDENTE' %}row-warning{% endif %}">
+                                    <td><input type="checkbox" name="contract_ids" value="{{ contract.id }}" class="contract-checkbox"></td>
+                                    <td>{{ contract.title }}</td>
+                                    <td>{{ contract.client.nome }}</td>
+                                    <td>{{ contract.start_date|date:"d/m/Y" }}</td>
+                                    <td>{{ contract.end_date|date:"d/m/Y"|default:"--" }}</td>
+                                    <td>R$ {{ contract.value|intcomma }}</td>
+                                    <td>
+                                        <span class="status-badge status-{{ contract.status|lower }}">{{ contract.get_status_display }}</span>
+                                    </td>
+                                    <td>
+                                        {% if contract.document %}
+                                            <a href="{{ contract.document.url }}" target="_blank" class="btn btn-secondary btn-sm" title="Ver documento">Ver</a>
+                                        {% else %}
+                                            <button type="button" class="btn btn-secondary btn-sm" onclick="openAttachModal({{ contract.id }})">Anexar</button>
+                                        {% endif %}
+                                    </td>
+                                    <td class="action-buttons">
+                                        <a href="?edit={{ contract.id }}" class="btn btn-sm btn-primary">Editar</a>
+                                        <button type="button" class="btn btn-sm btn-danger" onclick="openDeleteModal({{ contract.id }}, '{{ contract.title|escapejs }}')">Excluir</button>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="9" style="text-align: center; padding: 20px;">
+                                        Nenhum contrato encontrado para os filtros selecionados.
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="5" style="text-align: right; font-weight: bold;">Total do Período:</td>
+                                    <td colspan="4" style="font-weight: bold;">R$ {{ total_value|floatformat:2|intcomma }}</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div> </form>
+
+                {% if contracts.has_other_pages %}
+                    <div class="pagination" style="text-align: center; margin-top: 20px; padding-bottom: 15px;">
+                        <span class="step-links">
+                            
+                            {% if contracts.has_previous %}
+                                <a href="?page=1&status={{ filter_status }}&start_date={{ start_date|default:'' }}&end_date={{ end_date|default:'' }}" class="btn btn-secondary btn-sm" title="Primeira página">&laquo;</a>
+                                <a href="?page={{ contracts.previous_page_number }}&status={{ filter_status }}&start_date={{ start_date|default:'' }}&end_date={{ end_date|default:'' }}" class="btn btn-secondary btn-sm" title="Página anterior">Anterior</a>
+                            {% else %}
+                                <span class="btn btn-secondary btn-sm disabled">&laquo;</span>
+                                <span class="btn btn-secondary btn-sm disabled">Anterior</span>
+                            {% endif %}
+
+                            <span class="current-page" style="padding: 0 15px; font-size: 0.9rem; vertical-align: middle;">
+                                Página {{ contracts.number }} de {{ contracts.paginator.num_pages }}
+                            </span>
+
+                            {% if contracts.has_next %}
+                                <a href="?page={{ contracts.next_page_number }}&status={{ filter_status }}&start_date={{ start_date|default:'' }}&end_date={{ end_date|default:'' }}" class="btn btn-secondary btn-sm" title="Próxima página">Próxima</a>
+                                <a href="?page={{ contracts.paginator.num_pages }}&status={{ filter_status }}&start_date={{ start_date|default:'' }}&end_date={{ end_date|default:'' }}" class="btn btn-secondary btn-sm" title="Última página">&raquo;</a>
+                            {% else %}
+                                <span class="btn btn-secondary btn-sm disabled">Próxima</span>
+                                <span class="btn btn-secondary btn-sm disabled">&raquo;</span>
+                            {% endif %}
+                        </span>
+                    </div>
+                {% endif %}
+            </div> </div> </div> <div id="delete-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeDeleteModal()">&times;</span>
+            <h4>Confirmar Exclusão</h4>
+            <p>Tem certeza que deseja excluir o contrato "<strong id="delete-contract-name"></strong>"?</p>
+            <form method="POST" id="delete-modal-form">
+                {% csrf_token %}
+                <input type="hidden" name="action_delete_contract" id="delete-contract-id">
+                <div class="button-container" style="justify-content: flex-end;">
+                    <button type="button" class="btn btn-secondary" onclick="closeDeleteModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-danger">Excluir</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="attach-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeAttachModal()">&times;</span>
+            <h4>Anexar Documento</h4>
+            <p>Selecione o arquivo PDF para o contrato.</p>
+            <form method="POST" enctype="multipart/form-data" id="attach-modal-form">
+                {% csrf_token %}
+                <input type="hidden" name="action_attach" value="true">
+                <input type="hidden" name="attach_contract_id" id="attach-contract-id">
+                <input type="file" name="file" class="form-field" accept="application/pdf" required style="width: 100%; margin-bottom: 15px;">
+                <div class="button-container" style="justify-content: flex-end;">
+                    <button type="button" class="btn btn-secondary" onclick="closeAttachModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar Anexo</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="{% static 'js/theme.js' %}"></script>
+    <script>
+        // ==========================================================
+        // FIX 1: Funções do Modal (Movidas para o escopo global)
+        // ==========================================================
+        
+        // As funções agora estão aqui fora e podem ser encontradas pelo 'onclick'
+        
+        function openDeleteModal(id, name) {
+            const deleteModal = document.getElementById('delete-modal');
+            if (!deleteModal) return;
+            document.getElementById('delete-contract-id').value = id;
+            document.getElementById('delete-contract-name').textContent = name;
+            deleteModal.style.display = 'block';
+        }
+        function closeDeleteModal() {
+            const deleteModal = document.getElementById('delete-modal');
+            if (deleteModal) deleteModal.style.display = 'none';
+        }
+
+        function openAttachModal(id) {
+            const attachModal = document.getElementById('attach-modal');
+            if (!attachModal) return;
+            document.getElementById('attach-contract-id').value = id;
+            attachModal.style.display = 'block';
+        }
+        function closeAttachModal() {
+            const attachModal = document.getElementById('attach-modal');
+            if (attachModal) attachModal.style.display = 'none';
+        }
+
+        // Fechar modal clicando fora
+        window.onclick = function(event) {
+            const deleteModal = document.getElementById('delete-modal');
+            const attachModal = document.getElementById('attach-modal');
+            if (event.target == deleteModal) closeDeleteModal();
+            if (event.target == attachModal) closeAttachModal();
+        }
+
+        // ==========================================================
+        // (Restante do seu script que roda quando o DOM carrega)
+        // ==========================================================
+        document.addEventListener('DOMContentLoaded', function() {
+
+            // MENU MOBILE
+            const menuToggleButton = document.getElementById('menu-toggle');
+            const sidebar = document.querySelector('.sidebar');
+            if (menuToggleButton && sidebar) {
+                menuToggleButton.addEventListener('click', function() {
+                    sidebar.classList.toggle('mobile-open');
+                });
+            }
+
+            // SUBMENUS
+            function setupSubmenuToggle(toggleId, submenuId) {
+                const toggleButton = document.getElementById(toggleId);
+                const submenu = document.getElementById(submenuId);
+                if (toggleButton && submenu) {
+                    toggleButton.addEventListener('click', function(event) {
+                        event.preventDefault();
+                        submenu.style.display = submenu.style.display === 'block' ? 'none' : 'block';
+                    });
+                }
+            }
+            setupSubmenuToggle('financeiro-toggle', 'financeiro-submenu');
+            setupSubmenuToggle('comercial-toggle', 'comercial-submenu');
+            setupSubmenuToggle('configuracoes-toggle', 'configuracoes-submenu');
+
+            const activeLink = document.querySelector('.sidebar a.active');
+            if (activeLink) {
+                const parentSubmenu = activeLink.closest('.submenu');
+                if (parentSubmenu) parentSubmenu.style.display = 'block';
+            }
+            
+            // Script para "Selecionar Todos"
+            const selectAllCheckbox = document.getElementById('select-all-contracts');
+            if (selectAllCheckbox) {
+                selectAllCheckbox.addEventListener('change', function(e) {
+                    const checkboxes = document.querySelectorAll('.contract-checkbox');
+                    checkboxes.forEach(cb => cb.checked = e.target.checked);
+                });
+            }
+
+            // --- INÍCIO DO FIX 2: Limpador de valor do formulário ---
+            
+            // Seleciona o formulário principal (pelo ID)
+            const mainContractForm = document.getElementById('main-contract-form');
+            // O Django gera o id 'id_value' para o campo 'value'
+            const valueInput = document.getElementById('id_value'); 
+            
+            if (mainContractForm && valueInput) {
+                mainContractForm.addEventListener('submit', function() {
+                    let formValue = valueInput.value;
+                    
+                    // Lógica de limpeza (igual ao 'contas_pagar.html')
+                    // Só executa se o valor tiver o formato brasileiro (com vírgula)
+                    if (formValue.includes(',')) {
+                        // Remove pontos de milhar (Ex: 1.200,00 -> 1200,00)
+                        formValue = formValue.replace(/\./g, '');
+                        // Troca a vírgula do decimal por ponto (Ex: 1200,00 -> 1200.00)
+                        formValue = formValue.replace(',', '.');
+                    }
+                    
+                    // Define o valor limpo de volta no campo
+                    valueInput.value = formValue;
+                });
+            }
+            // --- FIM DO FIX 2 ---
+        });    
+    </script>
+</body>
+</html>

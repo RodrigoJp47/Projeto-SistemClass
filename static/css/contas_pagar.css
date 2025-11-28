@@ -1,0 +1,440 @@
+/* ========================================================================== */
+/* ESTILOS DA PÁGINA DE CONTAS A PAGAR                                        */
+/* ========================================================================== */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+/* -------------------------------------------------------------------------- */
+/* RECOMENDAÇÃO: ESTILOS GLOBAIS DA APLICAÇÃO (TEMA ESCURO)                   */
+/* Se este visual (fundo preto, texto branco) for para o site inteiro,       */
+/* considere mover estas regras para o seu arquivo `global.css`.            */
+/* -------------------------------------------------------------------------- */
+body {
+    font-family: Arial, sans-serif;
+    
+    min-height: 100vh;
+}
+
+
+
+/* ========================================================================== */
+/* LAYOUT E COMPONENTES PRINCIPAIS                                            */
+/* ========================================================================== */
+
+.main-content {
+    /* Mantido o margin-left original de 290px para acomodar a sidebar */
+    margin-left: 250px;
+    padding: 20px;
+    width: calc(100% - 250px);
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+.header-container {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+/*
+  CORREÇÃO: A propriedade `font-size` foi REMOVIDA daqui.
+  Agora, o tamanho do h2 será controlado pelo `global.css`.
+  Apenas o `margin: 0;` foi mantido por ser um ajuste de layout específico.
+*/
+.header-container h2 {
+    margin: 0;
+}
+
+/* ADICIONE ESTA REGRA ABAIXO 
+  Ela aplica uma margem à esquerda em qualquer botão dentro do cabeçalho.
+*/
+.header-container .btn {
+    margin-left: 30px; /* Você pode aumentar ou diminuir este valor */
+}
+
+
+
+/* ========================================================================== */
+/* FORMULÁRIOS E FILTROS                                                      */
+/* ========================================================================== */
+
+.form-container, .filter-container {
+    background-color: #222;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.form-container input, .form-container select, .form-container textarea,
+.filter-container input[type="text"],
+.filter-container select, .filter-container input[type="date"] {
+    width: 100%;
+    padding: 10px;
+    margin: 5px 0 15px 0;
+    border: none;
+    border-radius: 4px;
+    background-color: #333;
+    color: #fff;
+}
+
+.form-container .btn + .btn {
+    margin-left: 15px; /* Ajuste o valor do espaçamento como preferir */
+}
+
+
+
+
+/* ========================================================================== */
+/* CABEÇALHO DE AÇÕES (EXPORTAR, EXCLUIR EM MASSA)                            */
+/* ========================================================================== */
+
+.actions-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+.export-buttons {
+    display: flex;         /* Garante que os botões fiquem em linha. */
+    align-items: center;   /* Alinha os botões verticalmente. */
+    gap: 10px;             /* CRIA O ESPAÇO de 10 pixels entre cada botão. */
+}
+
+
+
+
+
+
+/* ========================================================================== */
+/* TABELA DE DADOS E MENU DE AÇÕES                                            */
+/* ========================================================================== */
+
+.table-container {
+    background-color: #222;
+    padding: 20px;
+    border-radius: 8px;
+    width: 100%;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed; /* Força a tabela a respeitar as larguras definidas */
+}
+
+th, td {
+    padding: 12px 8px;
+    text-align: left;
+    border-bottom: 1px solid #444;
+    vertical-align: middle;
+    word-wrap: break-word; /* Garante a quebra de textos longos */
+}
+
+th {
+    background-color: #333;
+}
+
+
+/* Definição das larguras das colunas (código específico desta tabela) */
+.table-container th:nth-child(1) { width: 3%; }   /* Checkbox */
+.table-container th:nth-child(2) { width: 10%; }  /* Nome */
+.table-container th:nth-child(3) { width: 10%; }   /* Descrição (reduzida) */
+.table-container th:nth-child(4) { width: 9%; }   /* Vencimento */
+.table-container th:nth-child(5) { width: 8%; }   /* Valor */
+.table-container th:nth-child(6) { width: 9%; }  /* Categoria */
+.table-container th:nth-child(7) { width: 8%; }   /* Conta Bancária */
+.table-container th:nth-child(8) { width: 9%; }   /* Área-DRE (NOVA) */
+.table-container th:nth-child(9) { width: 8%; }   /* Forma Pag. */
+.table-container th:nth-child(10){ width: 8%; }   /* Ocorrência */
+.table-container th:nth-child(11){ width: 7%; }   /* Custo */
+.table-container th:nth-child(12){ width: 6%; }   /* Status */
+.table-container th:nth-child(13){ width: 6%; }   /* Ações */
+
+/* --- Estilos do menu de ações individual --- */
+td.actions-cell {
+    text-align: center;
+}
+
+.action-menu {
+    position: relative;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.action-menu .menu-icon {
+    width: 30px;
+    height: 30px;
+    background-color: rgb(16, 107, 16);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #000;
+    font-size: 16px;
+    margin: 0 auto;
+}
+
+.action-menu.active .dropdown {
+    display: block;
+}
+
+.action-menu .dropdown {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: 35px;
+    background-color: #333;
+    min-width: 0; /* Permite que o menu dropdown seja mais estreito */
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.4);
+    z-index: 1000;
+    border-radius: 4px;
+}
+
+.action-menu .dropdown a, .action-menu .dropdown button {
+    display: block;
+    padding: 8px;
+    color: #fff;
+    text-decoration: none;
+    background: none;
+    border: none;
+    width: 100%;
+    text-align: center;
+    cursor: pointer;
+    font-size: 18px;
+}
+
+.action-menu .dropdown a:hover, .action-menu .dropdown button:hover {
+    background-color: #0f0;
+    color: #000;
+}
+
+.action-menu .dropdown button.delete-btn { color: #f00; }
+.action-menu .dropdown button.delete-btn:hover { background-color: #f00; color: #fff; }
+
+.action-menu .dropdown button.undo-btn { color: #0d6efd; }
+.action-menu .dropdown button.undo-btn:hover { background-color: #0d6efd; color: #fff; }
+
+/* ========================================================================== */
+/* ESTILOS DOS BOTÕES GLOBAIS                                                 */
+/* ========================================================================== */
+
+/* Estilo base para todos os botões */
+.btn {
+    display: inline-block;
+    padding: 5px 10px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    color: #000;
+    text-decoration: none;
+    text-align: center;
+    font-size: 12px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+/* Estilo para botões primários (Salvar, Filtrar, Voltar) */
+.btn-primary {
+    background-color: rgb(23, 103, 23); /* Verde */
+    color: #fff; /* Texto preto */
+    border-color: rgb(20, 108, 20);
+}
+
+.btn-primary:hover {
+    background-color: #0c0; /* Verde mais escuro no hover */
+    border-color: #0c0;
+}
+
+/* Estilo para botões de perigo (Excluir) */
+.btn-danger {
+    background-color: #dc3545; /* Vermelho */
+    color: #f5eaea; /* Texto branco */
+    border-color: #dc3545;
+}
+
+.btn-danger:hover {
+    background-color: #c82333; /* Vermelho mais escuro no hover */
+    border-color: #bd2130;
+}
+
+
+
+/* ==========================================================================
+   SOBRESCRITA DE ESTILO DO SIDEBAR PARA ESTA PÁGINA
+   ========================================================================== */
+body.contas-pagar-page .sidebar {
+    top: 0;
+    left: 0;
+    bottom: 0;
+    border-radius: 0;
+}
+
+/* Em contas_pagar.css, adicione ao final */
+.total-row { font-size: 1.1em; }
+.pagination { margin-top: 20px; text-align: center; }
+.pagination a { text-decoration: none; padding: 8px 12px; border: 1px solid #444; margin: 0 4px; border-radius: 4px; }
+
+/* Em static/css/contas_pagar.css, adicione no final do arquivo */
+
+/* ==========================================================================
+   ESTILOS PARA O BOTÃO DE INFORMAÇÃO DA IMPORTAÇÃO
+   ========================================================================== */
+
+/* 1. Contêiner para alinhar o botão de importação e o ícone de informação lado a lado. */
+.import-container {
+    display: flex; /* Usa Flexbox para alinhar os itens. */
+    align-items: center; /* Centraliza verticalmente. */
+    gap: 10px; /* Cria um espaço entre o botão e o ícone. */
+}
+
+/* 2. Contêiner principal do ícone e da dica. A posição relativa é crucial! */
+.info-tooltip-container {
+    position: relative; /* Serve como âncora para o texto da dica. */
+    display: inline-block;
+}
+
+/* 3. Estilo do ícone "i". */
+.info-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    background-color: #007bff; /* Azul para combinar com outros ícones de ajuda. */
+    color: #fff;
+    border-radius: 50%; /* Deixa o ícone redondo. */
+    font-weight: bold;
+    font-family: 'Courier New', Courier, monospace;
+    cursor: help; /* Muda o cursor para um ponto de interrogação. */
+    font-size: 16px;
+}
+
+/* 4. Estilo do texto da dica (tooltip). Começa escondido. */
+.info-tooltip-container .tooltip-text {
+    visibility: hidden; /* Começa invisível. */
+    opacity: 0; /* Começa transparente para o efeito de fade-in. */
+    width: 350px; /* Largura da caixa de texto. */
+    background-color: #333; /* Fundo escuro. */
+    color: #fff; /* Texto branco. */
+    text-align: left;
+    border-radius: 6px;
+    padding: 10px;
+    position: absolute; /* Posição flutuante. */
+    z-index: 1; /* Garante que fique sobre outros elementos. */
+    bottom: 125%; /* Posição acima do ícone. */
+    left: 50%;
+    transform: translateX(-50%); /* Centraliza a caixa horizontalmente. */
+    transition: opacity 0.3s; /* Efeito suave de aparição. */
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3); /* Sombra para dar profundidade. */
+    line-height: 1.6;
+}
+
+/* 5. A "seta" que aponta do texto para o ícone. */
+.info-tooltip-container .tooltip-text::after {
+    content: "";
+    position: absolute;
+    top: 100%; /* Posicionada na base da caixa de texto. */
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 5px;
+    border-style: solid;
+    border-color: #333 transparent transparent transparent; /* Truque para criar um triângulo. */
+}
+
+/* 6. A MÁGICA: Quando o mouse passa sobre o contêiner, o texto da dica se torna visível. */
+.info-tooltip-container:hover .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* Estilos para a formatação do texto dentro da dica. */
+.tooltip-text strong {
+    color: #0f0; /* Cor de destaque para o título. */
+}
+.tooltip-text hr {
+    border-color: #555;
+    margin: 5px 0;
+}
+.tooltip-text ul {
+    list-style-position: inside;
+    padding-left: 5px;
+}
+.tooltip-text li {
+    margin-bottom: 8px;
+}
+/* ========================================================================== */
+/* ESTILOS RESPONSIVOS (PARA DISPOSITIVOS MÓVEIS)                             */
+/* ========================================================================== */
+
+@media screen and (max-width: 768px) {
+    /* Adicione esse bloco */
+    .main-content {
+        width: 100%;      /* Define a largura total */
+        margin-left: 0;   /* Remove a margem da sidebar */
+        padding: 10px;    /* Opcional: um padding menor para telas pequenas */
+    }
+    
+    .actions-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 15px;
+    }
+
+    .export-buttons {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+    }
+
+    .export-buttons a {
+        flex-grow: 1;
+        text-align: center;
+    }
+
+    .bulk-action, .bulk-action button {
+        width: 100%;
+    }
+    
+    /* --- Layout de "Card" para a tabela em telas pequenas --- */
+    .table-container thead {
+        display: none;
+    }
+
+    .table-container tr {
+        display: block;
+        background-color: #2c2c2c;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        border: 1px solid #444;
+        padding: 5px 0;
+    }
+    
+    .table-container td {
+        display: block;
+        width: 100%;
+        text-align: right;
+        padding-left: 50%; /* Espaço para o "título" do dado */
+        position: relative;
+        border-bottom: none;
+        color: #fff !important;
+    }
+
+    .table-container td:last-child {
+        border-bottom: none;
+    }
+
+    /* Cria os "títulos" de cada dado usando o atributo data-label do HTML */
+    .table-container td:before {
+        content: attr(data-label);
+        position: absolute;
+        left: 10px;
+        width: calc(50% - 20px);
+        padding-right: 10px;
+        white-space: nowrap;
+        text-align: left;
+        font-weight: bold;
+        color: #0f0; /* Cor de destaque para o título */
+    }
+}

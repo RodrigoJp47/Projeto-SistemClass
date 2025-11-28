@@ -1,0 +1,424 @@
+/* static/css/contratos.css - Versão Refeita com Responsividade */
+
+/* ==========================================================================
+   Variáveis e Estilos Globais da Página
+   ========================================================================== */
+
+/* Cores base (Serão sobrescritas por themes.css para tema claro) */
+:root {
+    --contratos-bg-card: #222;
+    --contratos-bg-header: #333;
+    --contratos-border-color: #444;
+    --contratos-text-primary: #fff;
+    --contratos-text-secondary: #ccc;
+    --contratos-input-bg: #333;
+    --contratos-input-border: #555;
+    --contratos-hover-row: #303030;
+    --contratos-spacing: 15px; /* Espaçamento padrão */
+}
+
+.contratos-page .main-content {
+    margin-left: 270px; /* Espaço para sidebar no desktop */
+    padding: var(--contratos-spacing);
+    width: calc(100% - 270px);
+    background-color: #121212; /* Fundo escuro padrão para o conteúdo */
+    color: var(--contratos-text-primary);
+    min-height: 100vh;
+}
+
+.contratos-page .content-container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--contratos-spacing);
+}
+
+.contratos-page h1 {
+    margin-bottom: var(--contratos-spacing);
+    color: var(--contratos-text-primary);
+}
+
+/* Estilos dos cards (Formulário, Filtros, Tabela) */
+.contratos-page .card {
+    background-color: var(--contratos-bg-card);
+    padding: var(--contratos-spacing);
+    border-radius: 8px; /* Usando valor explícito para simplificar */
+    border: 1px solid var(--contratos-border-color);
+    color: var(--contratos-text-primary);
+}
+
+.contratos-page .card-header {
+    font-size: 1.1em; /* Ajuste de tamanho */
+    margin: -15px -15px 15px -15px; /* Remove padding interno e adiciona margem */
+    padding: 10px 15px; /* Adiciona padding interno */
+    border-bottom: 1px solid var(--contratos-border-color);
+    border-radius: 8px 8px 0 0; /* Arredonda cantos superiores */
+    background-color: var(--contratos-bg-header); /* Fundo sutilmente diferente */
+    font-weight: bold;
+}
+
+/* ==========================================================================
+   Formulário de Cadastro/Edição e Filtros
+   ========================================================================== */
+
+.contratos-page .form-container .card-body,
+.contratos-page .filter-container .card-body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--contratos-spacing);
+}
+
+.contratos-page .form-row {
+    display: flex;
+    gap: var(--contratos-spacing);
+    flex-wrap: wrap; /* Permite quebra em telas menores */
+}
+
+.contratos-page .form-group-inline {
+    display: flex;
+    flex-direction: column;
+    flex: 1; /* Tenta ocupar espaço igualmente */
+    min-width: 200px; /* Largura mínima antes de quebrar */
+}
+
+.contratos-page label {
+    margin-bottom: 5px;
+    font-weight: bold;
+    font-size: 0.85em;
+    color: var(--contratos-text-secondary);
+}
+
+.contratos-page input[type="text"],
+.contratos-page input[type="date"],
+.contratos-page input[type="file"],
+.contratos-page select {
+    padding: 9px 12px;
+    border: 1px solid var(--contratos-input-border);
+    border-radius: 4px;
+    background-color: var(--contratos-input-bg);
+    color: var(--contratos-text-primary);
+    font-size: 0.9em;
+    width: 100%; /* Ocupa toda a largura do .form-group-inline */
+}
+
+.contratos-page input[type="file"] {
+    padding: 5px; /* Ajuste específico para input file */
+}
+
+/* Placeholder do input de data */
+.contratos-page input[type="date"]:invalid {
+    color: #888;
+}
+
+.contratos-page .button-container {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-start;
+    margin-top: 5px; /* Reduz a margem superior */
+}
+
+/* Filtro específico */
+.contratos-page .filter-container .form-row {
+    align-items: flex-end; /* Alinha itens na base */
+}
+
+.contratos-page .filter-container button,
+.contratos-page .filter-container a.btn {
+    white-space: nowrap; /* Evita quebra de linha nos botões de filtro */
+}
+
+
+/* ==========================================================================
+   Tabela de Contratos
+   ========================================================================== */
+
+.contratos-page .table-container .table-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 15px; /* Reajusta padding */
+    margin: -15px -15px 15px -15px; /* Remove padding interno e adiciona margem */
+    background-color: var(--contratos-bg-header);
+    border-bottom: 1px solid var(--contratos-border-color);
+    border-radius: 8px 8px 0 0;
+}
+
+.contratos-page .table-container h3 { /* Título dentro dos controls */
+    margin: 0;
+    font-size: 1.1em;
+    color: var(--contratos-text-primary);
+}
+
+.contratos-page .table-scroll-wrapper {
+    overflow-x: auto; /* Rolagem horizontal obrigatória */
+}
+
+.contratos-page .styled-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 0; /* Remove margem, já espaçado pelo card */
+    min-width: 800px; /* Força largura mínima para ativar rolagem */
+}
+
+.contratos-page .styled-table th,
+.contratos-page .styled-table td {
+    padding: 10px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--contratos-border-color);
+    font-size: 0.9em;
+    vertical-align: middle;
+    white-space: nowrap; /* Evita quebra de linha nas células */
+}
+
+.contratos-page .styled-table th {
+    background-color: var(--contratos-bg-header);
+    font-weight: bold;
+    position: sticky; /* Mantém o cabeçalho fixo no topo durante a rolagem vertical */
+    top: 0;
+    z-index: 1;
+}
+
+.contratos-page .styled-table tbody tr:hover {
+    background-color: var(--contratos-hover-row);
+}
+
+/* Coluna de Ações */
+.contratos-page .action-buttons {
+    display: flex;
+    gap: 5px;
+}
+
+.contratos-page .btn-sm {
+    padding: 4px 8px;
+    font-size: 0.8em;
+}
+
+/* Rodapé da Tabela */
+.contratos-page .styled-table tfoot td {
+    font-weight: bold;
+    background-color: var(--contratos-bg-header);
+    border-top: 2px solid #555;
+    white-space: nowrap;
+}
+
+/* Badges de Status */
+.status-badge {
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.8em;
+    font-weight: bold;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: inline-block;
+    white-space: nowrap;
+}
+.status-pendente { background-color: #ffc107; color: #333; }
+.status-ativo { background-color: #28a745; }
+.status-concluido { background-color: #17a2b8; }
+.status-cancelado { background-color: #dc3545; }
+
+/* Linhas com status específico */
+.row-disabled { opacity: 0.6; background-color: #2a2a2a; }
+.row-warning { background-color: #4d442a; }
+
+/* Checkbox */
+.contratos-page .styled-table input[type="checkbox"] {
+    cursor: pointer;
+}
+
+/* ==========================================================================
+   Paginação e Modais (Estrutura Básica)
+   ========================================================================== */
+
+.contratos-page .pagination {
+    margin-top: var(--contratos-spacing);
+    text-align: center;
+    padding-top: var(--contratos-spacing);
+    border-top: 1px solid var(--contratos-border-color);
+}
+/* Estilos específicos de paginação (cores, etc.) devem vir do global.css ou themes.css */
+
+.modal {
+    display: none; /* Escondido por padrão */
+    position: fixed; /* Fica fixo na tela */
+    z-index: 1000; /* Fica sobre outros elementos */
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto; /* Permite rolagem se o conteúdo for grande */
+    background-color: rgba(0, 0, 0, 0.6); /* Fundo semi-transparente */
+    padding-top: 60px; /* Espaço no topo */
+}
+
+.modal-content {
+    background-color: var(--contratos-bg-card);
+    color: var(--contratos-text-primary);
+    margin: 5% auto; /* Centraliza verticalmente e horizontalmente */
+    padding: 25px;
+    border: 1px solid var(--contratos-border-color);
+    border-radius: 8px;
+    width: 80%; /* Largura padrão */
+    max-width: 500px; /* Largura máxima */
+    position: relative;
+    box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2), 0 6px 20px 0 rgba(0,0,0,0.19);
+}
+
+.modal h4 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: var(--contratos-text-primary);
+}
+
+.modal p {
+    margin-bottom: 20px;
+    color: var(--contratos-text-secondary);
+}
+
+.close-btn {
+    color: #aaa;
+    position: absolute;
+    top: 10px;
+    right: 20px;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close-btn:hover,
+.close-btn:focus {
+    color: #fff; /* Muda cor no hover no tema escuro */
+    text-decoration: none;
+}
+
+.modal .button-container {
+    justify-content: flex-end; /* Alinha botões do modal à direita */
+}
+
+/* ==========================================================================
+   Botões Globais (Revisão - ajuste conforme seu global.css)
+   ========================================================================== */
+.btn {
+    padding: 9px 18px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 0.9em;
+    font-weight: 500;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    text-align: center;
+}
+.btn:hover {
+    transform: translateY(-1px); /* Leve efeito ao passar o mouse */
+}
+.btn-primary { background-color: #0d6efd; color: white; }
+.btn-primary:hover { background-color: #0b5ed7; }
+.btn-secondary { background-color: #6c757d; color: white; }
+.btn-secondary:hover { background-color: #5c636a; }
+.btn-danger { background-color: #dc3545; color: white; }
+.btn-danger:hover { background-color: #bb2d3b; }
+
+/* ==========================================================================
+   Responsividade - Media Queries
+   ========================================================================== */
+
+/* Telas Médias (Tablets, Laptops Pequenos) - Ajusta Sidebar e Formulários */
+@media (max-width: 992px) { /* Ajuste o breakpoint se necessário */
+    .contratos-page .main-content {
+        margin-left: 0; /* Remove margem da sidebar */
+        width: 100%;
+        padding: 10px; /* Reduz padding */
+    }
+
+    .contratos-page .form-row {
+        gap: 10px; /* Reduz gap */
+    }
+
+    .contratos-page .form-group-inline {
+        min-width: calc(50% - 10px); /* Tenta colocar 2 por linha */
+    }
+
+    /* Garante que botões de filtro fiquem empilhados se necessário */
+    .contratos-page .filter-container .form-row {
+         flex-wrap: wrap;
+    }
+     .contratos-page .filter-container .form-group-inline {
+         min-width: 180px; /* Ajuste para caber melhor */
+     }
+}
+
+/* Telas Pequenas (Smartphones) - Empilha tudo, ajusta tabela */
+@media (max-width: 768px) {
+    .contratos-page h1 {
+        font-size: 1.4em; /* Reduz tamanho do título principal */
+    }
+
+    .contratos-page .card {
+        padding: 10px; /* Reduz padding dos cards */
+    }
+     .contratos-page .card-header {
+         padding: 8px 10px;
+         margin: -10px -10px 10px -10px;
+     }
+
+    .contratos-page .form-row {
+        flex-direction: column; /* Força empilhamento */
+        gap: 10px;
+    }
+
+    .contratos-page .form-group-inline {
+        min-width: 100%; /* Ocupa largura total */
+    }
+
+    .contratos-page .filter-container .form-row {
+        flex-direction: column;
+        align-items: stretch; /* Alinha itens para ocupar largura total */
+    }
+     .contratos-page .filter-container .form-group-inline {
+         width: 100%;
+     }
+    .contratos-page .filter-container button,
+    .contratos-page .filter-container a.btn {
+        width: 100%; /* Botões ocupam largura total */
+        margin-top: 5px;
+    }
+
+    .contratos-page .table-container .table-controls {
+        flex-direction: column;
+        align-items: flex-start; /* Alinha à esquerda */
+        gap: 10px;
+    }
+     .contratos-page .table-container h3 {
+         margin-bottom: 5px; /* Reduz margem do título */
+     }
+
+    .contratos-page .styled-table th,
+    .contratos-page .styled-table td {
+        padding: 8px 10px; /* Reduz padding da tabela */
+        font-size: 0.85em; /* Reduz fonte da tabela */
+    }
+
+    
+
+    .modal-content {
+        width: 90%; /* Modal ocupa mais largura em telas pequenas */
+        margin: 10% auto;
+        padding: 20px;
+    }
+}
+
+/* Ajuste fino para telas muito pequenas */
+@media (max-width: 480px) {
+    .contratos-page .styled-table {
+        min-width: 600px; /* Reduz largura mínima se necessário */
+    }
+     .contratos-page .pagination {
+         font-size: 0.9em; /* Reduz fonte da paginação */
+     }
+     .contratos-page .btn {
+         padding: 8px 12px; /* Reduz padding dos botões */
+         font-size: 0.85em;
+     }
+}

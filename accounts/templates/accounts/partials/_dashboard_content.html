@@ -1,0 +1,166 @@
+{% load humanize %}
+
+<div class="overview grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
+    <div class="card bg-gray-800 p-5 rounded-lg shadow-lg relative h-36 overflow-hidden">
+        <h3 class="text-lg font-semibold mb-2">Receitas</h3>
+        <p class="text-xl font-bold">R$ {{ total_receivable|floatformat:2|intcomma }}</p>
+        <div class="card-chart absolute bottom-0 left-0 right-0 h-20"> 
+            <canvas id="receitasCardChart"></canvas>
+        </div>
+    </div>
+    <div class="card bg-gray-800 p-5 rounded-lg shadow-lg relative h-36 overflow-hidden">
+        <h3 class="text-lg font-semibold mb-2">Despesas</h3>
+        <p class="text-xl font-bold">R$ {{ total_payable|floatformat:2|intcomma }}</p>
+        <div class="card-chart absolute bottom-0 left-0 right-0 h-20"> 
+            <canvas id="despesasCardChart"></canvas>
+        </div>
+    </div>
+    <div class="card bg-gray-800 p-5 rounded-lg shadow-lg relative h-36 overflow-hidden">
+        <h3 class="text-lg font-semibold mb-2">Saldo Líquido</h3>
+        <p class="text-xl font-bold">R$ {{ balance|floatformat:2|intcomma }}</p>
+        <div class="card-chart absolute bottom-0 left-0 right-0 h-20"> 
+            <canvas id="saldoCardChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<div class="chart-container bg-gray-800 p-5 rounded-lg shadow-lg h-96"> 
+    <canvas id="cashflowChart"></canvas>
+</div>
+
+<script>
+    // ==========================================================
+    // LÓGICA DOS GRÁFICOS DE ONDA NOS CARDS
+    // ==========================================================
+    function createMiniChart(canvasId, chartData, lineColor, gradientStartColor) {
+        const ctx = document.getElementById(canvasId);
+        if (!ctx) return;
+
+        const canvas = ctx.getContext('2d');
+        const gradient = canvas.createLinearGradient(0, 0, 0, 70); // Gradiente vertical
+        gradient.addColorStop(0, gradientStartColor);
+        gradient.addColorStop(1, 'rgba(34, 34, 34, 0)'); // Desvanece para o fundo do card
+
+        new Chart(canvas, {
+            type: 'line',
+            data: {
+                labels: {{ chart_labels|safe }},
+                datasets: [{
+                    data: chartData,
+                    borderColor: lineColor,
+                    backgroundColor: gradient,
+                    fill: true,
+                    borderWidth: 2,
+                    pointRadius: 0, // Sem pontos na linha
+                    tension: 0.4 // Linha suave (efeito de onda)
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { enabled: false }
+                },
+                scales: {
+                    x: { display: false },
+                    y: { display: false }
+                }
+            }
+        });
+    }
+
+    // Pega os dados do Django e calcula o saldo diário
+    const receitasData = {{ chart_receivable|safe }};
+    const despesasData = {{ chart_payable|safe }};
+    const saldoData = receitasData.map((receita, index) => receita - despesasData[index]);
+
+    // Cria os três gráficos
+    createMiniChart('receitasCardChart', receitasData, '#2E7D32', 'rgba(46, 125, 50, 0.5)');
+    createMiniChart('despesasCardChart', despesasData, '#c62828', 'rgba(198, 40, 40, 0.5)');
+    createMiniChart('saldoCardChart', saldoData, '#1E88E5', 'rgba(30, 136, 229, 0.5)');
+
+    // ==========================================================
+    // LÓGICA DO GRÁFICO PRINCIPAL
+    // ==========================================================
+    
+    let cashflowChartInstance = null; 
+
+    function renderChart() {
+        const chartCanvas = document.getElementById('cashflowChart');
+        if (!chartCanvas) return;
+
+        if (cashflowChartInstance) {
+            cashflowChartInstance.destroy();
+        }
+
+        // LÓGICA DE COR DINÂMICA PARA O GRÁFICO
+        const isLightTheme = document.body.classList.contains('theme-white');
+        const textColor = isLightTheme ? '#000000' : '#FFFFFF'; 
+        const gridColor = isLightTheme ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)'; 
+
+        cashflowChartInstance = new Chart(chartCanvas.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: {{ chart_labels|safe }},
+                datasets: [
+                    {
+                        label: 'Despesas',
+                        data: {{ chart_payable|safe }},
+                        borderColor: '#c62828',
+                        backgroundColor: 'rgba(205, 34, 22, 1)', 
+                        fill: true,
+                        order: 1 
+                    },
+                    {
+                        label: 'Receitas',
+                        data: {{ chart_receivable|safe }},
+                        borderColor: '#2E7D32',
+                        backgroundColor: 'rgba(9, 219, 16, 0.82)',
+                        fill: true,
+                        order: 1 
+                    },
+                    {
+                        label: 'Saldo Líquido',
+                        data: {{ chart_balance|safe }}, 
+                        type: 'line', 
+                        borderColor: '#16a085', 
+                        backgroundColor: 'rgba(22, 160, 133, 0.1)', 
+                        fill: false, 
+                        tension: 0.1, 
+                        pointRadius: 2, 
+                        pointBackgroundColor: '#16a085',
+                        order: 0 
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { 
+                    legend: { 
+                        position: 'top', 
+                        labels: { color: textColor } 
+                    } 
+                },
+                scales: {
+                    x: { 
+                        grid: { color: gridColor },
+                        ticks: { color: textColor, font: { size: 11 } }
+                    },
+                    y: { 
+                        beginAtZero: true, 
+                        grid: { color: gridColor },
+                        ticks: { color: textColor, font: { size: 11 } }
+                    }
+                }
+            }
+        });
+    }
+
+    // Executa o desenho do gráfico principal
+    renderChart();
+
+    // Torna renderChart global para ser chamada também pelo theme.js (se necessário)
+    window.renderChart = renderChart;
+</script>

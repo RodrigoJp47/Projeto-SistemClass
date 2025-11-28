@@ -1,0 +1,521 @@
+{% load static %}
+{% load humanize %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Análise de Clientes</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <link rel="stylesheet" href="{% static 'css/global.css' %}">
+    <link rel="stylesheet" href="{% static 'css/clientes.css' %}">
+    <link rel="stylesheet" href="{% static 'css/themes.css' %}">
+    <link rel="stylesheet" href="{% static 'css/sidebar.css' %}">
+</head>
+<body class="clientes-page">
+    
+    {% include 'accounts/_sidebar.html' %}
+    <div class="main-content">
+        {% include 'accounts/partials/bpo_banner.html' %}
+        <button id="menu-toggle">&#9776;</button>
+        <h1>Análise de Clientes</h1>
+        <div class="filter-container">
+            <form id="filter-form" method="get" style="display: flex; align-items: center; gap: 10px;">
+                <label for="period">Período:</label>
+                <select name="period" id="period">
+                    <option value="30" {% if period == '30' %}selected{% endif %}>Últimos 30 dias</option>
+                    <option value="90" {% if period == '90' %}selected{% endif %}>Últimos 90 dias</option>
+                    <option value="180" {% if period == '180' %}selected{% endif %}>Últimos 180 dias</option>
+                    <option value="custom" {% if period == 'custom' %}selected{% endif %}>Personalizado</option>
+                </select>
+                <div id="custom-date" style="{% if period == 'custom' %}display: flex;{% else %}display: none;{% endif %}">
+                    <label for="start_date">Data inicial:</label>
+                    <input type="date" name="start_date" id="start_date" value="{{ start_date|default_if_none:'' }}">
+                    <label for="end_date">Data final:</label>
+                    <input type="date" name="end_date" id="end_date" value="{{ end_date|default_if_none:'' }}">
+                </div>
+                <button type="submit">Filtrar</button>
+            </form>
+        </div>
+
+        <div class="stats-row">
+            <div class="stat-card">
+                <h4>Quant/clientes</h4>
+                <hr>
+                <p>{{ total_clients }}</p>
+            </div>
+            <div class="stat-card">
+                <h4>Valores recebidos</h4>
+                <hr>
+                <p>R$ {{ total_received|floatformat:2|intcomma }}</p>
+            </div>
+            <div class="stat-card">
+                <h4>Valores atrasados</h4>
+                <hr>
+                <p>R$ {{ total_overdue|floatformat:2|intcomma }}</p>
+            </div>
+            <div class="stat-card">
+                <h4>Valores em aberto</h4>
+                <hr>
+                <p>R$ {{ total_open|floatformat:2|intcomma }}</p>
+            </div>
+            <div class="stat-card">
+                <h4>Taxa de inadimplência</h4>
+                <hr>
+                <p>{{ taxa_inadimplencia|floatformat:2 }}%</p>
+            </div>
+        </div>
+
+
+        <div class="charts-row">
+            <div class="chart-container">
+                <h3>Receitas por Categoria</h3>
+                <div class="chart-wrapper">
+                    <canvas id="categoryChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-container">
+                <h3>Receitas por Cliente</h3>
+                <div style="max-height: 200px; overflow-y: auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Cliente</th>
+                                <th>Valor Recebido (R$)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in receitas_por_cliente %}
+                                <tr>
+                                    <td>{{ item.name|default:"Sem Nome" }}</td>
+                                    <td>{{ item.total|floatformat:2|intcomma }}</td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="2" style="text-align: center;">Nenhum dado encontrado.</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr style="font-weight: bold;">
+                                <td>Total:</td>
+                                <td>R$ {{ total_contas_receber_periodo|floatformat:2|intcomma }}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="charts-row">
+            <div class="chart-container">
+                <h3>Forma de Recebimento</h3>
+                <div class="chart-wrapper">
+                    <canvas id="paymentMethodChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-container">
+                <h3>Status (Aberto x Recebido)</h3>
+                <div class="chart-wrapper">
+                    <canvas id="statusChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="charts-row">
+            <div class="chart-container">
+                <h3>Ocorrência (Avulso x Recorrente)</h3>
+                <div class="chart-wrapper">
+                    <canvas id="occurrenceChart"></canvas>
+                </div>
+            </div>
+            
+            <div class="chart-container">
+                <h3>Previsão x Realizado por Cliente</h3>
+                <div style="max-height: 250px; overflow-y: auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>Previsto</th>
+                                <th>Realizado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in client_comparison_data %}
+                                <tr>
+                                    <td>{{ item.name|default:"Sem Nome" }}</td>
+                                    <td>R$ {{ item.previsto|floatformat:2|intcomma }}</td>
+                                    <td>R$ {{ item.realizado|default:0|floatformat:2|intcomma }}</td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="3" style="text-align: center;">Nenhum dado encontrado para o período.</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr style="font-weight: bold;">
+                                <td>Total:</td>
+                                <td>R$ {{ total_previsto|floatformat:2|intcomma }}</td>
+                                <td>R$ {{ total_realizado|floatformat:2|intcomma }}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+            </div>
+        <div class="accounts-table-container">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h3>Contas a Receber no Período</h3>
+                <a href="?export_excel=1&period={{ period }}&start_date={{ start_date }}&end_date={{ end_date }}" class="btn-export">Exportar para Excel</a>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Nome</th>
+                        <th>Descrição</th>
+                        <th>Vencimento</th>
+                        <th>Status</th>
+                        <th>Valor (R$)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for account in accounts %}
+                        <tr>
+                            <td>{{ account.name|default:"-" }}</td>
+                            <td>{{ account.description|default:"-" }}</td>
+                            <td>{{ account.due_date|date:"d/m/Y" }}</td>
+                            <td>{{ account.is_received|yesno:"Recebido,Aberto" }}</td>
+                            <td>R$ {{ account.amount|floatformat:2|intcomma }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="5" style="text-align: center;">Nenhuma conta encontrada para o período.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="4" style="text-align: right; font-weight: bold;">Total do Período:</td>
+                        <td style="font-weight: bold;">R$ {{ total_contas_receber_periodo|floatformat:2|intcomma }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+            </div> <div class="pagination" style="text-align: center; margin-top: 20px;">
+                <span class="step-links">
+                    {% if accounts.has_previous %}
+                        <a href="?page=1&period={{ period }}&start_date={{ start_date }}&end_date={{ end_date }}">&laquo; primeira</a>
+                        <a href="?page={{ accounts.previous_page_number }}&period={{ period }}&start_date={{ start_date }}&end_date={{ end_date }}">anterior</a>
+                    {% endif %}
+
+                    <span class="current">
+                        Página {{ accounts.number }} de {{ accounts.paginator.num_pages }}.
+                    </span>
+
+                    {% if accounts.has_next %}
+                        <a href="?page={{ accounts.next_page_number }}&period={{ period }}&start_date={{ start_date }}&end_date={{ end_date }}">próxima</a>
+                        <a href="?page={{ accounts.paginator.num_pages }}&period={{ period }}&start_date={{ start_date }}&end_date={{ end_date }}">última &raquo;</a>
+                    {% endif %}
+                </span>
+            </div>
+        </div>
+
+    </div>
+    <script src="{% static 'js/theme.js' %}"></script>
+    <script>
+document.addEventListener('DOMContentLoaded', function() {
+    // MENU MOBILE
+    const menuToggleButton = document.getElementById('menu-toggle');
+    const sidebar = document.querySelector('.sidebar');
+    if (menuToggleButton && sidebar) {
+        menuToggleButton.addEventListener('click', function() {
+            sidebar.classList.toggle('mobile-open');
+        });
+    }
+
+    // SUBMENUS
+    function setupSubmenuToggle(toggleId, submenuId) {
+        const toggleButton = document.getElementById(toggleId);
+        const submenu = document.getElementById(submenuId);
+        if (toggleButton && submenu) {
+            toggleButton.addEventListener('click', function(event) {
+                event.preventDefault();
+                submenu.style.display = submenu.style.display === 'block' ? 'none' : 'block';
+            });
+        }
+    }
+    setupSubmenuToggle('financeiro-toggle', 'financeiro-submenu');
+    setupSubmenuToggle('comercial-toggle', 'comercial-submenu');
+    setupSubmenuToggle('configuracoes-toggle', 'configuracoes-submenu');
+
+    // Abre submenu pai se link ativo
+    const activeLink = document.querySelector('.sidebar a.active');
+    if (activeLink) {
+        const parentSubmenu = activeLink.closest('.submenu');
+        if (parentSubmenu) parentSubmenu.style.display = 'block';
+    }
+
+    // FILTRO PERÍODO
+    const periodSelect = document.getElementById('period');
+    const customDateDiv = document.getElementById('custom-date');
+    const filterForm = document.getElementById('filter-form');
+
+    function toggleCustomDate() {
+        if (!periodSelect || !customDateDiv) return;
+        customDateDiv.style.display = periodSelect.value === 'custom' ? 'flex' : 'none';
+    }
+    if (periodSelect) {
+        toggleCustomDate();
+        periodSelect.addEventListener('change', function() {
+            toggleCustomDate();
+            if (this.value !== 'custom') filterForm.submit();
+        });
+    }
+
+    // GRÁFICOS - Chart.js + ChartDataLabels
+    if (typeof Chart === 'undefined') {
+        console.error('Chart.js não carregado.');
+        return;
+    }
+    if (typeof ChartDataLabels !== 'undefined') {
+        Chart.register(ChartDataLabels);
+    }
+
+    // Variáveis para guardar instâncias e facilitar destruição
+    const charts = {
+        categoryChart: null,
+        paymentMethodChart: null,
+        statusChart: null,
+        occurrenceChart: null
+    };
+
+    function getThemeColors() {
+        const isWhite = document.body.classList.contains('theme-white');
+        return {
+            tickColor: isWhite ? '#333333' : '#ffffff',
+            gridColor: isWhite ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.08)',
+            datalabelColor: isWhite ? '#111111' : '#ffffff',
+            legendColor: isWhite ? '#333333' : '#ffffff'
+        };
+    }
+
+    function destroyAllCharts() {
+        Object.keys(charts).forEach(key => {
+            if (charts[key] && typeof charts[key].destroy === 'function') {
+                try { charts[key].destroy(); } catch (e) { /* ignore */ }
+                charts[key] = null;
+            }
+        });
+    }
+
+    function createCharts() {
+        // destrói instâncias anteriores
+        destroyAllCharts();
+
+        const colors = getThemeColors();
+
+        // ---------- Category Chart (horizontal bar) ----------
+        const catCtxEl = document.getElementById('categoryChart');
+        if (catCtxEl) {
+            const ctx = catCtxEl.getContext('2d');
+            charts.categoryChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: {{ category_labels|safe }},
+                    datasets: [{
+                        label: 'Valor (R$)',
+                        data: {{ category_data|safe }},
+                        backgroundColor: '#36a2eb',
+                        borderColor: '#222222',
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        datalabels: { display: false }
+                    },
+                    scales: {
+                        x: { beginAtZero: true, ticks: { color: colors.tickColor, font: { size: 10 } }, grid: { color: colors.gridColor } },
+                        y: { ticks: { color: colors.tickColor, font: { size: 10 } }, grid: { color: colors.gridColor } }
+                    }
+                }
+            });
+        }
+
+        
+
+        // ---------- Payment Method (pie) ----------
+        const paymentCtxEl = document.getElementById('paymentMethodChart');
+        if (paymentCtxEl) {
+            const ctx = paymentCtxEl.getContext('2d');
+            charts.paymentMethodChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: {{ payment_method_labels|safe }},
+                    datasets: [{
+                        data: {{ payment_method_data|safe }},
+                        backgroundColor: ['#36a2eb', '#ff6384', '#ffce56', '#4bc0c0', '#9966ff'],
+                        borderColor: '#222222',
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    layout: { // <-- ADICIONE ESTE BLOCO
+                        padding: {
+                            bottom: 2 // Adiciona 25 pixels de espaço na parte de baixo
+                        }
+                    },
+                    plugins: {
+                        legend: { position: 'left', labels: { color: colors.legendColor,  padding: 20 } },
+                        datalabels: {
+                            formatter: (value, ctx) => {
+                                const dataArr = ctx.chart.data.datasets[0].data;
+                                const total = dataArr.reduce((a,b) => a + b, 0) || 0;
+                                if (total === 0) return '0%';
+                                return (value / total * 100).toFixed(1) + '%';
+                            },
+                            color: colors.tickColor,
+                            anchor: 'end',
+                            align: 'end',
+                            offset: 10,
+                            clamp: false,
+                            borderWidth: 1,
+                            borderColor: colors.gridColor,
+                            borderRadius: 0,
+                            font: {
+                                weight: 'bold'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // ---------- Status (doughnut) ----------
+        const statusCtxEl = document.getElementById('statusChart');
+        if (statusCtxEl) {
+            const ctx = statusCtxEl.getContext('2d');
+            charts.statusChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Aberto', 'Recebido'],
+                    datasets: [{
+                        data: {{ status_data|safe }},
+                        backgroundColor: ['#ff6384', '#36a2eb'],
+                        borderColor: '#222222',
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top', labels: { color: colors.legendColor } },
+                        datalabels: {
+                            formatter: (value, ctx) => {
+                                const dataArr = ctx.chart.data.datasets[0].data;
+                                const total = dataArr.reduce((a,b) => a + b, 0) || 0;
+                                if (total === 0) return '0%';
+                                return (value / total * 100).toFixed(1) + '%';
+                            },
+                            color: colors.tickColor,
+                            anchor: 'end',
+                            align: 'end',
+                            offset: 10,
+                            clamp: false,
+                            borderWidth: 1,
+                            borderColor: colors.gridColor,
+                            borderRadius: 0,
+                            font: {
+                                weight: 'bold'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // ---------- Occurrence (doughnut) ----------
+        const occCtxEl = document.getElementById('occurrenceChart');
+        if (occCtxEl) {
+            const ctx = occCtxEl.getContext('2d');
+            charts.occurrenceChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Avulso', 'Recorrente'],
+                    datasets: [{
+                        data: {{ occurrence_data|safe }},
+                        backgroundColor: ['#4bc0c0', '#ffce56'],
+                        borderColor: '#222222',
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top', labels: { color: colors.legendColor } },
+                        datalabels: {
+                            formatter: (value, ctx) => {
+                                const dataArr = ctx.chart.data.datasets[0].data;
+                                const total = dataArr.reduce((a,b) => a + b, 0) || 0;
+                                if (total === 0) return '0%';
+                                return (value / total * 100).toFixed(1) + '%';
+                            },
+                            color: colors.tickColor,
+                            anchor: 'end',
+                            align: 'end',
+                            offset: 10,
+                            clamp: false,
+                            borderWidth: 1,
+                            borderColor: colors.gridColor,
+                            borderRadius: 0,
+                            font: {
+                                weight: 'bold'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    } // createCharts
+
+    // torna disponível globalmente (para theme.js ou debugging)
+    window.renderCharts = createCharts;
+
+    // chama inicialmente
+    createCharts();
+
+    // Observa mudanças na classe do body (troca de tema) e re-renderiza
+    let renderDebounce = null;
+    const bodyObserver = new MutationObserver(function(mutations) {
+        mutations.forEach(m => {
+            if (m.type === 'attributes' && m.attributeName === 'class') {
+                if (renderDebounce) clearTimeout(renderDebounce);
+                renderDebounce = setTimeout(() => {
+                    try { createCharts(); } catch(e) { console.error(e); }
+                }, 80);
+            }
+        });
+    });
+    bodyObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+
+    // Workaround para mudanças por localStorage (tema trocado em outra aba)
+    window.addEventListener('storage', function(e) {
+        if (e.key === 'selectedTheme') {
+            if (renderDebounce) clearTimeout(renderDebounce);
+            renderDebounce = setTimeout(() => createCharts(), 80);
+        }
+    });
+
+});
+</script>
+
+</body>
+</html>

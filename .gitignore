@@ -1,0 +1,20 @@
+# Arquivos de ambiente virtual
+venv/
+env/
+
+# Arquivos de senhas e segredos (NUNCA envie isso!)
+.env
+
+# Banco de dados local
+*.sqlite3
+db.sqlite3
+
+# Arquivos temporários do Python
+__pycache__/
+*.pyc
+
+# Pasta de arquivos estáticos gerada pelo Django
+staticfiles/
+
+# Pasta de mídia
+media/

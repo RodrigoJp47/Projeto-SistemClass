@@ -1,0 +1,480 @@
+{% load static %}
+{% load humanize %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Análise de Fornecedores</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <link rel="stylesheet" href="{% static 'css/global.css' %}">
+    <link rel="stylesheet" href="{% static 'css/fornecedor.css' %}">
+    <link rel="stylesheet" href="{% static 'css/themes.css' %}">
+    <link rel="stylesheet" href="{% static 'css/sidebar.css' %}">
+    <link rel="stylesheet" href="{% static 'css/layout-responsive.css' %}">
+</head>
+<body class="fornecedor-page">
+    
+    {% include 'accounts/_sidebar.html' %}
+    <div class="main-content">
+        {% include 'accounts/partials/bpo_banner.html' %}
+        <button id="menu-toggle">&#9776;</button>
+        <h1>Análise de Fornecedores</h1>
+        <div class="filter-container">
+            <form id="filter-form" method="get" style="display: flex; align-items: center; gap: 10px;">
+                <label for="period">Período:</label>
+                <select name="period" id="period">
+                    <option value="30" {% if period == '30' %}selected{% endif %}>Últimos 30 dias</option>
+                    <option value="90" {% if period == '90' %}selected{% endif %}>Últimos 90 dias</option>
+                    <option value="180" {% if period == '180' %}selected{% endif %}>Últimos 180 dias</option>
+                    <option value="custom" {% if period == 'custom' %}selected{% endif %}>Personalizado</option>
+                </select>
+                <div id="custom-date" style="{% if period == 'custom' %}display: flex; gap: 10px; align-items: center;{% else %}display: none;{% endif %}">
+                    <label for="start_date">Data inicial:</label>
+                    <input type="date" name="start_date" id="start_date" value="{{ start_date|default_if_none:'' }}">
+                    <label for="end_date">Data final:</label>
+                    <input type="date" name="end_date" id="end_date" value="{{ end_date|default_if_none:'' }}">
+                </div>
+                <button type="submit" id="filter-button">Filtrar</button>
+            </form>
+        </div>
+
+        <div class="stats-row">
+            <div class="stat-card">
+                <h4>Quant/fornecedores</h4>
+                <hr>
+                <p>{{ total_suppliers }}</p>
+            </div>
+            <div class="stat-card">
+                <h4>Valores pagos</h4>
+                <hr>
+                <p>R$ {{ total_paid|floatformat:2|intcomma }}</p>
+            </div>
+            <div class="stat-card">
+                <h4>Valores atrasados</h4>
+                <hr>
+                <p>R$ {{ total_overdue|floatformat:2|intcomma }}</p>
+            </div>
+            <div class="stat-card">
+                <h4>Valores em aberto</h4>
+                <hr>
+                <p>R$ {{ total_open|floatformat:2|intcomma }}</p>
+            </div>
+        </div>
+
+        <div class="charts-row">
+            <div class="chart-container">
+                <h3>Despesas por Categoria</h3>
+                <div class="horizontal-bar-chart">
+                    <canvas id="categoryChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-container">
+                <h3>Despesas por Fornecedor</h3>
+                <div style="max-height: 150px; overflow-y: auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Fornecedor</th>
+                                <th>Valor Pago (R$)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in despesas_por_fornecedor %}
+                                <tr>
+                                    <td>{{ item.name|default:"Sem Nome" }}</td>
+                                    <td style="text-align: right;">{{ item.total|floatformat:2|intcomma }}</td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="2" style="text-align: center;">Nenhum dado encontrado.</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr style="font-weight: bold;">
+                                <td>Total:</td>
+                                <td style="text-align: right;">R$ {{ total_despesas_fornecedor_periodo|floatformat:2|intcomma }}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="charts-row">
+            <div class="chart-container">
+                <h3>Forma de Pagamento</h3>
+                <div class="horizontal-bar-chart">
+                    <canvas id="paymentMethodChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-container">
+                <h3>Status (Aberto x Pago)</h3>
+                <div class="horizontal-bar-chart">
+                    <canvas id="statusChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="charts-row">
+            <div class="chart-container">
+                <h3>Custos Fixos por Categoria</h3>
+                <div class="horizontal-bar-chart">
+                    <canvas id="fixedCostChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-container">
+                <h3>Custos Variáveis por Categoria</h3>
+                <div class="horizontal-bar-chart">
+                    <canvas id="variableCostChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="accounts-table-container">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h3>Contas a Pagar no Período</h3>
+                <a href="?export_excel=1&period={{ period }}&start_date={{ start_date }}&end_date={{ end_date }}" class="btn-export">Exportar para Excel</a>
+            </div>
+            <div class="table-scroll-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>Descrição</th>
+                            <th>Data de Vencimento</th>
+                            <th>Valor (R$)</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for account in accounts %}
+                            <tr>
+                                <td>{{ account.name|default:"-" }}</td>
+                                <td>{{ account.description|default:"-" }}</td>
+                                <td>{{ account.due_date|date:"d/m/Y" }}</td>
+                                <td>{{ account.amount|floatformat:2|intcomma }}</td>
+                                <td>{{ account.is_paid|yesno:"Pago,Aberto" }}</td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="5" style="text-align: center; padding: 20px;">Nenhuma conta encontrada para o período selecionado.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="3" style="text-align: right; font-weight: bold;">Total do Período:</td>
+                            <td style="font-weight: bold;">{{ total_amount_period|floatformat:2|intcomma }}</td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>    
+            <div class="pagination" style="text-align: center; margin-top: 20px;">
+            <span class="step-links">
+                {% if accounts.has_previous %}
+                    <a href="?page=1&period={{ period }}&start_date={{ start_date }}&end_date={{ end_date }}">&laquo; primeira</a>
+                    <a href="?page={{ accounts.previous_page_number }}&period={{ period }}&start_date={{ start_date }}&end_date={{ end_date }}">anterior</a>
+                {% endif %}
+
+                <span class="current">
+                    Página {{ accounts.number }} de {{ accounts.paginator.num_pages }}.
+                </span>
+
+                {% if accounts.has_next %}
+                    <a href="?page={{ accounts.next_page_number }}&period={{ period }}&start_date={{ start_date }}&end_date={{ end_date }}">próxima</a>
+                    <a href="?page={{ accounts.paginator.num_pages }}&period={{ period }}&start_date={{ start_date }}&end_date={{ end_date }}">última &raquo;</a>
+                {% endif %}
+            </span>
+        </div>
+        </div>
+    </div>
+
+    <script src="{% static 'js/theme.js' %}"></script>
+
+    <script>
+document.addEventListener('DOMContentLoaded', function() {
+    // MENU MOBILE
+    const menuToggleButton = document.getElementById('menu-toggle');
+    const sidebar = document.querySelector('.sidebar');
+    if (menuToggleButton && sidebar) {
+        menuToggleButton.addEventListener('click', function() {
+            sidebar.classList.toggle('mobile-open');
+        });
+    }
+
+    // SUBMENUS
+    function setupSubmenuToggle(toggleId, submenuId) {
+        const toggleButton = document.getElementById(toggleId);
+        const submenu = document.getElementById(submenuId);
+        if (toggleButton && submenu) {
+            toggleButton.addEventListener('click', function(event) {
+                event.preventDefault();
+                submenu.style.display = submenu.style.display === 'block' ? 'none' : 'block';
+            });
+        }
+    }
+    setupSubmenuToggle('financeiro-toggle', 'financeiro-submenu');
+    setupSubmenuToggle('comercial-toggle', 'comercial-submenu');
+    setupSubmenuToggle('configuracoes-toggle', 'configuracoes-submenu');
+
+    const activeLink = document.querySelector('.sidebar a.active');
+    if (activeLink) {
+        const parentSubmenu = activeLink.closest('.submenu');
+        if (parentSubmenu) parentSubmenu.style.display = 'block';
+    }
+
+    // FILTRO PERÍODO
+    const periodSelect = document.getElementById('period');
+    const customDateDiv = document.getElementById('custom-date');
+    const filterForm = document.getElementById('filter-form');
+
+    function toggleCustomDate() {
+        if (!periodSelect || !customDateDiv) return;
+        customDateDiv.style.display = periodSelect.value === 'custom' ? 'flex' : 'none';
+    }
+    if (periodSelect) {
+        toggleCustomDate();
+        periodSelect.addEventListener('change', function() {
+            toggleCustomDate();
+            if (this.value !== 'custom') filterForm.submit();
+        });
+    }
+
+    // GRÁFICOS - Chart.js + ChartDataLabels
+    if (typeof Chart === 'undefined') {
+        console.error('Chart.js não carregado.');
+        return;
+    }
+    if (typeof ChartDataLabels !== 'undefined') Chart.register(ChartDataLabels);
+
+    // Guarda instâncias
+    const charts = {
+        categoryChart: null,
+        paymentMethodChart: null,
+        statusChart: null,
+        fixedCostChart: null,
+        variableCostChart: null
+    };
+
+    function getThemeColors() {
+        const isWhite = document.body.classList.contains('theme-white');
+        return {
+            tickColor: isWhite ? '#333333' : '#ffffff',
+            gridColor: isWhite ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.08)',
+            datalabelColor: isWhite ? '#111111' : '#ffffff',
+            legendColor: isWhite ? '#333333' : '#ffffff'
+        };
+    }
+
+    function destroyAllCharts() {
+        Object.keys(charts).forEach(key => {
+            if (charts[key] && typeof charts[key].destroy === 'function') {
+                try { charts[key].destroy(); } catch (e) { /* ignore */ }
+                charts[key] = null;
+            }
+        });
+    }
+
+    function createCharts() {
+        destroyAllCharts();
+        const colors = getThemeColors();
+
+        // Category (horizontal)
+        const catEl = document.getElementById('categoryChart');
+        if (catEl) {
+            const ctx = catEl.getContext('2d');
+            charts.categoryChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: {{ category_labels|safe }},
+                    datasets: [{
+                        label: 'Valor por Categoria',
+                        data: {{ category_data|safe }},
+                        backgroundColor: '#3498db',
+                        borderColor: '#222222',
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false }, datalabels: { display: false } },
+                    scales: {
+                        x: { beginAtZero: true, ticks: { color: colors.tickColor, font: { size: 10 } }, grid: { color: colors.gridColor } },
+                        y: { ticks: { color: colors.tickColor, font: { size: 10 } }, grid: { color: colors.gridColor } }
+                    }
+                }
+            });
+        }
+
+        
+
+        // Fixed cost
+        const fixedEl = document.getElementById('fixedCostChart');
+        if (fixedEl) {
+            const ctx = fixedEl.getContext('2d');
+            charts.fixedCostChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: {{ fixed_cost_labels|safe }},
+                    datasets: [{ label: 'Custo Fixo', data: {{ fixed_cost_data|safe }}, backgroundColor: '#ca0a0aff', borderColor: '#222222', borderWidth: 0 }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false }, datalabels: { display: false } },
+                    scales: {
+                        x: { beginAtZero: true, ticks: { color: colors.tickColor, font: { size: 10 } }, grid: { color: colors.gridColor } },
+                        y: { ticks: { color: colors.tickColor, font: { size: 10 } }, grid: { color: colors.gridColor } }
+                    }
+                }
+            });
+        }
+
+        // Variable cost
+        const varEl = document.getElementById('variableCostChart');
+        if (varEl) {
+            const ctx = varEl.getContext('2d');
+            charts.variableCostChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: {{ variable_cost_labels|safe }},
+                    datasets: [{ label: 'Custo Variável', data: {{ variable_cost_data|safe }}, backgroundColor: '#ca0a0aff', borderColor: '#222222', borderWidth: 0 }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false }, datalabels: { display: false } },
+                    scales: {
+                        x: { beginAtZero: true, ticks: { color: colors.tickColor, font: { size: 10 } }, grid: { color: colors.gridColor } },
+                        y: { ticks: { color: colors.tickColor, font: { size: 10 } }, grid: { color: colors.gridColor } }
+                    }
+                }
+            });
+        }
+
+        // Payment Method (pie)
+        const payEl = document.getElementById('paymentMethodChart');
+        if (payEl) {
+            const ctx = payEl.getContext('2d');
+            charts.paymentMethodChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: {{ payment_method_labels|safe }},
+                    datasets: [{
+                        data: {{ payment_method_data|safe }},
+                        backgroundColor: ['#f39c12', '#d35400', '#c0392b', '#2980b9', '#8e44ad'],
+                        borderColor: '#222222',
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    layout: {
+                        padding: 20 // Adiciona 30 pixels de margem em TODOS os lados
+                    },
+                    plugins: {
+                        legend: { position: 'left', labels: { color: colors.legendColor, padding: 20 } },
+                        datalabels: { // SUBSTITUA TODO O CONTEÚDO DE DATALABELS POR ISTO
+                            formatter: (value, ctx) => {
+                                const dataArr = ctx.chart.data.datasets[0].data;
+                                const total = dataArr.reduce((a,b) => a + b, 0) || 0;
+                                if (total === 0) return '0%';
+                                return (value / total * 100).toFixed(1) + '%';
+                            },
+                            color: colors.tickColor,
+                            anchor: 'end',
+                            align: 'end',
+                            offset: 10,
+                            clamp: true,
+                            borderWidth: 1,
+                            borderColor: colors.gridColor,
+                            borderRadius: 0,
+                            font: {
+                                weight: 'bold'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Status (doughnut)
+        const statusEl = document.getElementById('statusChart');
+        if (statusEl) {
+            const ctx = statusEl.getContext('2d');
+            charts.statusChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Aberto', 'Pago'],
+                    datasets: [{
+                        data: {{ status_data|safe }},
+                        backgroundColor: ['#e74c3c', '#2ecc71'],
+                        borderColor: '#222222',
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top', labels: { color: colors.legendColor } },
+                        datalabels: { // SUBSTITUA TODO O CONTEÚDO DE DATALABELS POR ISTO
+                            formatter: (value, ctx) => {
+                                const dataArr = ctx.chart.data.datasets[0].data;
+                                const total = dataArr.reduce((a,b) => a + b, 0) || 0;
+                                if (total === 0) return '0%';
+                                return (value / total * 100).toFixed(1) + '%';
+                            },
+                            color: colors.tickColor,
+                            anchor: 'end',
+                            align: 'end',
+                            offset: 10,
+                            clamp: false,
+                            borderWidth: 1,
+                            borderColor: colors.gridColor,
+                            borderRadius: 0,
+                            font: {
+                                weight: 'bold'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+    } // createCharts
+
+    window.renderCharts = createCharts;
+    createCharts();
+
+    // Observa mudanças na classe do body (troca de tema) e re-renderiza
+    let renderDebounce = null;
+    const bodyObserver = new MutationObserver(function(mutations) {
+        mutations.forEach(m => {
+            if (m.type === 'attributes' && m.attributeName === 'class') {
+                if (renderDebounce) clearTimeout(renderDebounce);
+                renderDebounce = setTimeout(() => createCharts(), 80);
+            }
+        });
+    });
+    bodyObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+
+    // Storage event (outras abas)
+    window.addEventListener('storage', function(e) {
+        if (e.key === 'selectedTheme') {
+            if (renderDebounce) clearTimeout(renderDebounce);
+            renderDebounce = setTimeout(() => createCharts(), 80);
+        }
+    });
+
+});
+</script>
+
+</body>
+</html>

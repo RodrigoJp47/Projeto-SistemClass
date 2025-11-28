@@ -1,0 +1,211 @@
+/* static/css/planos.css (SUBSTITUIÇÃO PARA assinatura.css) */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+
+.main-content {
+    /* Mantido o margin-left original de 290px para acomodar a sidebar */
+    margin-left: 270px;
+    padding: 20px;
+    width: calc(100% - 270px);
+    overflow-y: auto;
+}
+
+
+body.theme-white .main-content {
+    color: #212529;
+}
+
+h1 {
+    text-align: center;
+    margin-bottom: 10px;
+    font-size: 2rem;
+}
+
+.subtitulo-planos {
+    text-align: center;
+    font-size: 1.1rem;
+    color: #ccc;
+    margin-bottom: 40px;
+}
+
+body.theme-white .subtitulo-planos {
+    color: #495057;
+}
+
+/* --- GRID DE PLANOS --- */
+.pricing-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 25px;
+}
+
+.plan-card {
+    background-color: #222;
+    border: 1px solid #444;
+    border-radius: 10px;
+    padding: 30px;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.2s, box-shadow 0.2s;
+    position: relative; /* Para o 'popular-badge' */
+}
+
+.plan-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 255, 0, 0.1);
+}
+
+body.theme-white .plan-card {
+    background-color: #f8f9fa;
+    border-color: #dee2e6;
+}
+body.theme-white .plan-card:hover {
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+/* --- BADGE DE POPULAR --- */
+.popular-badge {
+    position: absolute;
+    top: -15px;
+    right: 20px;
+    background-color: #0f0;
+    color: #000;
+    font-weight: bold;
+    font-size: 12px;
+    padding: 5px 12px;
+    border-radius: 20px;
+}
+
+/* --- DESTAQUE PLANO ATIVO --- */
+.active-plan {
+    border: 2px solid #0f0; /* Borda verde no plano ativo */
+    box-shadow: 0 0 25px rgba(0, 255, 0, 0.2);
+}
+
+/* --- Conteúdo do Card --- */
+.plan-card h3 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    font-size: 1.8rem;
+    color: #0f0; /* Título verde */
+}
+
+.plan-card.popular h3 {
+    color: #0f0;
+}
+
+body.theme-white .plan-card h3 {
+    color: #198754; /* Verde mais escuro para tema claro */
+}
+
+.plan-card .plan-description {
+    font-size: 0.9rem;
+    color: #bbb;
+    margin-bottom: 20px;
+    min-height: 40px; /* Garante alinhamento */
+}
+
+body.theme-white .plan-card .plan-description {
+    color: #495057;
+}
+
+.plan-card .price-tag {
+    margin-bottom: 10px;
+}
+
+.plan-card .price {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #fff;
+}
+body.theme-white .plan-card .price {
+    color: #212529;
+}
+
+.plan-card .user-limit {
+    font-size: 1rem;
+    color: #ccc;
+    margin-bottom: 25px;
+    border-top: 1px dashed #444;
+    border-bottom: 1px dashed #444;
+    padding: 15px 0;
+}
+body.theme-white .plan-card .user-limit {
+    color: #495057;
+    border-color: #dee2e6;
+}
+
+.plan-card .features-list {
+    list-style: none;
+    padding: 0;
+    margin-bottom: 30px;
+    flex-grow: 1; /* Faz a lista crescer para empurrar o botão para baixo */
+}
+
+.plan-card .features-list li {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+    color: #e0e0e0;
+}
+
+body.theme-white .plan-card .features-list li {
+    color: #212529;
+}
+
+.plan-card .features-list i {
+    width: 20px;
+    margin-right: 10px;
+}
+
+.plan-card .features-list i.fa-check {
+    color: #0f0; /* Verde */
+}
+
+.plan-card .features-list i.fa-times {
+    color: #666; /* Cinza */
+}
+
+body.theme-white .plan-card .features-list i.fa-check {
+    color: #198754;
+}
+
+/* --- BOTÃO --- */
+.assinatura-page .btn-whatsapp {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    padding: 15px 30px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    width: 100%; /* Botão ocupa 100% do card */
+    text-decoration: none;
+    border-radius: 5px;
+    background-color: #0f0;
+    color: #000;
+    font-weight: bold;
+    transition: all 0.3s;
+}
+
+.assinatura-page .btn-whatsapp:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 255, 0, 0.3);
+    background-color: #0c0;
+}
+
+.assinatura-page .btn-whatsapp i {
+    margin-right: 10px;
+}
+
+/* --- RESPONSIVIDADE --- */
+@media (max-width: 992px) {
+    .pricing-grid {
+        grid-template-columns: 1fr; /* Coluna única em telas menores */
+    }
+}

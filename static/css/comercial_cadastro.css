@@ -1,0 +1,270 @@
+:root {
+    --primary-color: #0f0;
+    --background-color: #000;
+    --surface-color: #222;
+    --text-color: #fff;
+    --border-color: #444;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background-color: #000;
+    color: #fff;
+    display: flex;
+    min-height: 100vh;
+}
+
+
+
+.main-content {
+    /* Mantido o margin-left original de 290px para acomodar a sidebar */
+    margin-left: 270px;
+    padding: 20px;
+    width: calc(100% - 270px);
+    overflow-y: auto;
+}
+
+/* Em comercial_cadastro.css, adicione esta nova regra */
+
+/* Adiciona um espaçamento abaixo do título principal (H1) da página */
+.main-content > h1 {
+    margin-bottom: 15px;
+}
+
+.form-container,
+.table-container {
+    background-color: var(--surface-color);
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 25px;
+}
+
+h3 {
+    border-bottom: 2px solid var(--primary-color);
+    padding-bottom: 10px;
+    margin-top: 0;
+    margin-bottom: 10px;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 15px;
+}
+
+/* Em comercial_cadastro.css, adicione esta nova regra */
+
+/* Adiciona um espaço acima dos botões de salvar nos formulários */
+.form-container > form > button[type="submit"] {
+    margin-top: 10px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group label {
+    margin-bottom: 5px;
+    font-size: 14px;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    padding: 10px;
+    background-color: #333;
+    color: #fff;
+    border: 1px solid #555;
+    border-radius: 4px;
+    font-size: 14px;
+    width: 100%;
+}
+
+
+
+
+
+.delete-btn {
+    background-color: #c00;
+    color: #fff;
+    cursor: pointer;
+    padding: 5px 5px;
+    border: none;
+    border-radius: 4px;
+    font-weight: bold;
+    font-size: 13px;
+    margin-top: 15px;
+}
+
+.delete-btn:hover {
+    background-color: #a00;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+th,
+td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+th {
+    background-color: #333;
+}
+
+tr:nth-child(even) {
+    background-color: #2a2a2a;
+}
+
+
+
+.filter-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    align-items: flex-end;
+    margin-bottom: 20px;
+}
+
+.pagination {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.pagination a,
+.pagination .current {
+    color: var(--primary-color);
+    padding: 8px 12px;
+    text-decoration: none;
+    border: 1px solid var(--primary-color);
+    margin: 0 4px;
+    border-radius: 4px;
+}
+
+.pagination .current {
+    background-color: var(--primary-color);
+    color: var(--background-color);
+}
+
+.pagination a:hover {
+    background-color: #0f02;
+}
+
+/* Estilo para os botões de ação na tabela */
+.action-btn {
+    display: inline-block;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: bold;
+    text-align: center;
+    text-decoration: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.edit-btn {
+    background-color: #ffc107; /* Amarelo */
+    color: #000;
+    border: 1px solid #d39e00;
+}
+
+.edit-btn:hover {
+    background-color: #e0a800;
+}
+
+.btn-secondary {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: #6c757d;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    text-decoration: none;
+    text-align: center;
+}
+
+/* Media Query para telas pequenas (celulares e tablets) */
+@media screen and (max-width: 768px) {
+    #menu-toggle {
+        display: block;
+    }
+
+    .main-content {
+        margin-left: 0;
+        width: 100%;
+        padding: 15px;
+    }
+
+    .sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        height: 100%;
+        width: 260px;
+        z-index: 1000;
+        transform: translateX(-100%);
+        transition: transform 0.3s ease-in-out;
+        border-right: 1px solid #444;
+    }
+
+    .sidebar.mobile-open {
+        transform: translateX(0);
+    }
+
+    /* --- INÍCIO DA CORREÇÃO PARA AS TABELAS --- */
+
+    /* 1. Aplica a rolagem horizontal APENAS ao wrapper da tabela */
+    .table-scroll-wrapper {
+        overflow-x: auto;
+        padding-bottom: 10px; /* Garante espaço para a barra de rolagem não colar no fundo */
+    }
+
+    /* 2. Força a tabela DENTRO do wrapper a ter a largura mínima */
+    .table-scroll-wrapper table {
+        min-width: 800px;
+    }
+
+    /* 3. (OPCIONAL) Remove a regra antiga para evitar conflitos */
+    .table-container {
+        overflow-x: visible; /* Garante que o container principal não tenha rolagem */
+    }
+
+    /* --- FIM DA CORREÇÃO --- */
+
+    /* --- FIM DA CORREÇÃO --- */
+
+    .pagination {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .pagination a,
+    .pagination .current {
+        margin: 5px 0;
+        width: 60%;
+        text-align: center;
+    }
+
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .filter-form {
+        flex-direction: column;
+        align-items: stretch;
+    }
+}

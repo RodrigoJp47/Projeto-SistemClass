@@ -1,0 +1,600 @@
+{% load static %}
+{% load humanize %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <title>Gerenciador de Orçamentos</title>
+    <link rel="stylesheet" href="{% static 'css/global.css' %}">
+    <link rel="stylesheet" href="{% static 'css/sidebar.css' %}">
+    <link rel="stylesheet" href="{% static 'css/themes.css' %}">
+    <link rel="stylesheet" href="{% static 'css/orcamentos.css' %}">
+    <link rel="stylesheet" href="{% static 'css/layout-responsive.css' %}">
+</head>
+<body class="orcamentos-page">
+    
+    {% include 'accounts/_sidebar.html' %}
+
+    <div class="main-content">
+        {% include 'accounts/partials/bpo_banner.html' %}
+        <button id="menu-toggle">&#9776;</button>
+        <h1>Gerenciador de Orçamentos</h1>
+
+        <div class="orcamento-form-container">
+            <h3>Novo Orçamento</h3>
+            
+            <form id="novo-orcamento-form" onsubmit="return false;">
+                {% csrf_token %} {# <-- O TOKEN DE SEGURANÇA FOI ADICIONADO AQUI #}
+
+                <div class="form-grid-orcamento" style="grid-template-columns: 3fr 2fr; gap: 15px 20px; row-gap: 20px;"> 
+                    <div class="form-group" style="grid-column: 1 / 2;"> 
+                        <label for="cliente-select">Cliente *</label>
+                        <div style="display: flex; gap: 10px;">
+                            <select id="cliente-select" style="flex-grow: 1;">
+                                <option value="">Selecione um cliente</option>
+                                {% for cliente in clientes %}<option value="{{ cliente.id }}">{{ cliente.nome }}</option>{% endfor %}
+                            </select>
+                            <button type="button" id="novo-cliente-btn" style="padding: 0 15px;">Novo</button>
+                        </div>
+                    </div>
+                    <div class="form-group" style="grid-column: 2 / 3;"> 
+                        <label for="cliente-cpf-cnpj">CPF/CNPJ (Automático)</label>
+                        <input type="text" id="cliente-cpf-cnpj" readonly>
+                    </div>
+
+                    
+                    <div class="form-group" style="grid-column: 1 / 2;"> 
+                        <label for="vendedor-select">Vendedor (Opcional)</label>
+                        <select id="vendedor-select">
+                            <option value="">Sem vendedor</option>
+                            {% for vendedor in vendedores %}<option value="{{ vendedor.id }}">{{ vendedor.nome }}</option>{% endfor %}
+                        </select>
+                    </div>
+                     <div class="form-group" style="grid-column: 2 / 3;"> 
+                        <label for="validade-input">Validade da Proposta *</label>
+                        <input type="date" id="validade-input">
+                    </div>
+                    
+                    
+                     <div class="form-group" style="grid-column: 1 / 2;"> 
+                        <label for="cliente-email">E-mail (Automático)</label>
+                        <input type="email" id="cliente-email" readonly>
+                    </div>
+                    <div class="form-group" style="grid-column: 2 / 3;"> 
+                        <label for="cliente-telefone">Telefone (Automático)</label>
+                        <input type="text" id="cliente-telefone" readonly>
+                    </div>
+                </div>
+                <hr style="border-color: #444; margin: 20px 0;">
+                <div class="form-grid-orcamento" style="grid-template-columns: 3fr 1fr;">
+                    <div class="form-group">
+                        <label for="produto-search">Buscar Produto/Serviço</label>
+                        <input type="text" id="produto-search" placeholder="Digite o nome ou código...">
+                    </div>
+                    <div class="form-group">
+                        <label for="produto-qty">Quantidade</label>
+                        <input type="number" id="produto-qty" value="1" min="1">
+                    </div>
+                </div>
+                <button type="button" id="add-item-btn" style="margin-top: 15px;">Adicionar Item</button>
+
+                <table class="orcamento-item-table">
+                    <thead><tr><th>Produto/Serviço</th><th>Qtd.</th><th>Preço Unit.</th><th>Subtotal</th><th></th></tr></thead>
+                    <tbody id="itens-orcamento-tbody"></tbody>
+                </table>
+
+                <div class="total-container">Valor Total: <span id="valor-total-orcamento">R$ 0,00</span></div>
+
+                <div class="form-group" style="margin-top: 20px;">
+                    <label for="observacoes-input">Observações (Opcional)</label>
+                    <textarea id="observacoes-input" placeholder="Detalhes, condições especiais, etc."></textarea>
+                </div>
+                
+                <button type="button" id="salvar-orcamento-btn" class="analise-btn" style="width: 100%; margin-top: 20px;">Salvar Orçamento</button>
+            
+            </form> </div>
+
+        <div class="orcamento-table-container">
+            <h3>Histórico de Orçamentos</h3>
+            <form method="get" class="filter-form">
+                <div class="form-group"><label>Status</label>
+                    <select name="status" onchange="this.form.submit()">
+                        <option value="">Todos</option>
+                        {% for key, value in status_choices %}<option value="{{ key }}" {% if key == status_filter %}selected{% endif %}>{{ value }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div class="form-group"><label>Data Inicial</label><input type="date" name="start_date" value="{{ start_date|default:'' }}"></div>
+                <div class="form-group"><label>Data Final</label><input type="date" name="end_date" value="{{ end_date|default:'' }}"></div>
+                <button type="submit">Filtrar</button>
+            </form>
+
+            <form method="POST">
+                {% csrf_token %}
+                <div class="table-scroll-wrapper">
+                    <table>
+                        <thead>
+                            <tr><th>#ID</th><th>Cliente</th><th>Data</th><th>Validade</th><th>Itens</th><th>Valor Total</th><th>Status</th><th>Ações</th></tr>
+                        </thead>
+                        <tbody>
+                            {% for orcamento in orcamentos %}
+                            <tr>
+                                <td>{{ orcamento.id }}</td>
+                                <td>{{ orcamento.cliente.nome }}</td>
+                                <td>{{ orcamento.data_criacao|date:"d/m/Y" }}</td>
+                                <td>{{ orcamento.data_validade|date:"d/m/Y" }}</td>
+                                <td>{{ orcamento.itens.count }}</td>
+                                <td>R$ {{ orcamento.valor_total|intcomma }}</td>
+                                <td><span class="status-badge status-{{ orcamento.status }}">{{ orcamento.get_status_display }}</span></td>
+                                <td class="actions-cell">
+                                    {% if orcamento.observacoes %}
+                                        <span class="info-icon observation-icon" tabindex="0" title="Ver Observações">
+                                            <i class="fas fa-info"></i> {# Ícone de Informação #}
+                                            <span class="tooltip-text">{{ orcamento.observacoes|linebreaksbr }}</span>
+                                        </span>
+                                    {% endif %}
+
+                                    <button type="button" class="action-btn btn-edit edit-orcamento-btn" 
+                                            data-orcamento-id="{{ orcamento.pk }}" title="Editar Orçamento">
+                                        <i class="fas fa-pencil-alt"></i> {# Ícone de Lápis #}
+                                    </button>
+
+                                    {% if orcamento.status == 'PENDENTE' %}
+                                        <button type="submit" class="action-btn btn-accept" name="action_change_status" value="ACEITO-{{ orcamento.pk }}" title="Aceitar">
+                                            <i class="fas fa-thumbs-up"></i> {# Ícone de Polegar para Cima #}
+                                        </button>
+                                        <button type="submit" class="action-btn btn-deny" name="action_change_status" value="NEGADO-{{ orcamento.pk }}" title="Negar">
+                                            <i class="fas fa-thumbs-down"></i> {# Ícone de Polegar para Baixo #}
+                                        </button>
+                                    {% endif %}
+
+                                    {% if orcamento.status == 'ACEITO' %}
+                                    <a href="{% url 'converter_orcamento' orcamento.pk %}" class="action-btn btn-convert" onclick="return confirm('Tem certeza que deseja converter este orçamento em uma venda?');" title="Converter em Venda">
+                                        <i class="fas fa-exchange-alt"></i> {# Ícone de Troca (Sugestão para Converter) #}
+                                    </a>
+                                    {% endif %}
+
+                                    <button type="submit" class="action-btn btn-delete" name="action_delete" value="{{ orcamento.pk }}" onclick="return confirm('Tem certeza que deseja excluir permanentemente este orçamento?');" title="Excluir">
+                                        <i class="fas fa-trash-alt"></i> {# Ícone de Lixeira #}
+                                    </button>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="8">Nenhum orçamento encontrado.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </form>
+
+            <div class="pagination">
+                {# --- INÍCIO DO BLOCO DE PAGINAÇÃO COMPLETO --- #}
+                {% if orcamentos.has_other_pages %}
+                    {% if orcamentos.has_previous %}
+                        {# Mantém os filtros atuais ao navegar #}
+                        <a href="?page=1&status={{ status_filter|default:'' }}&start_date={{ start_date|default:'' }}&end_date={{ end_date|default:'' }}">&laquo; Primeira</a>
+                        <a href="?page={{ orcamentos.previous_page_number }}&status={{ status_filter|default:'' }}&start_date={{ start_date|default:'' }}&end_date={{ end_date|default:'' }}">Anterior</a>
+                    {% endif %}
+                    
+                    <span class="current">Página {{ orcamentos.number }} de {{ orcamentos.paginator.num_pages }}.</span>
+                    
+                    {% if orcamentos.has_next %}
+                        <a href="?page={{ orcamentos.next_page_number }}&status={{ status_filter|default:'' }}&start_date={{ start_date|default:'' }}&end_date={{ end_date|default:'' }}">Próxima</a>
+                        <a href="?page={{ orcamentos.paginator.num_pages }}&status={{ status_filter|default:'' }}&start_date={{ start_date|default:'' }}&end_date={{ end_date|default:'' }}">Última &raquo;</a>
+                    {% endif %}
+                {% endif %}
+                {# --- FIM DO BLOCO DE PAGINAÇÃO --- #}
+            </div>
+        </div>
+    </div>
+    <div id="cliente-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h3>Cadastrar Novo Cliente</h3>
+            <form id="cliente-rapido-form">
+                {% csrf_token %}
+                <div class="form-group" style="margin-bottom: 15px;"><label for="id_nome">Nome</label><input type="text" name="nome" required id="id_nome"></div>
+                <div class="form-group" style="margin-bottom: 15px;"><label for="id_cpf_cnpj">CPF/CNPJ</label><input type="text" name="cpf_cnpj" id="id_cpf_cnpj"></div>
+                <div class="form-group" style="margin-bottom: 15px;"><label for="id_email">E-mail</label><input type="email" name="email" id="id_email"></div>
+                <div class="form-group" style="margin-bottom: 15px;"><label for="id_telefone">Telefone</label><input type="text" name="telefone" id="id_telefone"></div>
+                <div class="form-group" style="margin-bottom: 15px;"><label for="id_endereco">Endereço</label><input type="text" name="endereco" id="id_endereco"></div>
+                <button type="submit" style="width: 100%;">Salvar Cliente</button>
+            </form>
+        </div>
+    </div>
+    <script src="{% static 'js/theme.js' %}"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // --- LÓGICA DE NAVEGAÇÃO DO MENU (ESSENCIAL) ---
+        const menuToggleButton = document.getElementById('menu-toggle');
+        const sidebar = document.querySelector('.sidebar');
+        if (menuToggleButton && sidebar) {
+            menuToggleButton.addEventListener('click', function() {
+                sidebar.classList.toggle('mobile-open');
+            });
+        }
+        function setupSubmenuToggle(toggleId, submenuId) {
+            const toggleButton = document.getElementById(toggleId);
+            const submenu = document.getElementById(submenuId);
+            if (toggleButton && submenu) {
+                toggleButton.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    submenu.style.display = submenu.style.display === 'block' ? 'none' : 'block';
+                });
+            }
+        }
+        setupSubmenuToggle('financeiro-toggle', 'financeiro-submenu');
+        setupSubmenuToggle('comercial-toggle', 'comercial-submenu');
+        setupSubmenuToggle('configuracoes-toggle', 'configuracoes-submenu');
+        const activeLink = document.querySelector('.sidebar .submenu a.active');
+        if (activeLink) {
+            const parentSubmenu = activeLink.closest('.submenu');
+            if (parentSubmenu) {
+                parentSubmenu.style.display = 'block';
+            }
+        }
+        // ========= INÍCIO DO BLOCO COPIADO DE vendas.html =========
+        // Modal de Cliente
+        const clienteModal = document.getElementById('cliente-modal');
+        const novoClienteBtn = document.getElementById('novo-cliente-btn');
+        const closeModalBtn = clienteModal.querySelector('.close-btn');
+        const clienteForm = document.getElementById('cliente-rapido-form');
+
+        novoClienteBtn.addEventListener('click', () => { clienteModal.style.display = 'block'; });
+        closeModalBtn.addEventListener('click', () => { clienteModal.style.display = 'none'; });
+        window.addEventListener('click', (event) => { if (event.target == clienteModal) { clienteModal.style.display = 'none'; } });
+
+        clienteForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            const formData = new FormData(this);
+            
+            // --- CORREÇÃO IMPORTANTE ---
+            // Pega o token DESTE formulário, e não o primeiro da página
+            const csrfToken = this.querySelector('[name=csrfmiddlewaretoken]').value;
+            // --- FIM DA CORREÇÃO ---
+
+            fetch("{% url 'cadastrar_cliente_rapido' %}", {
+                method: 'POST', body: formData, headers: {'X-CSRFToken': csrfToken}
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // (A variável 'clienteSelect' já existe no seu script)
+                    const newOption = new Option(data.cliente.nome, data.cliente.id, true, true);
+                    clienteSelect.appendChild(newOption);
+
+                    clientes.push({
+                        id: data.cliente.id,
+                        nome: data.cliente.nome,
+                        cpf_cnpj: data.cliente.cpf_cnpj || '',
+                        email: data.cliente.email || '',       // <-- ADICIONADO
+                        telefone: data.cliente.telefone || '', // <-- ADICIONADO
+                        endereco: data.cliente.endereco || ''  // <-- ADICIONADO (mesmo não sendo exibido)
+                    });
+                    
+                    // --- BÔNUS: Atualiza o campo CPF/CNPJ também ---
+                    clienteSelect.dispatchEvent(new Event('change'));
+                    // --- FIM DO BÔNUS ---
+
+                    alert('Cliente cadastrado com sucesso!');
+                    clienteModal.style.display = 'none';
+                    this.reset();
+                } else { 
+                    // Mostra erros de validação do servidor, se houver
+                    if (data.errors) {
+                        let errorMsg = 'Erro ao cadastrar cliente:\n';
+                        for (const field in data.errors) {
+                            errorMsg += `- ${field}: ${data.errors[field].join(', ')}\n`;
+                        }
+                        alert(errorMsg);
+                    } else {
+                        alert('Erro ao cadastrar cliente.'); 
+                    }
+                }
+            })
+            // Adiciona um .catch para erros de rede/JSON
+            .catch(error => {
+                console.error("Erro no fetch:", error);
+                alert('Ocorreu um erro de comunicação ao salvar o cliente.');
+            });
+        });
+        // ========= FIM DO BLOCO COPIADO =========
+
+        // --- INÍCIO DA LÓGICA DA PÁGINA DE ORÇAMENTOS ---
+        const produtos = JSON.parse('{{ produtos_json|escapejs }}');
+        
+        // ▼▼▼ CORREÇÃO AQUI ▼▼▼
+        // Carrega o JSON dos clientes (que faltou no script anterior)
+        const clientes = JSON.parse('{{ clientes_json|escapejs }}');
+        
+        let itensOrcamento = [];
+        let produtoSelecionado = null;
+
+        let editingOrcamentoId = null;
+
+        // Elementos do DOM
+        const produtoSearchInput = document.getElementById('produto-search');
+        const produtoQtyInput = document.getElementById('produto-qty');
+        const addItemBtn = document.getElementById('add-item-btn');
+        const itensTbody = document.getElementById('itens-orcamento-tbody');
+        const valorTotalSpan = document.getElementById('valor-total-orcamento');
+        const salvarOrcamentoBtn = document.getElementById('salvar-orcamento-btn');
+        
+        // ▼▼▼ E ADICIONE ESTAS DUAS LINHAS AQUI ▼▼▼
+        const clienteSelect = document.getElementById('cliente-select');
+        const clienteCpfCnpjInput = document.getElementById('cliente-cpf-cnpj');
+        const clienteEmailInput = document.getElementById('cliente-email');
+        const clienteTelefoneInput = document.getElementById('cliente-telefone');
+
+        // ▼▼▼ ADICIONE ESTAS LINHAS ▼▼▼
+        const observacoesInput = document.getElementById('observacoes-input'); 
+        const dataValidadeInput = document.getElementById('validade-input'); 
+        const vendedorSelect = document.getElementById('vendedor-select'); 
+        // ▲▲▲ FIM DAS LINHAS ADICIONADAS ▲▲▲
+
+        const searchResultsContainer = document.createElement('div');
+        searchResultsContainer.className = 'product-search-results'; // Usa a classe de CSS que já existe em vendas.css
+        produtoSearchInput.parentNode.appendChild(searchResultsContainer);
+
+        // Função para formatar moeda
+        function formatCurrency(value) {
+            return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+        }
+
+        // Função para renderizar a tabela de itens e atualizar totais
+        function renderizarItens() {
+            itensTbody.innerHTML = '';
+            let valorTotal = 0;
+            itensOrcamento.forEach((item, index) => {
+                const subtotal = item.quantidade * item.preco;
+                valorTotal += subtotal;
+                const row = `
+                    <tr data-index="${index}">
+                        <td>${item.nome}</td>
+                        <td>${item.quantidade}</td>
+                        <td>${formatCurrency(item.preco)}</td>
+                        <td>${formatCurrency(subtotal)}</td>
+                        <td><button type="button" class="delete-item-btn">X</button></td>
+                    </tr>`;
+                itensTbody.insertAdjacentHTML('beforeend', row);
+            });
+            valorTotalSpan.textContent = formatCurrency(valorTotal);
+        }
+        
+        // ========= INÍCIO DO BLOCO ADICIONADO (JS) =========
+        clienteSelect.addEventListener('change', () => {
+            const selectedClientId = clienteSelect.value;
+            // Limpa todos os campos primeiro
+            clienteCpfCnpjInput.value = '';
+            clienteEmailInput.value = ''; // <-- Limpa email
+            clienteTelefoneInput.value = ''; // <-- Limpa telefone
+
+            if (selectedClientId) {
+                // Encontra o cliente no JSON (que agora tem email e telefone)
+                const selectedClient = clientes.find(c => c.id == selectedClientId);
+                if (selectedClient) {
+                    clienteCpfCnpjInput.value = selectedClient.cpf_cnpj || ''; // Usa '' se for nulo
+                    
+                    // ▼▼▼ ADICIONE ESTAS DUAS LINHAS ▼▼▼
+                    clienteEmailInput.value = selectedClient.email || ''; // Preenche email
+                    clienteTelefoneInput.value = selectedClient.telefone || ''; // Preenche telefone
+                }
+            } 
+            // Não precisa de 'else' aqui, pois já limpamos os campos no início
+        });
+        // ========= FIM DO BLOCO ADICIONADO (JS) =========
+
+        // --- ADICIONE ESTE BLOCO ABAIXO ---
+        // Listener para os botões "Editar" na tabela de histórico
+        document.querySelectorAll('.edit-orcamento-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const orcamentoId = this.dataset.orcamentoId;
+
+                // Feedback visual (opcional)
+                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                this.disabled = true;
+
+                // Faz a requisição AJAX GET para a URL principal com o parâmetro
+                fetch(`{% url 'orcamentos_venda' %}?fetch_orcamento_data=${orcamentoId}`)
+                    .then(response => {
+                        // Verifica se a resposta foi bem-sucedida (status 2xx)
+                        if (!response.ok) {
+                            throw new Error(`Erro HTTP ${response.status}`);
+                        }
+                        return response.json(); // Só tenta parsear JSON se a resposta for OK
+                    })
+                    .then(data => {
+                        if (data.status === 'success') {
+                            const orcamento = data.orcamento;
+
+                            // Preenche os campos do formulário
+                            clienteSelect.value = orcamento.cliente_id;
+                            clienteSelect.dispatchEvent(new Event('change')); // Dispara change para preencher CPF/Email/Tel
+
+                            vendedorSelect.value = orcamento.vendedor_id || '';
+                            dataValidadeInput.value = orcamento.data_validade;
+                            observacoesInput.value = orcamento.observacoes;
+
+                            // Limpa e preenche os itens
+                            // CORREÇÃO: Garante que os valores numéricos sejam usados
+                            itensOrcamento = orcamento.itens.map(item => ({
+                                id: item.id,
+                                nome: item.nome,
+                                quantidade: parseFloat(item.quantidade) || 0, // Converte para número
+                                preco: parseFloat(item.preco) || 0 // Converte para número
+                            }));
+                            renderizarItens(); // Atualiza a tabela de itens e o total
+
+                            // Guarda o ID para o salvamento e muda o texto do botão
+                            editingOrcamentoId = orcamento.id;
+                            salvarOrcamentoBtn.textContent = `Atualizar Orçamento #${orcamento.id}`;
+
+                            // Rola a página para o topo
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+
+                        } else {
+                            // Exibe a mensagem de erro vinda do servidor (ex: "Orçamento não encontrado")
+                            alert(`Erro ao carregar orçamento: ${data.message || 'Erro desconhecido.'}`);
+                        }
+                    })
+                    .catch(error => {
+                        console.error("Erro no fetch:", error);
+                        // Mensagem de erro mais genérica para problemas de rede ou JSON inválido
+                        alert("Erro de comunicação ao buscar dados do orçamento. Verifique o console para detalhes.");
+                    })
+                    .finally(() => {
+                        // Restaura o botão Editar, independentemente do resultado
+                        this.innerHTML = '<i class="fas fa-pencil-alt"></i>';
+                        this.disabled = false;
+                    });
+            });
+        });
+        // --- FIM DO BLOCO ADICIONADO ---
+
+        // Busca de produtos
+        produtoSearchInput.addEventListener('input', () => {
+            const query = produtoSearchInput.value.toLowerCase();
+            searchResultsContainer.innerHTML = '';
+            produtoSelecionado = null;
+            if (query.length < 2) return;
+
+            const filteredProdutos = produtos.filter(p => p.nome.toLowerCase().includes(query) || (p.codigo && p.codigo.toLowerCase().includes(query)));
+            
+            filteredProdutos.slice(0, 5).forEach(produto => {
+                const li = document.createElement('li');
+                li.className = 'search-result-item';
+                li.textContent = `${produto.nome} (R$ ${produto.preco.toFixed(2)})`;
+                li.dataset.produtoId = produto.id;
+                searchResultsContainer.appendChild(li);
+            });
+        });
+
+        // Selecionar um produto da busca
+        searchResultsContainer.addEventListener('click', function(event) {
+            if (event.target && event.target.matches('li.search-result-item')) {
+                const produtoId = parseInt(event.target.dataset.produtoId);
+                produtoSelecionado = produtos.find(p => p.id === produtoId);
+                produtoSearchInput.value = produtoSelecionado.nome;
+                searchResultsContainer.innerHTML = '';
+            }
+        });
+        document.addEventListener('click', () => { searchResultsContainer.innerHTML = ''; }); // Limpa ao clicar fora
+
+        // Adicionar item ao orçamento
+        addItemBtn.addEventListener('click', () => {
+            if (!produtoSelecionado) {
+                alert('Por favor, selecione um produto da lista.');
+                return;
+            }
+            const quantidade = parseInt(produtoQtyInput.value);
+            if (isNaN(quantidade) || quantidade <= 0) {
+                alert('Por favor, insira uma quantidade válida.');
+                return;
+            }
+            
+            itensOrcamento.push({
+                id: produtoSelecionado.id,
+                nome: produtoSelecionado.nome,
+                quantidade: quantidade,
+                preco: parseFloat(produtoSelecionado.preco)
+            });
+           
+            renderizarItens();
+            produtoSearchInput.value = '';
+            produtoQtyInput.value = '1';
+            produtoSelecionado = null;
+        });
+
+        // Remover item do orçamento
+        itensTbody.addEventListener('click', function(event) {
+            if (event.target.classList.contains('delete-item-btn')) {
+                const index = event.target.closest('tr').dataset.index;
+                itensOrcamento.splice(index, 1);
+                renderizarItens();
+            }
+        });
+
+        // Salvar o orçamento (MODIFICADO para incluir Edição)
+        salvarOrcamentoBtn.addEventListener('click', () => {
+            const clienteId = document.getElementById('cliente-select').value;
+            const vendedorId = document.getElementById('vendedor-select').value;
+            const dataValidade = document.getElementById('validade-input').value;
+            const observacoes = document.getElementById('observacoes-input').value;
+
+            // Validações básicas
+            if (!clienteId || !dataValidade || itensOrcamento.length === 0) {
+                alert('Preencha todos os campos obrigatórios: Cliente, Validade e adicione pelo menos um item.');
+                return;
+            }
+
+            // Recalcula o valor total baseado nos itens atuais no array
+            const valorTotal = itensOrcamento.reduce((acc, item) => {
+                // Garante que quantidade e preço são números antes de multiplicar
+                const qtd = parseFloat(item.quantidade) || 0;
+                const preco = parseFloat(item.preco) || 0;
+                return acc + (qtd * preco);
+            }, 0); // Inicia acumulador com 0
+
+
+            const orcamentoData = {
+                cliente_id: clienteId,
+                vendedor_id: vendedorId || null, // Envia null se vazio
+                data_validade: dataValidade,
+                observacoes: observacoes,
+                itens: itensOrcamento,
+                valor_total: valorTotal,
+                // ▼▼▼ ADICIONA O ID DO ORÇAMENTO (será null se for novo) ▼▼▼
+                orcamento_id: editingOrcamentoId 
+            };
+
+            // Pega o CSRF token do formulário principal (verifique se o ID está correto)
+            const csrfToken = document.querySelector('#novo-orcamento-form input[name=csrfmiddlewaretoken]').value; 
+
+            // Usa a URL principal para POST (a view do Django vai diferenciar criar vs atualizar)
+            fetch("{% url 'orcamentos_venda' %}", { 
+                method: 'POST', 
+                headers: { 
+                    'Content-Type': 'application/json', 
+                    'X-CSRFToken': csrfToken 
+                },
+                body: JSON.stringify(orcamentoData)
+            })
+            .then(response => {
+                // Verifica se a resposta foi bem-sucedida (status 2xx) antes de parsear JSON
+                if (!response.ok) {
+                    // Tenta ler a mensagem de erro do JSON, senão usa o status text
+                    return response.json().then(errData => { 
+                        throw new Error(errData.message || response.statusText); 
+                    }).catch(() => {
+                        // Se não conseguir ler JSON, lança erro com status text
+                        throw new Error(`Erro HTTP ${response.status}: ${response.statusText}`);
+                    });
+                }
+                return response.json(); 
+            })
+            .then(data => {
+                if (data.status === 'success') {
+                    // Mensagem dinâmica baseada se estava editando ou criando
+                    alert(editingOrcamentoId ? 'Orçamento atualizado com sucesso!' : 'Orçamento criado com sucesso!');
+                    window.location.href = data.redirect_url; // Redireciona
+                } else {
+                    // Exibe mensagem de erro vinda do servidor (se houver)
+                    alert(`Erro ao salvar: ${data.message || 'Erro desconhecido.'}`);
+                }
+            })
+            .catch(error => {
+                console.error('Erro no fetch ao salvar:', error);
+                // Exibe a mensagem de erro capturada
+                alert(`Ocorreu um erro de comunicação: ${error.message}`);
+            })
+            .finally(() => {
+                // Limpa o ID de edição e restaura o botão APÓS a tentativa de salvar
+                editingOrcamentoId = null;
+                salvarOrcamentoBtn.textContent = 'Salvar Orçamento';
+            });
+        });
+    });
+</script>
+</body>
+</html>

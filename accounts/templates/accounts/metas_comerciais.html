@@ -1,0 +1,246 @@
+{% load static %}
+{% load humanize %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Metas Comerciais</title>
+   
+    <link rel="stylesheet" href="{% static 'css/global.css' %}">
+   
+    <link rel="stylesheet" href="{% static 'css/sidebar.css' %}">
+    <link rel="stylesheet" href="{% static 'css/themes.css' %}">
+
+    <link rel="stylesheet" href="{% static 'css/dashbord.css' %}">
+    
+    {# 4. Carrega os estilos específicos desta página #}
+    <link rel="stylesheet" href="{% static 'css/metas.css' %}">
+    <link rel="stylesheet" href="{% static 'css/layout-responsive.css' %}">
+</head>
+{# A classe do tema será controlada pelo JavaScript, como nas outras páginas #}
+<body>
+    
+    {# 1. INCLUIR O SIDEBAR (ele já contém a logo, o que resolve a duplicação) #}
+    {% include 'accounts/_sidebar.html' %}
+
+    {# 2. USAR 'main-content' PARA MANTER O PADRÃO, mas vamos controlar o fundo com CSS #}
+    <div class="main-content">
+        {% include 'accounts/partials/bpo_banner.html' %}
+        <button id="menu-toggle">&#9776;</button>
+
+        <div class="header">
+            <h1>Metas Comerciais</h1>
+        </div>
+
+        
+
+        <div class="metas-container">
+            <div class="form-card">
+                <h2 class="form-title">Cadastrar / Atualizar Meta</h2>
+                <p class="form-subtitle">Selecione um alvo e um mês para criar ou atualizar uma meta.</p>
+                <form method="post" class="metas-form" action="{% url 'metas_comerciais' %}">
+                    {% csrf_token %}
+                    
+                    <div class="form-group">
+                        <label for="{{ form.alvo.id_for_label }}">{{ form.alvo.label }}</label>
+                        {{ form.alvo }}
+                    </div>
+
+                    <div class="form-group">
+                        <label for="{{ form.mes_ano.id_for_label }}">{{ form.mes_ano.label }}</label>
+                        {{ form.mes_ano }}
+                    </div>
+
+                    <div class="form-group">
+                        <label for="{{ form.valor_meta.id_for_label }}">{{ form.valor_meta.label }}</label>
+                        <div class="input-group">
+                            <span class="input-group-text">R$</span>
+                            {{ form.valor_meta }}
+                        </div>
+                    </div>
+
+                    {% if form.errors %}
+                        <div class="form-errors" style="color: #dc3545; margin-top: 10px;">
+                            <p><strong>Por favor, corrija os erros abaixo:</strong></p>
+                            {{ form.errors }}
+                        </div>
+                    {% endif %}
+                    
+                    <button type="submit" class="submit-btn">Salvar Meta</button>
+                </form>
+            </div>
+
+            {# ... (cabeçalho e a div .form-card continuam iguais) ... #}
+
+            <div class="list-card">
+                
+                {# --- INÍCIO DO FILTRO E ACUMULADO --- #}
+                <div class="list-header">
+                    <h2 class="list-title">Metas Cadastradas</h2>
+                    <form method="get" class="filtro-ano-form">
+                        <select name="ano" onchange="this.form.submit()">
+                            {% for ano in anos_disponiveis %}
+                                <option value="{{ ano }}" {% if ano == ano_selecionado %}selected{% endif %}>
+                                    {# A CORREÇÃO É ADICIONAR |stringformat:"d" #}
+                                    Ano {{ ano|stringformat:"d" }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </form>
+                </div>
+                <div class="acumulado-ano">
+                    <strong>Acumulado:</strong> R$ {{ total_anual_empresa |floatformat:2 |intcomma }}
+                </div>
+                {# --- FIM DO FILTRO E ACUMULADO --- #}
+
+                <div class="metas-list">
+                    {% for mes, metas in metas_agrupadas.items %}
+                        <div class="meta-mes-group">
+                            <h3 class="mes-title">{{ mes }}</h3>
+                            <ul>
+                                {% if metas.empresa %}
+                                    <li class="meta-item empresa">
+                                        <div>
+                                            <span>Meta Geral da Empresa</span>
+                                        </div>
+                                        <div>
+                                            <span class="meta-percentual">100%</span>
+                                            <span class="meta-valor">R$ {{ metas.empresa.valor_meta|intcomma }}</span>
+                                        </div>
+                                    </li>
+                                {% endif %}
+                                {% for meta_vendedor in metas.vendedores %}
+                                    <li class="meta-item vendedor">
+                                        <div>
+                                            <span>{{ meta_vendedor.vendedor.nome }}</span>
+                                        </div>
+                                        <div>
+                                            {# --- EXIBIÇÃO DO PERCENTUAL --- #}
+                                            <span class="meta-percentual">{{ meta_vendedor.percentual }}</span>
+                                            <span class="meta-valor">R$ {{ meta_vendedor.valor_meta|intcomma }}</span>
+                                        </div>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% empty %}
+                        <p>Nenhuma meta cadastrada para o ano de {{ ano_selecionado }}.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="card full-width-chart-card">
+            <div class="card-title">Visão Anual das Metas (Empresa) - {{ ano_selecionado|stringformat:"d" }}</div>
+            <div class="chart-container" style="height: 250px;">
+                <canvas id="metasAnualChart"></canvas>
+            </div>
+        </div>
+
+    </div>
+
+    {# Incluindo o script do tema que você já usa em outras páginas #}
+    <script src="{% static 'js/theme.js' %}"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // --- LÓGICA DO MENU LATERAL ---
+        const menuToggleButton = document.getElementById('menu-toggle');
+        const sidebar = document.querySelector('.sidebar');
+        if (menuToggleButton && sidebar) {
+            menuToggleButton.addEventListener('click', function() {
+                sidebar.classList.toggle('mobile-open');
+            });
+        }
+        function setupSubmenuToggle(toggleId, submenuId) {
+            const toggleButton = document.getElementById(toggleId);
+            const submenu = document.getElementById(submenuId);
+            if (toggleButton && submenu) {
+                toggleButton.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    submenu.style.display = submenu.style.display === 'block' ? 'none' : 'block';
+                });
+            }
+        }
+        setupSubmenuToggle('financeiro-toggle', 'financeiro-submenu');
+        setupSubmenuToggle('comercial-toggle', 'comercial-submenu');
+        setupSubmenuToggle('configuracoes-toggle', 'configuracoes-submenu');
+
+        const activeLink = document.querySelector('.sidebar a.active');
+        if (activeLink) {
+            const parentSubmenu = activeLink.closest('.submenu');
+            if (parentSubmenu) parentSubmenu.style.display = 'block';
+        }
+
+        // --- LÓGICA DO GRÁFICO DE METAS ANUAL (COM CORES FIXAS) ---
+        const ctx = document.getElementById('metasAnualChart');
+        if (ctx) {
+            
+            // =============================================================================
+            // AQUI ESTÁ A MUDANÇA: Cores fixas para os eixos e a grade
+            // =============================================================================
+            const gridColor = 'rgba(65, 105, 225, 0.2)'; // Azul Royal bem transparente
+            const tickColor = 'rgba(65, 105, 225, 0.9)'; // Azul Royal quase sólido
+            // =============================================================================
+
+            const labels = {{ labels_grafico_anual_json|safe }};
+            const dataValues = {{ data_grafico_anual_json|safe }};
+
+            const chartCtx = ctx.getContext('2d');
+            const gradient = chartCtx.createLinearGradient(0, 0, 0, 400);
+            gradient.addColorStop(0, 'rgba(65, 105, 225, 0.8)');
+            gradient.addColorStop(1, 'rgba(100, 149, 237, 0.6)');
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Meta Mensal',
+                        data: dataValues,
+                        backgroundColor: gradient,
+                        borderColor: 'rgba(65, 105, 225, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: gridColor },
+                            ticks: {
+                                color: tickColor,
+                                font: {
+                                size: 10
+                                 },
+                                callback: function(value) { return 'R$ ' + value.toLocaleString('pt-BR'); }
+                            }
+                        },
+                        x: {
+                        grid: { color: gridColor },
+                        ticks: { color: tickColor, font: { size: 10 }, }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let value = context.parsed.y;
+                                    return ' Meta: ' + new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    });
+    </script>
+</body>
+</html>

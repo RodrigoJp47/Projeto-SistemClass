@@ -1,0 +1,407 @@
+/* ==========================================================================
+   4. ESTILIZAÇÃO DO MENU LATERAL (SIDEBAR)
+   ========================================================================== */
+
+/* --- Container Principal do Menu --- */
+.sidebar {
+    width: 250px;                   /* Largura fixa do menu */
+    background-color: #000;         /* Cor de fundo */
+    padding: 20px;                  /* Espaçamento interno */
+    position: fixed;                /* Posição fixa na tela (não rola com a página) */
+    top: 5px;
+    left: 5px;
+    bottom: 5px;
+    border-radius: 15px;            /* Bordas arredondadas */
+    z-index: 1000;                  /* Garante que o menu fique acima do conteúdo */
+    display: flex;
+    flex-direction: column;
+}
+
+/* --- Título (Ex: "Menu") --- */
+.sidebar h2 {
+    color: #fff;
+    font-size: 18px;
+    margin-bottom: 20px;
+}
+
+/* --- Lista de Itens do Menu --- */
+.sidebar ul {
+    list-style: none; /* Remove as "bolinhas" da lista */
+}
+
+.sidebar ul li {
+    margin: 10px 0;    /* Espaçamento vertical entre os itens */
+}
+
+/* --- Estilo Padrão dos Links do Menu --- */
+.sidebar ul li a {
+    color: #ffffff;
+    text-decoration: none;      /* Remove o sublinhado */
+    font-size: 15px;
+    display: block;             /* Faz o link ocupar toda a largura, melhorando a área de clique */
+    padding: 6px 15px;          /* Espaçamento interno do link */
+    border-radius: 6px;
+    transition: background-color 0.2s ease-in-out; /* Animação suave no hover */
+}
+
+/* --- Efeito ao passar o mouse sobre um link --- */
+.sidebar ul li a:hover {
+    background-color: #333;
+}
+
+/* --- Estilo do link da página ATIVA --- */
+.sidebar ul li a.active {
+    background-color: #0f0;     /* Fundo verde para destacar a página atual */
+    color: #000;                /* Texto preto para contraste */
+    font-weight: bold;
+}
+
+/* --- Estilo dos Submenus --- */
+.submenu {
+    display: none;              /* Oculto por padrão (o JavaScript controla a exibição) */
+    list-style: none;
+    margin-top: 8px;
+    padding-left: 18px;         /* Recuo para indicar hierarquia */
+    border-left: 2px solid #333;/* Linha vertical para organização visual */
+}
+
+/* No lugar da regra antiga, coloque estas duas */
+
+
+
+.submenu li a {
+    font-size: 15px; /* Mantenha o tamanho da fonte, mas sem o padding */
+    padding-left: 0; /* Garanta que não há padding no link */
+}
+
+.submenu li a:hover {
+    background-color: #2a2a2a;  /* Cor de hover levemente diferente */
+}
+
+/* --- Indicador de Seta para menus com submenu --- */
+.has-submenu > a::after {
+    content: '▼';               /* Adiciona o ícone de seta */
+    float: right;               /* Alinha a seta à direita */
+    font-size: 12px;
+    opacity: 0.7;
+}
+
+/* --- Rodapé do Menu --- */
+.sidebar-footer {
+    margin-top: auto;           /* Chave para empurrar o bloco inteiro para o rodapé */
+    text-align: center;         /* Centraliza o conteúdo */
+}
+
+/* --- Logo na Base do Menu --- */
+.logo-container {
+    padding-top: 5px;
+}
+
+.logo-container img {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 5px;
+}
+
+.logo-container p {
+    color: #fff;
+    font-size: 16px;
+}
+
+/* --- Seletor de Tema --- */
+.theme-switcher {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+/* ==========================================================================
+   5. BOTÃO HAMBÚRGUER (MOBILE)
+   ========================================================================== */
+#menu-toggle {
+    display: none;
+    position: fixed;
+    top: 15px;
+    right: 20px;
+    width: 40px;
+    height: 40px;
+    background-color: #333;
+    color: #fff;
+    border: 1px solid #555;
+    border-radius: 5px;
+    cursor: pointer;
+    z-index: 1001;
+    font-size: 24px;
+    line-height: 40px;
+    text-align: center;
+}
+
+/* Em sidebar.css, adicione este novo bloco de código */
+
+/* ==========================================================================
+   7. ESTILOS DO MENU RETRÁTIL (DESKTOP)
+   ========================================================================== */
+
+/* Animação suave para a transição do menu e do conteúdo principal */
+.sidebar, .main-content {
+    transition: all 0.3s ease-in-out;
+}
+
+
+
+/* --- Botão de controle do menu (desktop) --- */
+#desktop-toggle-btn {
+    background: #333;
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 28px;
+    /* Posicionamento para ficar "para fora" do menu */
+    position: absolute;
+    top: 15px;
+    right: -14px; 
+    z-index: 1001;
+    transition: transform 0.3s, background-color 0.2s;
+}
+#desktop-toggle-btn:hover {
+    background: #0f0;
+    color: #000;
+    transform: scale(1.1);
+}
+
+
+/* --- ESTADO RECOLHIDO (.sidebar-collapsed) --- */
+
+/* 1. O menu em si fica mais estreito */
+.sidebar.sidebar-collapsed {
+    width: 80px;
+}
+
+/* 2. O conteúdo principal da página ocupa o espaço que foi liberado */
+.main-content.sidebar-collapsed {
+    /* (Largura do menu recolhido + espaçamento) */
+    margin-left: 80px; 
+    width: calc(100% - 80px);
+}
+
+/* 3. Esconde os textos, título, setas e o nome do sistema */
+.sidebar.sidebar-collapsed .text,
+.sidebar.sidebar-collapsed h2,
+.sidebar.sidebar-collapsed .has-submenu > a::after,
+.sidebar.sidebar-collapsed .logo-container p {
+    display: none;
+    opacity: 0;
+}
+
+/* 4. Centraliza os ícones e o logo */
+.sidebar.sidebar-collapsed ul li a,
+.sidebar.sidebar-collapsed .logo-container {
+    text-align: center;
+    padding-left: 0;
+    padding-right: 0;
+}
+
+/* 5. Esconde os submenus por completo */
+.sidebar.sidebar-collapsed .submenu {
+    display: none !important;
+}
+/* 7. Esconde a logo inteira quando o menu está recolhido */
+.sidebar.sidebar-collapsed .logo-container {
+    display: none;
+}
+/* ==========================================================================
+   ESTILOS PARA O CABEÇALHO DO MENU E SELETOR DE TEMA
+   ========================================================================== */
+
+/* 1. Container que alinha o título e o botão */
+.sidebar-header {
+    display: flex;              /* ESSENCIAL: Alinha os itens na horizontal */
+    justify-content: space-between; /* Joga o título para a esquerda e o botão para a direita */
+    align-items: center;        /* Alinha os dois verticalmente no centro */
+    margin-bottom: 20px;        /* Mantém o espaçamento abaixo do cabeçalho */
+}
+
+/* 2. Remove a margem do título para um alinhamento perfeito */
+.sidebar-header h2 {
+    margin: 0;
+}
+
+/* 3. Estilização do ícone/botão do tema */
+#theme-toggle-btn {
+    background: none;
+    border: none;
+    font-size: 24px; /* Tamanho do emoji (ícone) */
+    cursor: pointer;
+    padding: 0;      /* Remove qualquer preenchimento extra */
+    color: #fff;     /* Cor do ícone no tema escuro */
+    transition: transform 0.2s; /* Adiciona uma animação suave ao clicar */
+}
+
+#theme-toggle-btn:hover {
+    transform: scale(1.1); /* Aumenta um pouco o ícone ao passar o mouse */
+}
+/* ==========================================================================
+   AJUSTES PARA ÍCONES SVG NO BOTÃO DE TEMA
+   ========================================================================== */
+
+/* Remove o tamanho da fonte, já que não temos mais texto/emoji */
+#theme-toggle-btn {
+    font-size: initial; 
+    line-height: initial;
+    display: flex; /* Ajuda a centralizar o SVG */
+    align-items: center;
+    justify-content: center;
+    /* --- LINHAS ADICIONADAS --- */
+    position: relative; /* Habilita o uso das propriedades de deslocamento */
+    right: 10px; 
+}
+
+/* Define o tamanho padrão dos ícones SVG dentro do botão */
+#theme-toggle-btn svg {
+    width: 22px;  /* Ajuste o tamanho conforme sua preferência */
+    height: 22px;
+}
+
+/* Em sidebar.css */
+
+/* ==========================================================================
+   ESTILO GLOBAL CORRIGIDO PARA O ÍCONE DE CALENDÁRIO (input[type="date"])
+   ========================================================================== */
+
+/* 1. Adiciona um preenchimento à direita para o texto não ficar em cima do ícone */
+input[type="date"] {
+    position: relative; /* Necessário para o truque do clique funcionar */
+    padding-right: 35px !important; /* Aumenta o espaço à direita */
+    
+    /* O código gigante abaixo é o "desenho" do novo ícone de calendário azul */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%230d6efd' class='bi bi-calendar-event' viewBox='0 0 16 16'%3E%3Cpath d='M11 6.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1z'/%3E%3Cpath d='M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+}
+
+/* 2. Deixa o ícone de calendário padrão INVISÍVEL, mas CLICÁVEL */
+input[type="date"]::-webkit-calendar-picker-indicator {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 100%; /* Ocupa toda a largura do campo */
+    height: 100%; /* Ocupa toda a altura do campo */
+    opacity: 0; /* Totalmente transparente */
+    cursor: pointer;
+}
+
+/* ==========================================================================
+   CORREÇÃO DA COR DO ÍCONE DE TEMA NO TEMA CLARO
+   ========================================================================== */
+
+/* Esta regra define que, quando o body tiver a classe 'theme-white',
+o botão #theme-toggle-btn (e o ícone SVG dentro dele) deve ter a cor preta.
+*/
+body.theme-white #theme-toggle-btn {
+    color: #000;
+}
+.btn-whatsapp {
+    display: inline-block; /* Permite definir padding e outras propriedades de bloco */
+    background-color: #25D366; /* Cor verde oficial do WhatsApp */
+    color: #FFFFFF; /* Texto branco */
+    padding: 12px 20px; /* Espaçamento interno (vertical e horizontal) */
+    border-radius: 8px; /* Cantos arredondados */
+    text-decoration: none; /* Remove o sublinhado padrão do link */
+    font-weight: bold; /* Deixa o texto em negrito */
+    font-family: Arial, sans-serif;
+    transition: background-color 0.2s ease; /* Animação suave ao passar o mouse */
+}
+
+.btn-whatsapp:hover {
+    background-color: #1DA851; /* Um tom de verde um pouco mais escuro para o efeito hover */
+}
+
+/* Adicione esta regra ao seu CSS, junto com a .btn-whatsapp */
+.btn-whatsapp .fab {
+    margin-right: 8px; /* Espaço entre o ícone e o texto */
+}
+
+/* Adicione ao final de static/css/sidebar.css */
+
+/* Espaçamento para ícones dentro dos links de menu */
+.sidebar ul li a i {
+    margin-right: 8px;
+    width: 1.2em; /* Garante que o ícone tenha um espaço reservado */
+    display: inline-block;
+    text-align: center;
+}
+
+/* Adicione ao final do seu sidebar.css */
+
+/* Estilo para o menu pai (ex: Financeiro) quando um filho está ativo */
+.sidebar ul li a.active-parent {
+    background-color: #222; /* Um fundo sutil, diferente do link ativo */
+    font-weight: bold;
+}
+
+/* Garante que o hover não seja mais forte que o 'active-parent' */
+.sidebar ul li a.active-parent:hover {
+    background-color: #333;
+}
+/* ==========================================================================
+   6. RESPONSIVIDADE (TELAS MENORES) - PARTE DO MENU
+   ========================================================================== */
+@media screen and (max-width: 768px) {
+    #menu-toggle {
+        display: block; /* Exibe o botão hambúrguer */
+    }
+
+    #desktop-toggle-btn {
+        display: none; /* Esconde o botão de recolher do desktop em telas menores */
+    }
+
+    /* Animação do menu mobile */
+    .sidebar {
+        height: 100%;
+        width: 260px;
+        transform: translateX(-100%); /* Esconde o menu para a esquerda */
+        transition: transform 0.3s ease-in-out;
+        border-right: 1px solid #444;
+    }
+
+    /* Classe adicionada via JavaScript para abrir o menu */
+    .sidebar.mobile-open {
+        transform: translateX(0); /* Traz o menu de volta para a tela */
+    }
+
+    /* ==========================================================================
+    CORREÇÃO PARA CONFLITO ENTRE MENU RECOLHIDO E VIEW MOBILE
+    ========================================================================== */
+
+    /* 1. Força o conteúdo principal a ocupar 100% da largura no mobile,
+        ignorando o margin-left que a classe .sidebar-collapsed adiciona. */
+    .main-content.sidebar-collapsed {
+        margin-left: 0;
+        width: 100%;
+    }
+
+    /* 2. Força o menu a ter a largura correta do mobile (260px) e
+        garante que os textos e ícones que estavam escondidos reapareçam. */
+    .sidebar.sidebar-collapsed {
+        width: 260px; /* Mesma largura definida para o menu mobile */
+    }
+
+    .sidebar.sidebar-collapsed .text,
+    .sidebar.sidebar-collapsed .has-submenu > a::after,
+    .sidebar.sidebar-collapsed h2 {
+        display: inline; /* Faz os textos e setas reaparecerem */
+        opacity: 1;
+    }
+
+    /* Garante que o título "Menu" não fique na mesma linha dos botões */
+    .sidebar.sidebar-collapsed h2 {
+        display: block;
+}
+}

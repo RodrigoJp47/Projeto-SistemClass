@@ -1,0 +1,2409 @@
+/* static/css/themes.css - VERSÃO SEM O TEMA AZUL */
+
+/* ========================================================================== */
+/* ESTILOS DO SELETOR DE TEMAS (OS PONTOS DE COR)                             */
+/* ========================================================================== */
+.theme-dot {
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
+    border: 2px solid #555;
+    cursor: pointer;
+    padding: 0;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.theme-dot:hover {
+    transform: scale(1.1);
+}
+
+.theme-dot.active {
+    border-color: #0f0;
+}
+
+.theme-black { background-color: #000000; }
+.theme-white { background-color: #FFFFFF; }
+/* A linha do theme-blue foi REMOVIDA daqui */
+
+
+/* ========================================================================== */
+/* REGRAS DE TEMA HÍBRIDO                                                     */
+/* ========================================================================== */
+
+/* --- TEMA BRANCO --- */
+
+/* 1. Define o fundo da página como claro e o TEXTO PADRÃO como preto */
+body.theme-white {
+    background-color: #ffffff;
+    color: #000000;
+}
+
+/* 2. Deixa o menu com fundo branco e garante que seus textos sejam pretos */
+body.theme-white .sidebar {
+    background-color: #FFFFFF;
+}
+
+body.theme-white .sidebar h2,
+body.theme-white .sidebar ul li a,
+body.theme-white .sidebar .logo-container p {
+    color: #000000;
+}
+
+/* Ajusta as cores do link ativo e do hover para o tema branco */
+body.theme-white .sidebar ul li a.active {
+    background-color: #e0e0e0;
+    color: #000000;
+}
+
+body.theme-white .sidebar ul li a:hover {
+    background-color: #f4f4f4;
+    color: #000000;
+}
+
+
+
+/* ========================================================================== */
+/* LÓGICA PARA TROCA DE LOGO NOS TEMAS                                        */
+/* ========================================================================== */
+
+/* 1. Por padrão, esconde o logo claro. */
+.logo-light {
+    display: none;
+}
+
+/* 2. Quando o tema branco estiver ativo... */
+body.theme-white .logo-dark {
+    display: none; /* ...esconde o logo escuro... */
+}
+
+body.theme-white .logo-light {
+    display: block; /* ...e mostra o logo claro. */
+    margin-left: auto;  
+    margin-right: auto; 
+}
+
+/* ========================================================================== */
+/* CORREÇÕES FINAIS DE TEXTO PARA A PÁGINA DE CONFIGURAÇÕES (TEMA CLARO)      */
+/* ========================================================================== */
+
+/* 1. Força os títulos principais da página a ficarem pretos no tema claro. */
+/* Isso inclui "Configurações", "Tema", "Contas Bancárias", etc.         */
+body.theme-white .config-header .section-title,
+body.theme-white .theme-selector-container h4,
+body.theme-white .table-container h3 {
+    color: #000000;
+}
+
+/* 2. Força o conteúdo (as linhas) da tabela de contas bancárias a ficar preto. */
+body.theme-white .bank-accounts-table td {
+    color: #000000;
+}
+
+/* ========================================================================== */
+/* ESTILOS ADICIONAIS PARA OS CARDS E GRÁFICO (APENAS DA PÁGINA HOME)        */
+/* ========================================================================== */
+
+/* 1. Define o fundo 'branco gelo' APENAS para os cards da página home no tema claro */
+body.theme-white.home-page .card {
+    background-color: #f0f2f5;
+}
+
+/* 2. Define o fundo 'branco gelo' APENAS para o canvas dentro do .chart-container da página home */
+body.theme-white.home-page .chart-container canvas {
+    background-color: #f0f2f5;
+}
+
+/* 3. Muda a cor do texto dentro dos cards da página home para preto */
+body.theme-white.home-page .card h3,
+body.theme-white.home-page .card p {
+    color: #000000;
+}
+
+/* Define a cor específica para o "Bem-vindo" no tema claro */
+body.theme-white .main-header h2 {
+    color: #221e1e; /* Cor preta para o tema claro */
+}
+
+/* ========================================================================== */
+/* CORREÇÃO PONTUAL PARA TÍTULOS NA PÁGINA DE CADASTROS (TEMA CLARO)   */
+/* ========================================================================== */
+
+/*
+Esta regra força o H3 dentro de .table-container a voltar a ser branco
+na página de cadastros, pois o fundo do container continua escuro.
+*/
+body.theme-white.cadastros-page .table-container h3 {
+    color: #FFFFFF; /* Força o texto do título a ser branco */
+}
+
+
+/* ==========================================================================
+   ESTILOS DE TEMA PARA A PÁGINA DE METAS COMERCIAIS
+   ========================================================================== */
+
+/* --- TEMA ESCURO (PADRÃO) --- */
+
+
+body .metas-container .form-card,
+body .metas-container .list-card,
+body .main-content .full-width-chart-card {
+    background-color: #222;
+    border-color: #444;
+}
+
+body .header h1,
+body .metas-container .form-title,
+body .metas-container .list-title,
+body .metas-container .form-subtitle,
+body .metas-container .form-group label,
+body .metas-container .mes-title,
+body .metas-container .acumulado-ano,
+body .meta-item span,
+body .main-content .full-width-chart-card .card-title {
+    color: #FFFFFF;
+}
+
+body .metas-container .form-group select,
+body .metas-container .form-group input,
+body .filtro-ano-form select {
+    background-color: #333;
+    color: #FFFFFF;
+    border-color: #555;
+}
+
+body .metas-container .input-group .input-group-text {
+    background-color: #444;
+    border-color: #555;
+    color: #FFFFFF;
+}
+
+/* AQUI ESTÁ A CORREÇÃO PRINCIPAL: Adicionamos 'body' para aumentar a especificidade */
+body .meta-item.empresa {
+    background-color: #1a2c40; /* Azul bem escuro */
+    border-left-color: #3498db;
+}
+
+body .meta-item.vendedor {
+    background-color: #2c3e50; /* Cinza-azulado escuro */
+    border-left-color: #bdc3c7;
+}
+
+body .mes-title,
+body .acumulado-ano {
+    border-bottom-color: #444;
+}
+
+/* Em static/css/themes.css */
+
+/* ... (dentro da seção de Estilos para Metas) ... */
+
+/* ADICIONE ESTAS NOVAS REGRAS */
+
+/* --- TEMA ESCURO --- */
+body .meta-percentual {
+    background-color: #4f5b66; /* Fundo cinza-escuro para o percentual */
+    color: #FFFFFF;           /* Texto branco */
+}
+
+/* --- TEMA CLARO --- */
+body.theme-white .meta-percentual {
+    background-color: #e9ecef; /* Fundo cinza-claro */
+    color: #212529;           /* Texto escuro */
+}
+
+/* --- TEMA CLARO (SOBRESCRITAS) --- */
+/* Aplica-se quando a classe .theme-white ESTÁ PRESENTE no body */
+
+body.theme-white.metas-comerciais-page .main-content {
+    background-color: #f0f2f5; /* Fundo principal cinza claro */
+}
+
+body.theme-white .metas-container .form-card,
+body.theme-white .metas-container .list-card,
+body.theme-white .main-content .full-width-chart-card {
+    background-color: #FFFFFF; /* Fundo branco para os cards */
+    border-color: #DEE2E6;
+}
+
+/* Textos gerais no tema claro */
+body.theme-white .header h1,
+body.theme-white .metas-container .form-title,
+body.theme-white .metas-container .list-title,
+body.theme-white .metas-container .form-subtitle,
+body.theme-white .metas-container .form-group label,
+body.theme-white .metas-container .mes-title,
+body.theme-white .metas-container .acumulado-ano,
+body.theme-white .meta-item span,
+body.theme-white .main-content .full-width-chart-card .card-title {
+    color: #212529; /* Texto escuro */
+}
+
+/* Campos de formulário no tema claro */
+body.theme-white .metas-container .form-group select,
+body.theme-white .metas-container .form-group input,
+body.theme-white .filtro-ano-form select {
+    background-color: #FFFFFF;
+    color: #212529;
+    border-color: #CED4DA;
+}
+
+body.theme-white .metas-container .input-group .input-group-text {
+    background-color: #e9ecef;
+    border-color: #CED4DA;
+    color: #495057;
+}
+
+/* Itens da lista de metas no tema claro (cores originais) */
+body.theme-white .meta-item.empresa {
+    background-color: #e9f5ff;
+    border-left-color: #3498db;
+}
+
+body.theme-white .meta-item.vendedor {
+    background-color: #f8f9fa; /* Usando uma cor de variável global como exemplo */
+    border-left-color: #bdc3c7;
+}
+
+/* Bordas divisórias no tema claro */
+body.theme-white .mes-title,
+body.theme-white .acumulado-ano {
+    border-bottom-color: #DEE2E6;
+}
+
+/* ========================================================================== */
+/* CORREÇÃO PARA CARDS/GRÁFICOS/TABELA NA PÁGINA FORNECEDOR (TEMA CLARO)     */
+/* ========================================================================== */
+
+/* 1. Aplica o fundo 'branco gelo' nos containers de GRÁFICOS e TABELA */
+body.theme-white .main-content .chart-container,
+body.theme-white .main-content .accounts-table-container {
+    background-color: #f0f2f5; /* Tom de branco gelo */
+    color: #000; /* Garante que o texto padrão dentro deles seja preto */
+}
+
+/* 2. Aplica o fundo VERDE MUSGO APENAS nos cards de estatísticas */
+body.theme-white .main-content .stat-card {
+    background-color: #046251; /* Verde Musgo */
+}
+
+/* 3. Força o texto dos cards de estatísticas a ficar BRANCO no tema claro */
+body.theme-white .stat-card h4,
+body.theme-white .stat-card p {
+    color: #FFFFFF; /* Texto branco */
+    font-weight: bold; /* Adiciona o negrito */
+}
+
+
+/* ... (o resto das regras para a tabela continua aqui) ... */
+body.theme-white .accounts-table-container th {
+    background-color: #e9ecef; /* Fundo cinza claro para o cabeçalho */
+    color: #000; /* Texto do cabeçalho preto */
+}
+
+body.theme-white .accounts-table-container td {
+    color: #000; /* Texto das células da tabela preto */
+    border-bottom-color: #ddd; /* Cor da linha separadora mais clara */
+}
+
+/* 2. Ajusta a tabela para o tema claro */
+body.theme-white .accounts-table-container th {
+    background-color: #e9ecef; /* Fundo cinza claro para o cabeçalho */
+    color: #000; /* Texto do cabeçalho preto */
+}
+
+body.theme-white .accounts-table-container td {
+    color: #000; /* Texto das células da tabela preto */
+    border-bottom-color: #ddd; /* Cor da linha separadora mais clara */
+}
+
+
+
+/* ========================================================================== */
+/* CORREÇÃO PARA TABELAS E TEXTOS NA PÁGINA CLIENTES (TEMA CLARO)       */
+/* ========================================================================== */
+
+/* Garante que o texto dentro de QUALQUER tabela na página de clientes fique escuro */
+body.theme-white .accounts-table-container td,
+body.theme-white .chart-container table td {
+    color: #212529; /* Tom de preto/cinza escuro para o texto */
+}
+
+/* Ajusta a cor do cabeçalho da tabela 'Previsão x Realizado' */
+body.theme-white .chart-container table th {
+    background-color: #e9ecef; /* Fundo cinza claro para o cabeçalho */
+    color: #000; /* Texto do cabeçalho preto */
+}
+
+/* ============================================================================ */
+/* CORREÇÃO PARA A COR DA PAGINAÇÃO NO TEMA CLARO                             */
+/* ============================================================================ */
+
+/* Define a cor do texto dos links da paginação para uma cor escura no tema branco */
+body.theme-white .pagination .step-links a {
+    color: #333; /* Cor de texto escura */
+    border-color: #ccc; /* Borda cinza clara para combinar */
+}
+
+/* Opcional: Melhora o hover no tema claro para não ficar verde sobre branco */
+body.theme-white .pagination .step-links a:hover {
+    background-color: #e9e9e9; /* Fundo cinza claro ao passar o mouse */
+    color: #000; /* Texto preto */
+    border-color: #ccc;
+}
+/* ========================================================================== */
+/* CORREÇÃO PONTUAL PARA GRÁFICOS ESCUROS NO DASHBOARD DE FATURAMENTO     */
+/* ========================================================================== */
+
+/* Esta regra força o fundo dos containers dos gráficos de "Vendas por Produtos" 
+e "Vendas por Serviços" a permanecerem pretos, mesmo no tema claro, 
+sobrescrevendo as regras mais genéricas. Ela funciona procurando por um card 
+que tenha o estilo inline "background-color: #000". 
+*/
+body.theme-white .card[style*="background-color: #000"] .chart-container {
+    background-color: #000 !important;
+}
+
+/* ==========================================================================
+   CORREÇÃO PARA FORMULÁRIOS NA PÁGINA DE CONFIGURAÇÕES (TEMA CLARO)
+   ========================================================================== */
+
+/* 1. Define um fundo claro para os containers dos formulários */
+body.theme-white .form-container {
+    background-color: #f8f9fa; /* Fundo cinza bem claro */
+    border: 1px solid #dee2e6;
+}
+
+/* 2. Força os títulos (H3) dentro dos formulários a ficarem pretos */
+body.theme-white .form-container h3 {
+    color: #000;
+}
+
+/* 3. Ajusta a aparência dos campos de input e select para o tema claro */
+body.theme-white .form-container input,
+body.theme-white .form-container select {
+    background-color: #fff; /* Fundo branco */
+    color: #333; /* Texto escuro */
+    border: 1px solid #ccc; /* Borda sutil */
+}
+
+/* ==========================================================================
+   AJUSTES DE TEMA PARA OS CARDS DE FLUXO DE CAIXA
+   ========================================================================== */
+
+/* Estilo do card no tema claro */
+body.theme-white .new-card {
+    background-color: #fff;
+    border: 1px solid #dee2e6;
+}
+
+/* Estilo dos textos dentro do card no tema claro */
+body.theme-white .new-card h3,
+body.theme-white .new-card .card-main-values p span.value,
+body.theme-white .new-card .card-side-details p {
+    color: #000; /* Texto preto */
+}
+
+/* Textos secundários no tema claro */
+body.theme-white .new-card .card-main-values p {
+    color: #666; /* Tom de cinza escuro */
+}
+
+/* Em static/css/themes.css, adicione este bloco ao final do arquivo */
+
+/* ==========================================================================
+   CORREÇÃO DE TEMA PARA PÁGINA DE CADASTROS COMERCIAIS (TEMA CLARO)
+   ========================================================================== */
+
+/* 1. Alvo: Apenas a página de cadastros (.cadastros-page) no tema claro (.theme-white) */
+
+/* 2. Força os containers de formulário e tabela a terem fundo branco e texto escuro */
+body.theme-white.cadastros-page .form-container,
+body.theme-white.cadastros-page .table-container {
+    background-color: #FFFFFF; /* Fundo branco */
+    color: #212529;            /* Cor do texto padrão escura */
+    border: 1px solid #DEE2E6; /* Borda cinza clara sutil */
+}
+
+/* 3. Garante que os títulos (H3) dentro desses containers fiquem escuros */
+body.theme-white.cadastros-page .form-container h3,
+body.theme-white.cadastros-page .table-container h3 {
+    color: #212529;
+}
+
+/* 4. Estiliza o cabeçalho da tabela (TH) para o tema claro */
+body.theme-white.cadastros-page .table-container table thead th {
+    background-color: #F8F9FA; /* Fundo cinza bem claro para o cabeçalho */
+    color: #212529;            /* Texto do cabeçalho escuro */
+    border-bottom: 2px solid #DEE2E6;
+}
+
+/* 5. Garante que o texto das células da tabela (TD) fique escuro */
+body.theme-white.cadastros-page .table-container table tbody td {
+    color: #212529;
+    border-bottom: 1px solid #DEE2E6; /* Linhas separadoras claras */
+}
+
+/* 6. Ajusta os formulários para o tema claro */
+body.theme-white.cadastros-page .form-container input,
+body.theme-white.cadastros-page .form-container select,
+body.theme-white.cadastros-page .form-container textarea { /* <-- ADICIONE A VÍRGULA E ESTA LINHA */
+    background-color: #FFFFFF;
+    color: #212529;
+    border: 1px solid #CED4DA;
+}
+body.theme-white.cadastros-page .form-container label {
+    color: #212529;
+}
+
+/* Em static/css/themes.css, adicione este bloco ao final */
+
+/* ==========================================================================
+   AJUSTES FINAIS PARA PÁGINA DE CADASTROS (TEMA CLARO)
+   ========================================================================== */
+
+/* 1. Corrige o fundo e o texto das LINHAS da tabela (tbody tr) */
+/* Esta é a regra principal que corrige as listagens escuras */
+body.theme-white.cadastros-page .table-container tbody tr {
+    background-color: #FFFFFF; /* Fundo branco para as linhas */
+}
+
+/* 2. Garante que o texto DENTRO das células (td) seja escuro */
+body.theme-white.cadastros-page .table-container tbody td {
+    color: #212529; /* Texto escuro */
+}
+
+/* 3. Adiciona um efeito de hover claro para as linhas da tabela */
+body.theme-white.cadastros-page .table-container tbody tr:hover {
+    background-color: #f8f9fa; /* Cinza bem claro ao passar o mouse */
+}
+
+/* 4. Corrige os campos de input do formulário de FILTRO da tabela */
+body.theme-white.cadastros-page .table-container .filter-form input {
+    background-color: #FFFFFF;
+    color: #212529;
+    border: 1px solid #CED4DA;
+}
+
+/* Em static/css/themes.css, adicione este bloco ao final */
+
+/* ==========================================================================
+   ESTILOS DE TEMA PARA A PÁGINA CONTAS A PAGAR
+   ========================================================================== */
+
+/* --- TEMA ESCURO (PADRÃO) --- */
+/* Estas regras garantem que o tema escuro continue funcionando como antes */
+body.contas-pagar-page .form-container,
+body.contas-pagar-page .table-container,
+body.contas-pagar-page .filter-container {
+    background-color: #222;
+}
+body.contas-pagar-page th {
+    background-color: #333;
+    color: #FFFFFF;
+}
+body.contas-pagar-page input,
+body.contas-pagar-page select,
+body.contas-pagar-page textarea {
+    background-color: #333;
+    color: #fff;
+    border: none;
+}
+body.contas-pagar-page .action-menu .dropdown {
+    background-color: #333;
+}
+
+/* --- TEMA CLARO (SOBRESCRITAS) --- */
+/* Estas regras são aplicadas APENAS quando o tema branco está ativo */
+body.theme-white.contas-pagar-page .form-container,
+body.theme-white.contas-pagar-page .table-container,
+body.theme-white.contas-pagar-page .filter-container {
+    background-color: #FFFFFF;
+    border: 1px solid #DEE2E6;
+    color: #212529;
+}
+body.theme-white.contas-pagar-page h1,
+body.theme-white.contas-pagar-page h3 {
+    color: #212529;
+}
+body.theme-white.contas-pagar-page th {
+    background-color: #F8F9FA;
+    color: #212529;
+    border-bottom: 2px solid #DEE2E6;
+}
+body.theme-white.contas-pagar-page td {
+    color: #212529;
+    border-bottom: 1px solid #DEE2E6;
+}
+body.theme-white.contas-pagar-page input,
+body.theme-white.contas-pagar-page select,
+body.theme-white.contas-pagar-page textarea {
+    background-color: #FFFFFF;
+    color: #212529;
+    border: 1px solid #CED4DA;
+}
+body.theme-white.contas-pagar-page .action-menu .dropdown {
+    background-color: #FFFFFF;
+    border: 1px solid #DEE2E6;
+}
+body.theme-white.contas-pagar-page .action-menu .dropdown a,
+body.theme-white.contas-pagar-page .action-menu .dropdown button {
+    color: #495057;
+}
+body.theme-white.contas-pagar-page .action-menu .dropdown a:hover,
+body.theme-white.contas-pagar-page .action-menu .dropdown button:hover {
+    background-color: #e9ecef;
+}
+
+/* Em static/css/themes.css, adicione este bloco ao final */
+
+/* ==========================================================================
+   ESTILOS DE TEMA PARA A PÁGINA CONTAS A RECEBER
+   ========================================================================== */
+
+/* --- TEMA ESCURO (PADRÃO) --- */
+body.contas-receber-page .form-container,
+body.contas-receber-page .table-container,
+body.contas-receber-page .filter-container {
+    background-color: #222;
+}
+body.contas-receber-page th {
+    background-color: #333;
+    color: #FFFFFF;
+}
+body.contas-receber-page input,
+body.contas-receber-page select,
+body.contas-receber-page textarea {
+    background-color: #333;
+    color: #fff;
+    border: none;
+}
+body.contas-receber-page .action-menu .dropdown {
+    background-color: #333;
+}
+/* Garante que o texto das células (td) seja branco no tema escuro */
+body.contas-pagar-page td,
+body.contas-receber-page td {
+    color: #FFFFFF;
+}
+
+/* --- TEMA CLARO (SOBRESCRITAS) --- */
+body.theme-white.contas-receber-page .form-container,
+body.theme-white.contas-receber-page .table-container,
+body.theme-white.contas-receber-page .filter-container {
+    background-color: #FFFFFF;
+    border: 1px solid #DEE2E6;
+    color: #212529;
+}
+body.theme-white.contas-receber-page h1,
+body.theme-white.contas-receber-page h3 {
+    color: #212529;
+}
+body.theme-white.contas-receber-page th {
+    background-color: #F8F9FA;
+    color: #212529;
+    border-bottom: 2px solid #DEE2E6;
+}
+body.theme-white.contas-receber-page td {
+    color: #212529;
+    border-bottom: 1px solid #DEE2E6;
+}
+body.theme-white.contas-receber-page input,
+body.theme-white.contas-receber-page select,
+body.theme-white.contas-receber-page textarea {
+    background-color: #FFFFFF;
+    color: #212529;
+    border: 1px solid #CED4DA;
+}
+body.theme-white.contas-receber-page .action-menu .dropdown {
+    background-color: #FFFFFF;
+    border: 1px solid #DEE2E6;
+}
+body.theme-white.contas-receber-page .action-menu .dropdown a,
+body.theme-white.contas-receber-page .action-menu .dropdown button {
+    color: #495057;
+}
+body.theme-white.contas-receber-page .action-menu .dropdown a:hover,
+body.theme-white.contas-receber-page .action-menu .dropdown form:hover {
+    background-color: #e9ecef;
+}
+body.theme-white.contas-receber-page .action-menu .dropdown form:hover button {
+    color: #000;
+}
+
+/* Em static/css/themes.css, adicione este bloco ao final */
+
+/* ==========================================================================
+   CORREÇÃO DE TEMA ESCURO PARA PÁGINAS CONTAS A PAGAR E RECEBER
+   ========================================================================== */
+
+/* 1. Força o fundo do conteúdo principal a ser escuro no tema padrão (dark) */
+body.contas-pagar-page .main-content,
+body.contas-receber-page .main-content {
+    background-color: #121212; /* Um tom de preto/cinza escuro para o fundo */
+}
+
+/* 2. Garante que os títulos H1 e H3 sejam brancos no tema escuro */
+body.contas-pagar-page h1,
+body.contas-pagar-page h3,
+body.contas-receber-page h1,
+body.contas-receber-page h3 {
+    color: #FFFFFF;
+}
+
+/* 3. Garante que o texto dos rótulos (labels) dos formulários seja branco */
+body.contas-pagar-page label,
+body.contas-receber-page label {
+    color: #FFFFFF;
+}
+
+
+
+body.theme-white.contas-pagar-page .main-content,
+body.theme-white.contas-receber-page .main-content {
+    background-color: #FFFFFF;
+}
+
+body.theme-white.contas-pagar-page label,
+body.theme-white.contas-receber-page label {
+    color: #212529;
+}
+
+/* Em themes.css, adicione ao final */
+body.contas-pagar-page .total-row { background-color: #333; color: #0f0; }
+body.contas-pagar-page .pagination a { color: #fff; }
+body.theme-white.contas-pagar-page .total-row { background-color: #F8F9FA; color: #07501d; }
+body.theme-white.contas-pagar-page .pagination a { color: #212529; border-color: #DEE2E6; }
+body.theme-white.contas-pagar-page .pagination a:hover { background-color: #e9ecef; }
+
+/* Em themes.css, adicione ao final */
+body.contas-receber-page .total-row { background-color: #333; color: #0f0; }
+body.contas-receber-page .pagination a { color: #fff; }
+body.theme-white.contas-receber-page .total-row { background-color: #F8F9FA; color: #07501d; }
+body.theme-white.contas-receber-page .pagination a { color: #212529; border-color: #DEE2E6; }
+body.theme-white.contas-receber-page .pagination a:hover { background-color: #e9ecef; }
+
+/* Em static/css/themes.css, adicione ao final */
+
+/* ==========================================================================
+   CORREÇÃO DE COR PARA O TEXTO DA PAGINAÇÃO
+   ========================================================================== */
+
+/* Garante que o texto 'Página X de Y' seja branco no tema escuro */
+body.contas-pagar-page .pagination .current,
+body.contas-receber-page .pagination .current {
+    color: #FFFFFF;
+}
+
+/* Garante que o texto 'Página X de Y' seja escuro no tema claro */
+body.theme-white.contas-pagar-page .pagination .current,
+body.theme-white.contas-receber-page .pagination .current {
+    color: #212529;
+}
+
+/* Em static/css/themes.css, adicione ao final */
+
+/* ==========================================================================
+   CORREÇÃO DE COR PARA O SELECT DO FILTRO DE STATUS (TEMA CLARO)
+   ========================================================================== */
+
+/* Esta regra força o fundo e o texto do campo <select> a terem as cores
+   corretas no tema claro para as duas páginas. */
+body.theme-white.contas-pagar-page .filter-container select,
+body.theme-white.contas-receber-page .filter-container select {
+    background-color: #FFFFFF;
+    color: #212529; /* <-- Esta é a correção principal (texto escuro) */
+    border: 1px solid #CED4DA;
+}
+
+/* Em static/css/themes.css, adicione este bloco ao final */
+
+/* ==========================================================================
+   CORREÇÃO DEFINITIVA PARA PLACEHOLDER DE DATA (TEMA CLARO)
+   ========================================================================== */
+
+/* Esta regra geral define a cor do texto para o campo de data quando ele
+   ainda não tem um valor válido (ou seja, quando está mostrando 'dd/mm/aaaa'). */
+body.theme-white.contas-pagar-page .filter-container input[type="date"],
+body.theme-white.contas-receber-page .filter-container input[type="date"] {
+    color: #6c757d; /* Tom de cinza escuro para o placeholder */
+}
+
+/* Esta regra define a cor do texto para o campo de data DEPOIS que um
+   valor é selecionado pelo usuário. */
+body.theme-white.contas-pagar-page .filter-container input[type="date"]:valid,
+body.theme-white.contas-receber-page .filter-container input[type="date"]:valid {
+    color: #212529; /* Texto preto para a data preenchida */
+}
+
+/* Regras específicas para navegadores baseados em WebKit (Chrome, Edge, etc.)
+   para garantir que os pedaços do placeholder ('dd', 'mm', 'aaaa') tenham a cor certa. */
+body.theme-white.contas-pagar-page input[type="date"]::-webkit-datetime-edit-text,
+body.theme-white.contas-pagar-page input[type="date"]::-webkit-datetime-edit-month-field,
+body.theme-white.contas-pagar-page input[type="date"]::-webkit-datetime-edit-day-field,
+body.theme-white.contas-pagar-page input[type="date"]::-webkit-datetime-edit-year-field,
+body.theme-white.contas-receber-page input[type="date"]::-webkit-datetime-edit-text,
+body.theme-white.contas-receber-page input[type="date"]::-webkit-datetime-edit-month-field,
+body.theme-white.contas-receber-page input[type="date"]::-webkit-datetime-edit-day-field,
+body.theme-white.contas-receber-page input[type="date"]::-webkit-datetime-edit-year-field {
+    color: #6c757d;
+}
+
+/* Regra para o ícone do calendário no tema claro */
+body.theme-white.contas-pagar-page input[type="date"]::-webkit-calendar-picker-indicator,
+body.theme-white.contas-receber-page input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+}
+
+/* Em static/css/themes.css, adicione este bloco ao final */
+
+/* ==========================================================================
+   ESTILOS DE TEMA PARA A PÁGINA DE VENDAS (TEMA CLARO)
+   ========================================================================== */
+
+/* 1. Define o fundo principal e a cor de texto padrão para a página no tema claro */
+body.theme-white.vendas-page .main-content {
+    background-color: #fff; /* Um cinza bem claro para o fundo geral */
+}
+
+/* 2. Ajusta os containers principais ("Nova Venda" e "Vendas Realizadas") */
+body.theme-white.vendas-page .section-container {
+    background-color: #FFFFFF; /* Fundo branco */
+    border: 1px solid #DEE2E6; /* Borda cinza clara */
+    color: #212529;            /* Texto padrão escuro */
+}
+
+/* 3. Garante que todos os títulos e labels fiquem escuros */
+body.theme-white.vendas-page h1,
+body.theme-white.vendas-page h3,
+body.theme-white.vendas-page h4,
+body.theme-white.vendas-page label,
+body.theme-white.vendas-page .totals-section div {
+    color: #212529;
+}
+
+/* 4. Ajusta os campos de formulário (inputs e selects) */
+body.theme-white.vendas-page input,
+body.theme-white.vendas-page select {
+    background-color: #FFFFFF;
+    color: #212529;
+    border: 1px solid #CED4DA;
+}
+
+/* 5. Estiliza a tabela de "Vendas Realizadas" para o tema claro */
+body.theme-white.vendas-page table th {
+    background-color: #F8F9FA; /* Fundo do cabeçalho cinza claro */
+    color: #212529;
+    border-bottom: 2px solid #DEE2E6;
+}
+
+body.theme-white.vendas-page table td,
+body.theme-white.vendas-page table ul li { /* Alvo para as células e itens da lista */
+    color: #212529;
+    border-bottom: 1px solid #DEE2E6;
+}
+
+/* 6. Corrige as cores da paginação */
+body.theme-white.vendas-page .pagination a {
+    color: #212529;
+    border-color: #DEE2E6;
+}
+body.theme-white.vendas-page .pagination a:hover {
+    background-color: #e9ecef;
+}
+body.theme-white.vendas-page .pagination .current {
+    color: #212529;
+}
+
+/* Em static/css/themes.css, adicione ao final */
+
+/* Correção para a caixa de sugestão de produtos no tema claro */
+body.theme-white.vendas-page .product-search-results {
+    background-color: #FFFFFF;
+    border: 1px solid #CED4DA;
+}
+
+body.theme-white.vendas-page .search-result-item {
+    color: #212529; /* Texto escuro */
+}
+
+body.theme-white.vendas-page .search-result-item:hover {
+    background-color: #f0f2f5; /* Fundo cinza claro no hover */
+}
+
+/* Em static/css/themes.css, adicione ao final */
+
+/* ==========================================================================
+   CORREÇÃO DE TEMA PARA O MODAL DE CADASTRO DE CLIENTE (TEMA CLARO)
+   ========================================================================== */
+
+/* 1. Define o fundo branco e a borda clara para o conteúdo do modal */
+body.theme-white.vendas-page .modal-content {
+    background-color: #FFFFFF;
+    border: 1px solid #DEE2E6;
+}
+
+/* 2. Garante que o título (h3) e os rótulos (label) fiquem com texto escuro */
+body.theme-white.vendas-page .modal-content h3,
+body.theme-white.vendas-page .modal-content label {
+    color: #212529;
+}
+
+/* 3. Ajusta a cor do botão "X" de fechar para o tema claro */
+body.theme-white.vendas-page .modal .close-btn {
+    color: #6c757d; /* Cinza escuro */
+}
+body.theme-white.vendas-page .modal .close-btn:hover {
+    color: #212529; /* Preto ao passar o mouse */
+}
+
+/* 4. Ajusta os campos de input dentro do modal para o tema claro */
+body.theme-white.vendas-page .modal-content input {
+    background-color: #FFFFFF;
+    color: #212529;
+    border: 1px solid #CED4DA;
+}
+
+/* Em static/css/themes.css, adicione ao final */
+
+/* Correção da linha de total da tabela de vendas no tema claro */
+body.theme-white.vendas-page .total-row {
+    background-color: #f8f9fa; /* Fundo cinza claro */
+    color: #212529;            /* Texto escuro */
+    border-top: 2px solid #dee2e6; /* Linha superior para separar */
+}
+
+/* static/css/themes.css */
+
+/* ==========================================================================
+   ESTILOS DE TEMA PARA AS PÁGINAS DE CONFIGURAÇÕES (Bancos e OFX)
+   ========================================================================== */
+
+/* Regras aplicadas APENAS quando o tema branco está ativo */
+
+/* 1. Fundo principal e cor de texto padrão */
+body.theme-white.cadastrar-bancos-page .main-content,
+body.theme-white.importar-ofx-page .main-content {
+    background-color: #f8f9fa; /* Cinza bem claro */
+    color: #212529; /* Texto escuro */
+}
+
+/* 2. Títulos, labels e descrições */
+body.theme-white.cadastrar-bancos-page .section-title,
+body.theme-white.cadastrar-bancos-page .form-container h3,
+body.theme-white.cadastrar-bancos-page .table-container h3,
+body.theme-white.importar-ofx-page .section-title,
+body.theme-white.importar-ofx-page .form-container h3,
+body.theme-white.importar-ofx-page .description,
+body.theme-white.importar-ofx-page .form-group label {
+    color: #212529;
+}
+
+/* 3. Containers de formulário e tabelas */
+body.theme-white.cadastrar-bancos-page .form-container,
+body.theme-white.cadastrar-bancos-page .table-container,
+body.theme-white.importar-ofx-page .form-container {
+    background-color: #FFFFFF;
+    border: 1px solid #DEE2E6;
+}
+
+/* 4. Campos de formulário (input, select) */
+body.theme-white.cadastrar-bancos-page .form-container input,
+body.theme-white.importar-ofx-page .form-container select,
+body.theme-white.importar-ofx-page .form-container input[type="file"] {
+    background-color: #FFFFFF;
+    color: #212529;
+    border: 1px solid #CED4DA;
+}
+
+/* 5. Tabela de Contas Bancárias */
+body.theme-white.cadastrar-bancos-page .data-table th {
+    background-color: #F8F9FA;
+    color: #212529;
+}
+
+body.theme-white.cadastrar-bancos-page .data-table td {
+    color: #212529;
+    border-bottom-color: #DEE2E6;
+}
+
+body.theme-white.cadastrar-bancos-page .data-table tbody tr:hover {
+    background-color: #f1f1f1;
+}
+
+/* 6. Botão de cancelar edição */
+body.theme-white.cadastrar-bancos-page .cancel-button {
+    background-color: #6c757d; /* Cinza escuro */
+    color: #FFFFFF;
+}
+
+/* Adicionar ao final de static/css/themes.css */
+
+/* ==========================================================================
+   ESTILOS DA CAIXA DE MENSAGEM (TEMA CLARO)
+   ========================================================================== */
+
+body.theme-white .messages .success {
+    background-color: #d4edda; /* Fundo verde claro */
+    color: #155724; /* Texto verde escuro */
+    border: 1px solid #c3e6cb;
+}
+
+body.theme-white .messages .error {
+    background-color: #f8d7da; /* Fundo vermelho claro */
+    color: #721c24; /* Texto vermelho escuro */
+    border: 1px solid #f5c6cb;
+}
+
+/* Adicionar ao final de themes.css */
+
+/* ==========================================================================
+   CORREÇÃO DA COR DE FUNDO DA HOME PAGE (TEMA CLARO)
+   ========================================================================== */
+
+/* Esta regra força o fundo do conteúdo principal na home a ser branco puro. */
+body.theme-white.home-page .main-content {
+    background-color: #FFFFFF !important; 
+}
+
+/* Adicionar ao final de themes.css */
+
+/* ==========================================================================
+   CORREÇÃO DE COR DO TEXTO DOS GRÁFICOS (TEMA CLARO)
+   ========================================================================== */
+
+/* Define uma cor de texto escura padrão para os containers de gráficos
+   quando o tema branco está ativo. Chart.js herdará essa cor. */
+body.theme-white .chart-container {
+    color: #6C757D; /* Cinza escuro para os textos dos eixos/legendas */
+}
+
+/* ==========================================================================
+   CORREÇÃO DE CABEÇALHO PARA PÁGINA DE CLIENTES (TEMA CLARO)
+   ========================================================================== */
+
+/* Aplica o fundo azul e o texto branco APENAS nos títulos da página de clientes no tema claro */
+body.theme-white.clientes-page .chart-container h3,
+body.theme-white.clientes-page .accounts-table-container h3 {
+    background-color: #003366;      /* Sua cor de fundo (azul escuro) */
+    color: #FFFFFF;                 /* Força o texto a ser branco */
+    padding: 12px;
+    margin: -20px -20px 15px -20px;
+    border-radius: 8px 8px 0 0;
+    font-size: 12px;
+    text-align: center;
+}
+
+/* ==========================================================================
+   CORREÇÃO DA COR DO TEXTO NO RODAPÉ DA TABELA (TEMA CLARO)
+   ========================================================================== */
+
+/* Força o texto dentro do tfoot a ser branco na página de clientes no tema claro */
+body.theme-white.clientes-page tfoot td {
+    color: #FFFFFF;
+}
+
+/* Adicione este bloco ao FINAL de themes.css */
+
+/* ==========================================================================
+   ESTILOS DE CABEÇALHO PARA PÁGINA DE FORNECEDORES (TEMA CLARO)
+   ========================================================================== */
+body.theme-white.fornecedor-page .chart-container h3,
+body.theme-white.fornecedor-page .accounts-table-container h3 {
+    background-color: #003366;
+    color: #FFFFFF;
+    padding: 12px;
+    margin: -20px -20px 15px -20px;
+    border-radius: 8px 8px 0 0;
+    font-size: 12px;
+    text-align: center;
+}
+
+/* Corrige a cor do texto no rodapé da tabela no tema claro */
+body.theme-white.fornecedor-page tfoot td {
+    color: #FFFFFF;
+}
+
+/* ==========================================================================
+   CORREÇÃO PARA TEXTO DA LINHA DE TOTAL (TEMA CLARO / RESPONSIVO)
+   ========================================================================== */
+
+@media screen and (max-width: 768px) {
+    /* Esta regra se aplica apenas em telas pequenas E quando o tema claro está ativo */
+    body.theme-white.contas-pagar-page .total-row td,
+    body.theme-white.contas-receber-page .total-row td {
+        color: #07501d !important; /* Força o texto a ser verde-escuro, igual ao tema desktop */
+    }
+}
+
+/* Em static/css/themes.css, adicione ao final */
+
+/* ==========================================================================
+   ESTILOS DE TEMA PARA A PÁGINA DE PRECIFICAÇÃO (TEMA CLARO)
+   ========================================================================== */
+
+/* 1. Define o fundo principal da página */
+body.theme-white.precificacao-page .main-content {
+    background-color: #f8f9fa; /* Cinza bem claro */
+}
+
+/* 2. Garante que o título principal fique escuro */
+body.theme-white.precificacao-page h1 {
+    color: #212529;
+}
+
+/* 3. Estiliza os cards da calculadora e dos resultados para o tema claro */
+body.theme-white.precificacao-page .pricing-calculator,
+body.theme-white.precificacao-page .price-breakdown {
+    background-color: #FFFFFF;
+    border-color: #DEE2E6;
+}
+
+/* 4. Ajusta a cor dos títulos (H3) e labels dentro dos cards */
+body.theme-white.precificacao-page .pricing-calculator h3,
+body.theme-white.precificacao-page .price-breakdown h3,
+body.theme-white.precificacao-page .form-group label {
+    color: #212529;
+    border-bottom-color: #DEE2E6;
+}
+
+/* 5. Ajusta os campos de input e select */
+body.theme-white.precificacao-page .form-group input,
+body.theme-white.precificacao-page .form-group select {
+    background-color: #FFFFFF;
+    color: #212529;
+    border-color: #CED4DA;
+}
+
+/* Em themes.css, na seção da precificacao-page */
+
+/* Corrigir o input readonly */
+body.theme-white.precificacao-page .form-group input:read-only {
+    background-color: #e9ecef; /* Cinza claro padrão para campos desabilitados */
+    color: #495057; /* Cor de texto mais suave para melhor contraste */
+}
+
+/* 6. Ajusta o texto do grupo de input (R$) */
+body.theme-white.precificacao-page .input-group .input-group-text {
+    color: #6c757d;
+}
+
+/* 7. Ajusta os textos dos resultados */
+body.theme-white.precificacao-page .price-breakdown .result-item span:first-child {
+    color: #6c757d; /* Cinza escuro para o rótulo */
+}
+
+body.theme-white.precificacao-page .price-breakdown .result-item span:last-child {
+    color: #212529; /* Preto para o valor */
+}
+
+/* 8. Ajusta a mensagem inicial */
+body.theme-white.precificacao-page #initial-message {
+    color: #6c757d;
+}
+
+/* static/css/themes.css (Adicionar ao final da seção da precificacao-page) */
+
+body.theme-white.precificacao-page .base-period-info {
+    color: #6c757d;
+}
+
+body.theme-white.precificacao-page .info-icon {
+    background-color: #e9ecef;
+    color: #495057;
+}
+
+body.theme-white.precificacao-page .info-icon .tooltip-text {
+    background-color: #343a40;
+    color: #fff;
+}
+
+/* Em static/css/themes.css, adicione ao final */
+
+/* ==========================================================================
+   ESTILOS DE TEMA PARA A PÁGINA DE ORÇAMENTO ANUAL (TEMA CLARO - ATUALIZADO)
+   ========================================================================== */
+
+body.theme-white.orcamento-page .main-content {
+    background-color: #f8f9fa;
+}
+
+body.theme-white.orcamento-page h1,
+body.theme-white.orcamento-page h3 {
+    color: #212529;
+}
+
+body.theme-white.orcamento-page .orcamento-form-container,
+body.theme-white.orcamento-page .orcamento-table-container {
+    background-color: #FFFFFF;
+    border-color: #DEE2E6;
+}
+
+body.theme-white.orcamento-page .orcamento-form-container h3,
+body.theme-white.orcamento-page .orcamento-table-container h3 {
+    border-bottom-color: #DEE2E6;
+}
+
+body.theme-white.orcamento-page .form-group label,
+body.theme-white.orcamento-page .filter-form label {
+    color: #495057;
+}
+
+body.theme-white.orcamento-page .form-group input,
+body.theme-white.orcamento-page .form-group select {
+    background-color: #FFFFFF;
+    border-color: #CED4DA;
+    color: #212529;
+}
+
+/* Tabela */
+body.theme-white.orcamento-page th, 
+body.theme-white.orcamento-page td {
+    border-color: #DEE2E6;
+    color: #212529;
+}
+
+body.theme-white.orcamento-page thead th {
+    background-color: #F8F9FA;
+}
+
+body.theme-white.orcamento-page th.category-col,
+body.theme-white.orcamento-page td.category-name-cell {
+    background-color: #F8F9FA;
+}
+
+body.theme-white.orcamento-page td.category-name-cell {
+    background-color: #FFFFFF;
+}
+
+/* Novas cores das colunas para o tema claro */
+body.theme-white.orcamento-page .planejado-col {
+    background-color: #e9f5ff;
+    border-left-color: #DEE2E6;
+}
+
+body.theme-white.orcamento-page .realizado-col {
+    background-color: #fdecea;
+}
+
+body.theme-white.orcamento-page tfoot tr {
+    background-color: #e9ecef;
+}
+
+body.theme-white.orcamento-page .total-planejado-col,
+body.theme-white.orcamento-page .total-realizado-col {
+    background-color: rgba(222, 226, 230, 0.5);
+    border-left-color: #c9d1d8;
+}
+
+body.theme-white.orcamento-page .legend-item {
+    color: #212529;
+}
+
+/* Em themes.css, adicione ao final da seção da precificacao-page */
+
+body.theme-white.precificacao-page .chart-and-legend-container {
+    border-top-color: #DEE2E6;
+}
+
+body.theme-white.precificacao-page .legend-label {
+    color: #6c757d;
+}
+
+body.theme-white.precificacao-page .legend-value {
+    color: #212529;
+}
+
+/* Em themes.css, adicione ao final */
+
+/* Estilos para o container de Insights no tema claro */
+body.theme-white.precificacao-page .analise-container {
+    background-color: #f8f9fa;
+    border-color: #dee2e6;
+}
+
+body.theme-white.precificacao-page .analise-section h4 {
+    color: #0056b3;
+    border-bottom-color: #dee2e6;
+}
+
+body.theme-white.precificacao-page .analise-section p,
+body.theme-white.precificacao-page .analise-section li {
+    color: #212529;
+}
+
+/* Em themes.css, na seção da precificacao-page */
+
+body.theme-white.precificacao-page .history-table-container {
+    background-color: #FFFFFF;
+    border-color: #DEE2E6;
+}
+
+body.theme-white.precificacao-page .history-table-container h3 {
+    color: #212529;
+    border-bottom-color: #DEE2E6;
+}
+
+body.theme-white.precificacao-page .history-table-container th,
+body.theme-white.precificacao-page .history-table-container td {
+    color: #212529;
+    border-bottom-color: #DEE2E6;
+}
+
+body.theme-white.precificacao-page .history-table-container thead th {
+    background-color: #F8F9FA;
+}
+
+body.theme-white.precificacao-page .history-table-container tbody tr:hover {
+    background-color: #f1f1f1;
+}
+
+body.theme-white.precificacao-page .history-table-container td.final-price-cell {
+    color: #198754; /* Verde escuro */
+}
+
+/* Em themes.css, adicione ao final da seção da precificacao-page */
+
+body.theme-white.precificacao-page .btn-primary {
+    background-color: #198754;
+    color: white;
+}
+body.theme-white.precificacao-page .btn-primary:hover {
+    background-color: #157347;
+}
+
+body.theme-white.precificacao-page .btn-secondary {
+    background-color: #adb5bd;
+    color: #212529;
+}
+/* Em themes.css, na seção da precificacao-page */
+
+body.theme-white.precificacao-page .btn-secondary:hover {
+    background-color: #9fa6ae;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+body.theme-white.precificacao-page .filter-form .form-group label {
+    color: #495057;
+}
+
+
+body.theme-white.precificacao-page .filter-form input {
+    background-color: #FFFFFF;
+    border-color: #CED4DA;
+    color: #212529;
+}
+
+body.theme-white.precificacao-page .pagination a {
+    color: #212529;
+    border-color: #DEE2E6;
+}
+
+body.theme-white.precificacao-page .pagination a:hover {
+    background-color: #e9ecef;
+}
+
+body.theme-white.precificacao-page .pagination .current {
+    color: #212529;
+}
+/* Em themes.css, na seção da precificacao-page */
+
+body.theme-white.precificacao-page .status-icon.updated {
+    background-color: #198754; /* Um verde um pouco mais escuro para melhor contraste */
+    color: #fff;
+}
+
+
+/* Em static/css/themes.css, adicione ao final */
+
+/* ==========================================================================
+   ESTILOS DE TEMA PARA A PÁGINA DE ORÇAMENTOS (TEMA CLARO)
+   ========================================================================== */
+
+body.theme-white.orcamentos-page .main-content {
+    background-color: #f8f9fa;
+}
+
+body.theme-white.orcamentos-page h1,
+body.theme-white.orcamentos-page h3 {
+    color: #212529;
+}
+
+body.theme-white.orcamentos-page .orcamento-form-container,
+body.theme-white.orcamentos-page .orcamento-table-container {
+    background-color: #FFFFFF;
+    border-color: #DEE2E6;
+}
+
+body.theme-white.orcamentos-page .orcamento-form-container h3,
+body.theme-white.orcamentos-page .orcamento-table-container h3,
+body.theme-white.orcamentos-page .orcamento-item-table th {
+    border-bottom-color: #DEE2E6;
+}
+
+body.theme-white.orcamentos-page .form-group label {
+    color: #495057;
+}
+
+body.theme-white.orcamentos-page .form-group input,
+body.theme-white.orcamentos-page .form-group select,
+body.theme-white.orcamentos-page .form-group textarea {
+    background-color: #FFFFFF;
+    border-color: #CED4DA;
+    color: #212529;
+}
+
+body.theme-white.orcamentos-page .orcamento-item-table td {
+    border-bottom-color: #DEE2E6;
+}
+
+body.theme-white.orcamentos-page .total-container {
+    color: #212529;
+}
+
+body.theme-white.orcamentos-page .orcamento-table-container th, 
+body.theme-white.orcamentos-page .orcamento-table-container td {
+    border-bottom-color: #DEE2E6;
+    color: #212529;
+}
+
+body.theme-white.orcamentos-page .orcamento-table-container thead th {
+    background-color: #F8F9FA;
+}
+/* Em themes.css, na seção da orcamentos-page */
+
+/* Correção para a caixa de sugestão de produtos no tema claro */
+body.theme-white.orcamentos-page .product-search-results {
+    background-color: #FFFFFF;
+    border-color: #CED4DA;
+}
+
+body.theme-white.orcamentos-page .search-result-item {
+    color: #212529; /* Texto escuro */
+}
+
+body.theme-white.orcamentos-page .search-result-item:hover {
+    background-color: #f0f2f5; /* Fundo cinza claro no hover */
+}
+
+/* Em themes.css, na seção da orcamentos-page */
+
+body.theme-white.orcamentos-page .btn-accept {
+    background-color: #198754;
+    color: #fff;
+}
+body.theme-white.orcamentos-page .btn-accept:hover {
+    background-color: #157347;
+}
+
+body.theme-white.orcamentos-page .btn-deny {
+    background-color: #bb2d3b;
+    color: #fff;
+}
+body.theme-white.orcamentos-page .btn-deny:hover {
+    background-color: #a52834;
+}
+
+/* Em themes.css, na seção da orcamentos-page */
+
+/* Ajusta o ícone de observação para o tema claro */
+body.theme-white.orcamentos-page .info-icon.observation-icon {
+    background-color: #e9ecef;
+    color: #495057;
+}
+
+/* Ajusta o tooltip para o tema claro */
+body.theme-white.orcamentos-page .info-icon.observation-icon .tooltip-text {
+    background-color: #343a40;
+    color: #fff;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2); /* Sombra sutil no tema claro */
+}
+
+/* Ajusta o campo CPF/CNPJ readonly para o tema claro */
+body.theme-white.orcamentos-page #cliente-cpf-cnpj:read-only {
+    background-color: #e9ecef; /* Cinza claro padrão (Bootstrap) para campos readonly */
+    color: #495057;           /* Texto escuro, mas suave */
+    border-color: #CED4DA;
+}
+
+/* === INÍCIO: ESTILOS DA PAGINAÇÃO (LIGHT MODE) === */
+body.theme-white.orcamentos-page .pagination a {
+    color: #0d6efd; /* Cor azul padrão Bootstrap para links */
+    border-color: #dee2e6; /* Borda cinza clara */
+    background-color: #fff; /* Fundo branco */
+}
+
+body.theme-white.orcamentos-page .pagination a:hover {
+    background-color: #e9ecef; /* Fundo cinza claro no hover */
+    border-color: #dee2e6;
+    color: #0a58ca; /* Azul mais escuro no hover */
+}
+
+body.theme-white.orcamentos-page .pagination .current {
+    color: #6c757d; /* Texto cinza escuro para "Página X de Y" */
+     /* Removemos fundo e borda específicos do tema escuro se houver */
+    background-color: transparent;
+    border-color: transparent;
+}
+/* === FIM: ESTILOS DA PAGINAÇÃO (LIGHT MODE) === */
+
+/* Em themes.css, na seção da orcamentos-page */
+body.theme-white.orcamentos-page .status-CONVERTIDO {
+    background-color: #58379c; /* Roxo um pouco mais escuro */
+    color: #fff;
+}
+
+/* Estilo para o botão Editar (Light Mode) */
+body.theme-white.orcamentos-page .btn-edit {
+    background-color: #ffc107; /* Mantém o amarelo */
+    color: #000;
+    border-color: #e0a800; /* Adiciona uma borda sutil se quiser */
+}
+body.theme-white.orcamentos-page .btn-edit:hover {
+    background-color: #e0a800;
+}
+
+body.theme-white.orcamentos-page .modal-content {
+    background-color: #FFFFFF;
+    border-color: #DEE2E6;
+    color: #212529; /* Cor padrão do texto dentro do modal */
+}
+
+/* 2. Garante que o título (h3) e os rótulos (label) fiquem com texto escuro */
+body.theme-white.orcamentos-page .modal-content h3 {
+    color: #212529;
+    border-bottom-color: #DEE2E6; /* Cor da linha abaixo do título */
+}
+
+body.theme-white.orcamentos-page .modal-content label {
+    color: #495057; /* Cor padrão para labels (cinza escuro) */
+}
+
+/* 3. Ajusta a cor do botão "X" de fechar para o tema claro */
+body.theme-white.orcamentos-page .modal .close-btn {
+    color: #6c757d; /* Cinza escuro */
+}
+body.theme-white.orcamentos-page .modal .close-btn:hover {
+    color: #212529; /* Preto ao passar o mouse */
+}
+
+/* 4. Ajusta os campos de input dentro do modal para o tema claro */
+body.theme-white.orcamentos-page .modal-content input[type="text"],
+body.theme-white.orcamentos-page .modal-content input[type="email"] {
+    background-color: #FFFFFF;
+    color: #212529;
+    border: 1px solid #CED4DA; /* Borda padrão de input */
+}
+
+/* Em themes.css */
+
+/* ==========================================================================
+   ESTILOS DE TEMA PARA A PÁGINA DE CONTRATOS (TEMA CLARO)
+   ========================================================================== */
+
+body.theme-white.contratos-page .main-content {
+    background-color: #f8f9fa; /* Ou a cor de fundo que preferir */
+}
+
+body.theme-white.contratos-page .card { /* Aplica a todos os cards na página */
+    background-color: #FFFFFF;
+    border-color: #DEE2E6;
+    color: #212529;
+}
+
+body.theme-white.contratos-page h1,
+body.theme-white.contratos-page h3 {
+    color: #212529;
+    border-bottom-color: #DEE2E6; /* Adiciona borda ao header */
+}
+
+body.theme-white.contratos-page label {
+    color: #495057;
+}
+
+body.theme-white.contratos-page input,
+body.theme-white.contratos-page select {
+     background-color: #FFFFFF;
+     border-color: #CED4DA;
+     color: #212529;
+}
+
+/* Tabela */
+body.theme-white.contratos-page .styled-table th {
+     background-color: #F8F9FA;
+     color: #212529;
+     border-bottom-color: #DEE2E6;
+}
+
+body.theme-white.contratos-page .styled-table td {
+     color: #212529;
+     border-bottom-color: #DEE2E6;
+}
+
+body.theme-white.contratos-page .styled-table tbody tr:hover {
+    background-color: #f1f1f1; /* Hover claro */
+}
+
+/* Rodapé da Tabela */
+body.theme-white.contratos-page .styled-table tfoot td {
+    background-color: #F8F9FA; /* Fundo claro para o rodapé */
+    color: #212529;
+    border-top-color: #DEE2E6;
+}
+
+/* Paginação */
+body.theme-white.contratos-page .pagination a { color: #212529; border-color: #DEE2E6; }
+body.theme-white.contratos-page .pagination a:hover { background-color: #e9ecef; }
+body.theme-white.contratos-page .pagination .current { color: #212529; }
+
+/* Ajuste do placeholder de data */
+body.theme-white.contratos-page .filter-container input[type="date"] { color: #6c757d; }
+body.theme-white.contratos-page .filter-container input[type="date"]:valid { color: #212529; }
+body.theme-white.contratos-page input[type="date"]::-webkit-datetime-edit-text,
+body.theme-white.contratos-page input[type="date"]::-webkit-datetime-edit-month-field,
+body.theme-white.contratos-page input[type="date"]::-webkit-datetime-edit-day-field,
+body.theme-white.contratos-page input[type="date"]::-webkit-datetime-edit-year-field { color: #6c757d; }
+body.theme-white.contratos-page input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); }
+
+/* Badges de Status (manter cores originais, apenas ajustar fundo se necessário) */
+/* .status-pendente já tem cor de texto escura, OK */
+/* Outros badges já têm texto branco, OK */
+
+/* Linhas com status */
+body.theme-white.contratos-page .row-disabled { opacity: 0.7; background-color: #e9ecef; }
+body.theme-white.contratos-page .row-warning { background-color: #fff3cd; } /* Amarelo bem claro */
+
+/* Modais (ajustar fundo e texto) */
+body.theme-white.contratos-page .modal-content {
+    background-color: #FFFFFF;
+    color: #212529;
+    border: 1px solid #dee2e6;
+}
+body.theme-white.contratos-page .modal h4 { color: #212529; }
+body.theme-white.contratos-page .modal p { color: #495057; }
+body.theme-white.contratos-page .modal .close-btn { color: #6c757d; }
+body.theme-white.contratos-page .modal .close-btn:hover { color: #212529; }
+body.theme-white.contratos-page .modal input[type="file"] { border-color: #CED4DA; } /* Borda no input file */
+
+/* Em themes.css */
+
+/* ==========================================================================
+   CORREÇÃO: Cabeçalhos dos Cards na Gestão de Contratos (TEMA CLARO)
+   ========================================================================== */
+
+/* Alvo: O cabeçalho (H3) dentro do card de Formulário e o header da Tabela */
+/* Aplica um fundo claro a toda a barra do cabeçalho */
+body.theme-white.contratos-page .card-header {
+    background-color: #F8F9FA;      /* Fundo cinza bem claro (padrão Bootstrap para headers) */
+    color: #212529;                 /* Garante que texto solto (se houver) fique escuro */
+    border-bottom-color: #DEE2E6;   /* Borda inferior clara */
+}
+
+/* Garante especificamente que o H3 DENTRO desses cabeçalhos fique escuro */
+body.theme-white.contratos-page .card-header h3 {
+    color: #212529; /* Cor do texto escura */
+}
+
+
+/* ==========================================================================
+   ESTILOS DE TEMA PARA A PÁGINA BPO DASHBOARD (NOVO)
+   ========================================================================== */
+
+/* --- TEMA ESCURO (PADRÃO) --- */
+/* Garante que o fundo e texto padrão sejam escuros */
+body.bpo-dashboard-page .main-content {
+    background-color: #121212; /* Fundo principal escuro */
+    color: #FFFFFF; /* Texto padrão branco */
+}
+
+/* Estilo do card principal no tema escuro */
+body.bpo-dashboard-page .card {
+    background-color: #222; /* Fundo do card escuro */
+    border-color: #444; /* Borda sutil */
+}
+
+/* Estilo do cabeçalho do card no tema escuro */
+body.bpo-dashboard-page .card-header {
+    background-color: #333; /* Fundo um pouco mais claro para o header */
+    color: #FFFFFF;
+    border-bottom: 1px solid #444;
+}
+
+/* Estilo do cabeçalho da tabela (TH) no tema escuro */
+body.bpo-dashboard-page table th {
+    background-color: #333;
+    color: #FFFFFF;
+    border-bottom: 2px solid #555;
+}
+
+/* Estilo das células da tabela (TD) no tema escuro */
+body.bpo-dashboard-page table td {
+    color: #FFFFFF; /* Texto branco */
+    border-bottom: 1px solid #444; /* Linha separadora escura */
+    vertical-align: middle; /* Alinha o conteúdo verticalmente */
+}
+
+/* Estilo dos badges no tema escuro (já devem funcionar, mas por garantia) */
+body.bpo-dashboard-page .badge-success { background-color: #28a745; color: #fff; }
+body.bpo-dashboard-page .badge-danger { background-color: #dc3545; color: #fff; }
+body.bpo-dashboard-page .badge-secondary { background-color: #6c757d; color: #fff; }
+
+
+/* Garante que o texto do botão primário seja branco no tema escuro */
+body.bpo-dashboard-page .table td a.btn-primary {
+    color: #bf1010 !important; /* Texto branco (usamos !important por segurança) */
+    /* Opcional: Se quiser mudar o fundo azul padrão no tema escuro: */
+    /* background-color: #0b5ed7; */ /* Um azul um pouco mais escuro */
+    /* border-color: #0a58ca; */
+}
+
+
+
+/* --- TEMA CLARO (SOBRESCRITAS) --- */
+/* Aplica-se APENAS quando body tem .theme-white E .bpo-dashboard-page */
+
+body.theme-white.bpo-dashboard-page .main-content {
+    background-color: #f8f9fa; /* Fundo principal cinza claro */
+    color: #212529; /* Texto padrão escuro */
+}
+
+body.theme-white.bpo-dashboard-page h1,
+body.theme-white.bpo-dashboard-page p {
+    color: #212529; /* Garante que títulos e parágrafos sejam escuros */
+}
+
+body.theme-white.bpo-dashboard-page .card {
+    background-color: #FFFFFF; /* Fundo do card branco */
+    border-color: #DEE2E6; /* Borda cinza clara */
+}
+
+body.theme-white.bpo-dashboard-page .card-header {
+    background-color: #F8F9FA; /* Fundo do header cinza claro */
+    color: #212529;
+    border-bottom: 1px solid #DEE2E6;
+}
+/* Garante que o H6 dentro do header fique escuro */
+body.theme-white.bpo-dashboard-page .card-header h6 {
+    color: #212529;
+}
+
+body.theme-white.bpo-dashboard-page table th {
+    background-color: #F8F9FA; /* Fundo do cabeçalho da tabela cinza claro */
+    color: #212529;
+    border-bottom: 2px solid #DEE2E6;
+}
+
+body.theme-white.bpo-dashboard-page table td {
+    color: #212529; /* Texto das células escuro */
+    border-bottom: 1px solid #DEE2E6; /* Linha separadora clara */
+}
+
+/* Efeito hover para as linhas da tabela no tema claro */
+body.theme-white.bpo-dashboard-page table tbody tr:hover {
+    background-color: #f1f1f1; /* Cinza bem claro no hover */
+}
+
+/* Estilo dos badges no tema claro */
+body.theme-white.bpo-dashboard-page .badge-success { background-color: #d1e7dd; color: #0f5132; }
+body.theme-white.bpo-dashboard-page .badge-danger { background-color: #f8d7da; color: #842029; }
+body.theme-white.bpo-dashboard-page .badge-secondary { background-color: #e2e3e5; color: #41464b; }
+
+
+
+/* --- ADICIONE ESTA REGRA --- */
+/* Define o fundo GERAL da PÁGINA como claro no tema claro */
+body.theme-white.bpo-dashboard-page {
+    background-color: #f8f9fa; /* Mesma cor de fundo do .main-content para consistência */
+}
+/* --- FIM DA ADIÇÃO --- */
+
+body.theme-white.bpo-dashboard-page .main-content {
+    background-color: #f8f9fa; /* Fundo principal cinza claro (já existe) */
+    color: #212529; /* Texto padrão escuro (já existe) */
+}
+
+body.theme-white.bpo-dashboard-page h1,
+body.theme-white.bpo-dashboard-page p {
+    color: #212529; /* Garante que títulos e parágrafos sejam escuros (já existe) */
+}
+
+/* Adicionar ao FINAL de static/css/themes.css */
+
+/* ==========================================================================
+   ESTILOS DE TEMA PARA A PÁGINA GERENCIAR USUÁRIOS (TEMA CLARO)
+   ========================================================================== */
+
+/* Aplica-se APENAS quando body tem .theme-white E .manage-users-page */
+
+/* Fundo geral da PÁGINA */
+body.theme-white.manage-users-page {
+    background-color: #f8f9fa; /* Cinza bem claro */
+    color: #212529; /* Texto escuro padrão */
+}
+
+/* Fundo do CONTEÚDO PRINCIPAL */
+body.theme-white.manage-users-page .main-content {
+    background-color: #f8f9fa;
+}
+
+/* Cabeçalho principal (H1) */
+body.theme-white.manage-users-page .header {
+    color: #212529;
+    border-bottom-color: #DEE2E6; /* Borda clara */
+}
+
+/* Cards */
+body.theme-white.manage-users-page .card {
+    background-color: #FFFFFF; /* Fundo branco */
+    border-color: #DEE2E6; /* Borda cinza clara */
+    color: #212529; /* Texto escuro dentro do card */
+}
+
+body.theme-white.manage-users-page .card-title {
+    color: #212529;
+    border-bottom-color: #DEE2E6;
+}
+
+/* Formulários */
+body.theme-white.manage-users-page .manage-user-form label {
+    color: #495057; /* Cinza escuro para labels */
+}
+
+body.theme-white.manage-users-page .manage-user-form input[type="text"],
+body.theme-white.manage-users-page .manage-user-form input[type="email"],
+body.theme-white.manage-users-page .manage-user-form input[type="password"] {
+    background-color: #FFFFFF;
+    color: #212529;
+    border-color: #CED4DA; /* Borda cinza padrão */
+}
+
+/* Mensagens de erro de formulário */
+body.theme-white.manage-users-page .form-errors {
+    color: #dc3545; /* Vermelho padrão */
+}
+body.theme-white.manage-users-page .global-errors {
+     color: #dc3545;
+}
+
+/* Informações de Limite */
+body.theme-white.manage-users-page .user-limit-info {
+    color: #6c757d; /* Cinza escuro */
+    border-bottom-color: #DEE2E6;
+}
+body.theme-white.manage-users-page .user-limit-info strong {
+    color: #212529; /* Texto principal escuro */
+}
+body.theme-white.manage-users-page .user-limit-info .can-add strong {
+    color: #198754; /* Verde escuro */
+}
+body.theme-white.manage-users-page .user-limit-info .limit-reached {
+    color: #dc3545; /* Vermelho */
+}
+
+/* Tabela de Funcionários */
+body.theme-white.manage-users-page .styled-table {
+    color: #212529; /* Texto escuro */
+}
+
+body.theme-white.manage-users-page .styled-table th,
+body.theme-white.manage-users-page .styled-table td {
+    border-bottom-color: #DEE2E6; /* Borda clara */
+}
+
+body.theme-white.manage-users-page .styled-table thead th {
+    background-color: #F8F9FA; /* Fundo cinza claro cabeçalho */
+    color: #212529;
+}
+
+body.theme-white.manage-users-page .styled-table tbody tr:hover {
+    background-color: #f1f1f1; /* Hover claro */
+}
+
+body.theme-white.manage-users-page .styled-table .empty-row td {
+    color: #6c757d; /* Cinza escuro */
+}
+
+/* Badges de Status (Claro) */
+body.theme-white.manage-users-page .status-active { background-color: #d1e7dd; color: #0f5132; }
+body.theme-white.manage-users-page .status-inactive { background-color: #e2e3e5; color: #41464b; }
+
+
+/* Em static/css/themes.css, adicione este bloco ao final da seção .manage-users-page */
+
+/* ... (continuação das regras de .status-inactive do tema claro) ... */
+
+/* === INÍCIO: ESTILOS DA PAGINAÇÃO (Dark Mode) === */
+body.manage-users-page .pagination a {
+    color: #fff; /* Links brancos */
+}
+body.manage-users-page .pagination .current {
+    color: #FFFFFF; /* Texto "Página X" branco */
+}
+
+/* === INÍCIO: ESTILOS DA PAGINAÇÃO (Light Mode) === */
+body.theme-white.manage-users-page .pagination a {
+    color: #212529; /* Links escuros */
+    border-color: #DEE2E6; /* Borda clara */
+}
+body.theme-white.manage-users-page .pagination a:hover {
+    background-color: #e9ecef; /* Fundo claro no hover */
+}
+body.theme-white.manage-users-page .pagination .current {
+    color: #212529; /* Texto "Página X" escuro */
+}
+
+/* Em static/css/themes.css, adicione ao final */
+
+/* ==========================================================================
+   CORREÇÃO: Caixa de Permissões (Página Gerenciar Usuários - TEMA CLARO)
+   ========================================================================== */
+
+/* 1. Ajusta a borda superior do container de permissões */
+body.theme-white.manage-users-page .form-field-permissions {
+    border-top-color: #DEE2E6; /* Borda clara */
+}
+
+/* 2. Corrige o fundo do grid de permissões para o tema claro */
+body.theme-white.manage-users-page .permissions-grid {
+    background-color: #f8f9fa; /* Fundo cinza bem claro */
+    border: 1px solid #DEE2E6;  /* Adiciona uma borda sutil */
+}
+
+/* 3. Corrige a cor dos títulos (Financeiro, Comercial) para o tema claro */
+body.theme-white.manage-users-page .permission-column strong {
+    color: #0056b3; /* Azul escuro */
+    border-bottom-color: #DEE2E6; /* Borda clara */
+}
+
+/* 4. Corrige a cor dos labels dos checkboxes para o tema claro */
+body.theme-white.manage-users-page .form-field-permissions .form-check label {
+    color: #212529; /* Texto escuro */
+}
+/* ==========================================================================
+   ESTILOS DE TEMA PARA A PÁGINA PERFIL DA EMPRESA (TEMA CLARO)
+   ========================================================================== */
+
+/* Aplica-se APENAS quando body tem .theme-white E .company-profile-page */
+
+/* Fundo geral da PÁGINA */
+body.theme-white.company-profile-page {
+    background-color: #f8f9fa; /* Cinza bem claro */
+    color: #212529; /* Texto escuro padrão */
+}
+
+/* Fundo do CONTEÚDO PRINCIPAL */
+body.theme-white.company-profile-page .main-content {
+    background-color: #f8f9fa;
+}
+
+/* Cabeçalho principal (H1) */
+body.theme-white.company-profile-page .header {
+    color: #212529;
+    border-bottom-color: #DEE2E6; /* Borda clara */
+}
+body.theme-white.company-profile-page .header h1 {
+    color: #212529;
+}
+
+/* Cards */
+body.theme-white.company-profile-page .card {
+    background-color: #FFFFFF; /* Fundo branco */
+    border-color: #DEE2E6; /* Borda cinza clara */
+    color: #212529; /* Texto escuro dentro do card */
+}
+
+body.theme-white.company-profile-page .card-title {
+    color: #212529;
+    border-bottom-color: #DEE2E6;
+}
+
+/* Formulários */
+body.theme-white.company-profile-page .profile-form .form-group label,
+body.theme-white.company-profile-page .document-form .form-group-desc label,
+body.theme-white.company-profile-page .document-form .form-group-file label {
+    color: #495057; /* Cinza escuro para labels */
+}
+
+body.theme-white.company-profile-page .profile-form .form-group input,
+body.theme-white.company-profile-page .profile-form .form-group select,
+body.theme-white.company-profile-page .document-form .form-group-desc input,
+body.theme-white.company-profile-page .document-form .form-group-file input {
+    background-color: #FFFFFF;
+    color: #212529;
+    border-color: #CED4DA; /* Borda cinza padrão */
+}
+
+/* Tabela de Documentos */
+body.theme-white.company-profile-page .styled-table {
+    color: #212529; /* Texto escuro */
+}
+
+body.theme-white.company-profile-page .styled-table th,
+body.theme-white.company-profile-page .styled-table td {
+    color: #212529; /* Texto escuro */
+    border-bottom-color: #DEE2E6; /* Borda clara */
+}
+
+body.theme-white.company-profile-page .styled-table thead th {
+    background-color: #F8F9FA; /* Fundo cinza claro cabeçalho */
+    color: #212529;
+}
+
+body.theme-white.company-profile-page .styled-table tbody tr:hover {
+    background-color: #f1f1f1; /* Hover claro */
+}
+
+body.theme-white.company-profile-page .styled-table .empty-row td {
+    color: #6c757d; /* Cinza escuro */
+}
+
+/* Adicione ao FINAL de static/css/themes.css */
+
+/* ==========================================================================
+   ESTILOS DO NOME DA EMPRESA (HOME PAGE - TEMA CLARO)
+   ========================================================================== */
+
+body.theme-white.home-page .company-display-name {
+    color: #212529; /* Texto escuro */
+    background-color: #f8f9fa; /* Fundo cinza claro */
+    border-color: #DEE2E6; /* Borda clara */
+}
+
+body.theme-white.home-page .company-display-name i {
+    color: #007bff; /* Azul padrão */
+}
+
+/* static/css/themes.css (ADICIONAR AO FINAL) */
+
+/* ==========================================================================
+   CORREÇÃO DO BOTÃO "EMITIR NF-E" (PÁGINA DE VENDAS)
+   ========================================================================== */
+
+/* --- TEMA ESCURO (PADRÃO) --- */
+body.vendas-page .action-btn.btn-nfe {
+    background-color: #007bff; /* Cor azul */
+    color: #FFFFFF !important; /* FORÇA o texto a ser branco */
+    text-decoration: none;     /* Remove sublinhado de link */
+    display: inline-block;     /* Garante que o padding seja aplicado corretamente (como em um <button>) */
+    vertical-align: middle;  /* Alinha com os outros botões na célula */
+}
+body.vendas-page .action-btn.btn-nfe:hover {
+    background-color: #0056b3; /* Azul mais escuro no hover */
+}
+
+/* --- TEMA CLARO (SOBRESCRITA) --- */
+body.theme-white.vendas-page .action-btn.btn-nfe {
+    background-color: #007bff; /* Mantém o azul */
+    color: #FFFFFF !important; /* Mantém o texto branco */
+}
+body.theme-white.vendas-page .action-btn.btn-nfe:hover {
+    background-color: #0056b3;
+}
+
+/* ==========================================================================
+   ESTILOS DE TEMA PARA A PÁGINA DE NOTAS FISCAIS (NOVO)
+   (Corrige o link invisível)
+   ========================================================================== */
+
+/* --- TEMA ESCURO (PADRÃO) --- */
+body.notas-fiscais-list-page .main-content {
+    background-color: #121212;
+}
+body.notas-fiscais-list-page h1 {
+    color: #FFFFFF;
+}
+body.notas-fiscais-list-page .section-container {
+    background-color: #222;
+    border-color: #444;
+}
+body.notas-fiscais-list-page h3,
+body.notas-fiscais-list-page label {
+    color: #FFFFFF;
+}
+body.notas-fiscais-list-page table th {
+    background-color: #333;
+    color: #FFFFFF;
+}
+body.notas-fiscais-list-page table td {
+    color: #FFFFFF;
+    border-bottom-color: #444;
+}
+
+/* ▼▼▼ ESTA É A CORREÇÃO DO LINK DA VENDA (Problema 3) ▼▼▼ */
+body.notas-fiscais-list-page table td a {
+    color: #72a1e0; /* Um azul claro, legível no fundo escuro */
+    font-weight: bold;
+    text-decoration: underline;
+}
+body.notas-fiscais-list-page table td a:hover {
+    color: #9ec3f0; /* Azul um pouco mais claro no hover */
+}
+/* ▲▲▲ FIM DA CORREÇÃO ▲▲▲ */
+
+body.notas-fiscais-list-page input,
+body.notas-fiscais-list-page select {
+    background-color: #333;
+    color: #fff;
+    border: 1px solid #555;
+}
+body.notas-fiscais-list-page .pagination .current {
+    color: #FFFFFF;
+}
+body.notas-fiscais-list-page .pagination a {
+    color: #fff;
+}
+
+/* --- TEMA CLARO (SOBRESCRITAS) --- */
+body.theme-white.notas-fiscais-list-page .main-content {
+    background-color: #f8f9fa;
+}
+body.theme-white.notas-fiscais-list-page h1,
+body.theme-white.notas-fiscais-list-page h3,
+body.theme-white.notas-fiscais-list-page label {
+    color: #212529;
+}
+body.theme-white.notas-fiscais-list-page .section-container {
+    background-color: #FFFFFF;
+    border-color: #DEE2E6;
+}
+body.theme-white.notas-fiscais-list-page table th {
+    background-color: #F8F9FA;
+    color: #212529;
+}
+body.theme-white.notas-fiscais-list-page table td {
+    color: #212529;
+    border-bottom-color: #DEE2E6;
+}
+
+/* ▼▼▼ CORREÇÃO DO LINK DA VENDA (Tema Claro) ▼▼▼ */
+body.theme-white.notas-fiscais-list-page table td a {
+    color: #0056b3; /* Azul escuro padrão */
+    font-weight: bold;
+}
+body.theme-white.notas-fiscais-list-page table td a:hover {
+    color: #003d80;
+}
+/* ▲▲▲ FIM DA CORREÇÃO ▲▲▲ */
+
+body.theme-white.notas-fiscais-list-page input,
+body.theme-white.notas-fiscais-list-page select {
+    background-color: #FFFFFF;
+    color: #212529;
+    border: 1px solid #CED4DA;
+}
+body.theme-white.notas-fiscais-list-page .pagination .current {
+    color: #212529;
+}
+body.theme-white.notas-fiscais-list-page .pagination a {
+    color: #212529;
+    border-color: #DEE2E6;
+}
+body.theme-white.notas-fiscais-list-page .pagination a:hover {
+    background-color: #e9ecef;
+}
+
+/* static/css/themes.css (ADICIONAR AO FINAL) */
+
+/* ==========================================================================
+   CORREÇÃO DE PADDING DO BOTÃO "EMITIR NF-E" (PÁGINA DE VENDAS)
+   ========================================================================== */
+
+/* --- TEMA ESCURO (PADRÃO) --- */
+body.vendas-page .action-btn.btn-nfe {
+    background-color: #007bff; /* Cor azul */
+    color: #FFFFFF !important; /* FORÇA o texto a ser branco */
+    text-decoration: none;     /* Remove sublinhado de link */
+    display: inline-block;     /* Permite a aplicação de padding vertical */
+    vertical-align: middle;    /* Alinha com os outros botões na célula */
+    
+    /* ▼▼▼ AQUI ESTÁ O PADDING QUE VOCÊ PEDIU ▼▼▼ */
+    padding: 2px 5px;
+    box-sizing: border-box;  /* Garante que o padding não quebre o layout */
+}
+body.vendas-page .action-btn.btn-nfe:hover {
+    background-color: #0056b3; /* Azul mais escuro no hover */
+}
+
+/* --- TEMA CLARO (SOBRESCRITA) --- */
+body.theme-white.vendas-page .action-btn.btn-nfe {
+    background-color: #007bff; /* Mantém o azul */
+    color: #FFFFFF !important; /* Mantém o texto branco */
+}
+body.theme-white.vendas-page .action-btn.btn-nfe:hover {
+    background-color: #0056b3;
+}
+
+/* ==========================================================================
+   ESTILOS DE TEMA PARA A PÁGINA DE EMISSÃO DE NF-E (NOVO)
+   (Estiliza o botão "Cancelar")
+   ========================================================================== */
+
+/* --- TEMA ESCURO (PADRÃO) --- */
+body.notas-fiscais-emitir-page .main-content {
+    background-color: #121212;
+}
+body.notas-fiscais-emitir-page h1,
+body.notas-fiscais-emitir-page h3,
+body.notas-fiscais-emitir-page h4,
+body.notas-fiscais-emitir-page label,
+body.notas-fiscais-emitir-page p {
+    color: #FFFFFF;
+}
+body.notas-fiscais-emitir-page .section-container {
+    background-color: #222;
+    border-color: #444;
+}
+body.notas-fiscais-emitir-page table th {
+    background-color: #333;
+    color: #FFFFFF;
+}
+body.notas-fiscais-emitir-page table td {
+    color: #FFFFFF;
+    border-bottom-color: #444;
+}
+body.notas-fiscais-emitir-page input,
+body.notas-fiscais-emitir-page select,
+body.notas-fiscais-emitir-page textarea {
+    background-color: #333;
+    color: #fff;
+    border: 1px solid #555;
+}
+body.notas-fiscais-emitir-page input:disabled,
+body.notas-fiscais-emitir-page input:read-only {
+    background-color: #444;
+    color: #999;
+}
+
+/* ▼▼▼ ESTILO DO BOTÃO CANCELAR (TEMA ESCURO) ▼▼▼ */
+body.notas-fiscais-emitir-page .btn-cancel {
+    display: inline-block;
+    margin-left: 10px;
+    padding: 10px 15px;
+    color: #DDDDDD; /* Cinza claro */
+    text-decoration: none;
+    border-radius: 5px;
+    transition: background-color 0.2s ease;
+    vertical-align: middle; /* Alinha com o botão principal */
+}
+body.notas-fiscais-emitir-page .btn-cancel:hover {
+    background-color: #333; /* Fundo sutil no hover */
+    color: #FFFFFF;
+}
+
+/* --- TEMA CLARO (SOBRESCRITAS) --- */
+body.theme-white.notas-fiscais-emitir-page .main-content {
+    background-color: #f8f9fa;
+}
+body.theme-white.notas-fiscais-emitir-page h1,
+body.theme-white.notas-fiscais-emitir-page h3,
+body.theme-white.notas-fiscais-emitir-page h4,
+body.theme-white.notas-fiscais-emitir-page label,
+body.theme-white.notas-fiscais-emitir-page p {
+    color: #212529;
+}
+body.theme-white.notas-fiscais-emitir-page .section-container {
+    background-color: #FFFFFF;
+    border-color: #DEE2E6;
+}
+body.theme-white.notas-fiscais-emitir-page table th {
+    background-color: #F8F9FA;
+    color: #212529;
+}
+body.theme-white.notas-fiscais-emitir-page table td {
+    color: #212529;
+    border-bottom-color: #DEE2E6;
+}
+body.theme-white.notas-fiscais-emitir-page input,
+body.theme-white.notas-fiscais-emitir-page select,
+body.theme-white.notas-fiscais-emitir-page textarea {
+    background-color: #FFFFFF;
+    color: #212529;
+    border: 1px solid #CED4DA;
+}
+body.theme-white.notas-fiscais-emitir-page input:disabled,
+body.theme-white.notas-fiscais-emitir-page input:read-only {
+    background-color: #e9ecef; /* Cinza claro readonly */
+    color: #6c757d;
+}
+
+/* ▼▼▼ ESTILO DO BOTÃO CANCELAR (TEMA CLARO) ▼▼▼ */
+body.theme-white.notas-fiscais-emitir-page .btn-cancel {
+    display: inline-block;
+    margin-left: 10px;
+    padding: 10px 15px;
+    color: #6c757d; /* Cinza escuro */
+    text-decoration: none;
+    border-radius: 5px;
+    transition: background-color 0.2s ease;
+    vertical-align: middle;
+}
+body.theme-white.notas-fiscais-emitir-page .btn-cancel:hover {
+    background-color: #e9ecef; /* Fundo cinza claro no hover */
+    color: #212529; /* Texto escuro */
+}
+
+/* ==========================================================================
+   ESTILOS DE TEMA PARA A HOME PAGE (CORREÇÃO COMPLETA v2)
+   (Ignora os cards de vendas coloridos)
+   ========================================================================== */
+
+/* -------------------------------------------------------------------------- */
+/* 1. CORREÇÃO DO TEMA ESCURO (PADRÃO)                                        */
+/* -------------------------------------------------------------------------- */
+
+/* Força o fundo escuro nos cards (exceto os de vendas) */
+.home-page .info-card-left {
+    background-color: #222; /* Mesma cor dos cards da direita */
+    border: 1px solid #444; /* Borda escura sutil */
+}
+
+/* Garante que os TÍTULOS fiquem brancos no tema escuro */
+.home-page .info-card-left h3,
+.home-page .faturamento-chart-container-home h3 { /* Adicionado o gráfico de faturamento */
+    color: #FFFFFF;
+    border-bottom-color: #444; /* Borda escura */
+}
+
+/* Garante que os VALORES fiquem brancos no tema escuro */
+.home-page .info-card-left .value {
+    color: #FFFFFF;
+}
+
+/* Garante que os SUBTÍTULOS fiquem claros no tema escuro */
+.home-page .bank-balances-list p span {
+    color: #AAAAAA; /* Cinza claro */
+}
+
+/* Garante que o H3 do "Saldo Consolidado" fique branco */
+.home-page .info-card-left h3[style*="border: none"] {
+     color: #FFFFFF;
+}
+
+/* Mantém os valores negativos em vermelho */
+.home-page .info-card-left .value.negative {
+    color: #f44336;
+}
+
+/* O card do gráfico de Faturamento (centro) */
+.home-page .faturamento-chart-container-home {
+    background-color: #222;
+    border: 1px solid #444;
+}
+
+
+/* -------------------------------------------------------------------------- */
+/* 2. IMPLEMENTAÇÃO DO TEMA CLARO (SOBRESCRITA)                               */
+/* -------------------------------------------------------------------------- */
+
+/* 1. Garante que o fundo do CONTEÚDO principal seja BRANCO PURO */
+body.theme-white.home-page .main-content {
+    background-color: #FFFFFF !important; 
+}
+
+/* 2. Define o fundo 'branco gelo' para OS CARDS (exceto os de vendas) */
+body.theme-white.home-page .info-card-left,              /* Coluna Esquerda */
+body.theme-white.home-page .faturamento-chart-container-home, /* Coluna Central (Gráfico) */
+body.theme-white.home-page .overview .card,             /* Coluna Direita (KPIs) */
+body.theme-white.home-page .home-column .chart-container { /* Coluna Direita (Gráfico) */
+    background-color: #f0f2f5; /* Branco gelo / Cinza claro */
+    border: 1px solid #dee2e6; /* Borda sutil */
+}
+
+/* 3. Define o TEXTO dentro desses containers para escuro */
+
+/* Títulos H3 */
+body.theme-white.home-page .info-card-left h3,
+body.theme-white.home-page .faturamento-chart-container-home h3,
+body.theme-white.home-page .overview .card h3 {
+    color: #495057; /* Cinza escuro para títulos */
+    border-bottom-color: #dee2e6; /* Cor da borda sutil */
+}
+
+/* Textos principais (valores) */
+body.theme-white.home-page .info-card-left .value,
+body.theme-white.home-page .overview .card p {
+    color: #212529; /* Texto escuro */
+}
+
+/* 4. Ajusta cores específicas (verdes e vermelhos) para o tema claro */
+
+/* Exceção: Valores positivos na Coluna Esquerda (verde mais escuro) */
+body.theme-white.home-page .info-card-left .value {
+    color: #198754; /* Verde escuro (melhor para fundo claro) */
+}
+/* Exceção: Valores negativos (vermelho) */
+body.theme-white.home-page .info-card-left .value.negative {
+    color: #dc3545; /* Vermelho */
+}
+
+/* Textos secundários (legendas) */
+body.theme-white.home-page .bank-balances-list p span {
+    color: #6c757d; /* Cinza (para "Hoje", "Neste mês", "Nome do Banco") */
+}
+
+/* Garante que o texto do "Saldo Consolidado" (que é um H3) fique escuro */
+body.theme-white.home-page .info-card-left h3[style*="border: none"] {
+     color: #495057;
+}
+
+/* 5. Corrige o fundo do canvas (gráfico da direita) */
+body.theme-white.home-page .chart-container canvas {
+    background-color: transparent; /* O fundo deve ser no container, não no canvas */
+}
+
+/* ==========================================================================
+   CORREÇÃO DOS CARDS FISCAIS (PERFIL DA EMPRESA) - TEMA CLARO
+   ========================================================================== */
+
+/* Fundo e borda do Card Fiscal */
+body.theme-white .fiscal-card {
+    background-color: #f8f9fa !important; /* Fundo claro */
+    border: 1px solid #e9ecef !important; /* Borda clara */
+    color: #212529 !important;
+}
+
+/* Título do Card */
+body.theme-white .fiscal-card h4 {
+    color: #2c3e50 !important; /* Azul escuro */
+    border-bottom: 2px solid #e9ecef !important;
+}
+
+body.theme-white .fiscal-card h4 i {
+    color: #0d6efd; /* Azul padrão */
+}
+
+/* Labels e Textos */
+body.theme-white .label-with-icon,
+body.theme-white .toggle-label {
+    color: #495057 !important; /* Cinza escuro */
+}
+body.theme-white .label-with-icon i {
+    color: #6c757d;
+}
+
+/* Inputs Toggle */
+body.theme-white .toggle-container {
+    background: #FFFFFF !important;
+    border: 1px solid #DEE2E6 !important;
+}
+
+/* Blocos Internos (Certificado e NFe/NFSe) - Força fundo branco no tema claro */
+body.theme-white .fiscal-card div[style*="background-color: #fff"],
+body.theme-white .fiscal-card div[style*="background: #fff"],
+body.theme-white .fiscal-card div[style*="background: #2c2c2c"],
+body.theme-white .fiscal-card div[style*="background-color: #2c2c2c"] {
+    background-color: #FFFFFF !important;
+    border-color: #DEE2E6 !important;
+    color: #212529 !important;
+}
+
+/* Garante que labels dentro desses blocos fiquem escuros */
+body.theme-white .fiscal-card div label {
+    color: #495057 !important;
+}
+
+/* Títulos internos (NFe Produto) */
+body.theme-white .fiscal-card h5 {
+    color: #0056b3 !important; /* Azul escuro */
+    border-bottom-color: #DEE2E6 !important;
+}

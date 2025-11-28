@@ -1,0 +1,387 @@
+{% load static %}
+{% load humanize %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Financeiro</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="{% static 'css/sidebar.css' %}">
+    <link rel="stylesheet" href="{% static 'css/global.css' %}">
+    <link rel="stylesheet" href="{% static 'css/themes.css' %}">
+    <link rel="stylesheet" href="{% static 'css/home.css' %}">
+    <link rel="stylesheet" href="{% static 'css/layout-responsive.css' %}">
+</head>
+<body class="home-page">
+    
+    
+    {% include 'accounts/_sidebar.html' %}
+    <div class="main-content">
+        {% include 'accounts/partials/_global_announcement.html' %}
+        {% include 'accounts/partials/bpo_banner.html' %}
+        <button id="menu-toggle">&#9776;</button>
+        
+        <div class="main-header">
+            <h1>
+                Bem-vindo 
+                {% if request.real_user %}
+                    {{ request.real_user.get_full_name|default:request.real_user.username }}
+                {% else %}
+                    {{ request.user.get_full_name|default:request.user.username }}
+                {% endif %}
+            </h1>
+            {% if company_name %}
+                <div class="company-display-name">
+                    <i class="fas fa-building"></i> <span>{{ company_name }}</span>
+                </div>
+            {% endif %}
+        </div>
+
+        
+
+        <div class="dashboard-container">
+            <div class="feature-discovery-container" id="feature-banner-container">
+
+                <a href="{% url 'precificacao' %}" class="feature-card color-1">
+                    <span class="feature-card-close" data-action="close-banner">&times;</span>
+                    <div class="feature-card-content">
+                        <h4>Domine sua Margem</h4>
+                        <p>Use nossa ferramenta de precificação para encontrar o preço de venda ideal.</p>
+                    </div>
+                    <i class="fas fa-calculator feature-card-icon"></i>
+                </a>
+
+                <a href="{% url 'gerenciamento_contratos' %}" class="feature-card color-2">
+                    <span class="feature-card-close" data-action="close-banner">&times;</span>
+                    <div class="feature-card-content">
+                        <h4>Organize seus Contratos</h4>
+                        <p>Nunca mais perca um prazo. Gerencie vencimentos e valores em um só lugar.</p>
+                    </div>
+                    <i class="fas fa-file-signature feature-card-icon"></i>
+                </a>
+
+                <a href="{% url 'tarefas_home' %}" class="feature-card color-3">
+                    <span class="feature-card-close" data-action="close-banner">&times;</span>
+                    <div class="feature-card-content">
+                        <h4>Cumpra suas Obrigações</h4>
+                        <p>Organize as tarefas do seu financeiro e não perca nenhuma data de pagamento.</p>
+                    </div>
+                    <i class="fas fa-tasks feature-card-icon"></i>
+                </a>
+
+                <a href="{% url 'orcamento_anual' %}" class="feature-card color-4">
+                    <span class="feature-card-close" data-action="close-banner">&times;</span>
+                    <div class="feature-card-content">
+                        <h4>Planeje seu Futuro</h4>
+                        <p>Crie seu orçamento anual e compare o planejado com o realizado mês a mês.</p>
+                    </div>
+                    <i class="fas fa-chart-pie feature-card-icon"></i>
+                </a>
+
+                <a href="{% url 'dashboards' %}" class="feature-card color-5">
+                    <span class="feature-card-close" data-action="close-banner">&times;</span>
+                    <div class="feature-card-content">
+                        <h4>Descubra seu Valor</h4>
+                        <p>Acesse o Painel Financeiro e veja uma estimativa de Valuation da sua empresa.</p>
+                    </div>
+                    <i class="fas fa-gem feature-card-icon"></i>
+                </a>
+
+            </div>
+
+            <div>
+                <div class="section-header">A Receber</div>
+                <div class="three-card-grid">
+                    <div class="dashboard-card">
+                        <h3>Em Aberto</h3>
+                        <div class="value positive">R$ {{ total_areceber_aberto|floatformat:2|intcomma }}</div>
+                    </div>
+                    <div class="dashboard-card">
+                        <h3>Atrasado</h3>
+                        <div class="value negative">R$ {{ total_areceber_atrasado|floatformat:2|intcomma }}</div>
+                    </div>
+                    <div class="dashboard-card">
+                        <h3>Vencem Hoje</h3>
+                        <div class="value neutral">R$ {{ total_areceber_hoje|floatformat:2|intcomma }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <hr class="section-divider">
+
+            <div>
+                <div class="section-header" style="border-left-color: #dc3545;">A Pagar</div>
+                <div class="three-card-grid">
+                    <div class="dashboard-card">
+                        <h3>Em Aberto</h3>
+                        <div class="value negative">R$ {{ total_apagar_aberto|floatformat:2|intcomma }}</div>
+                    </div>
+                    <div class="dashboard-card">
+                        <h3>Atrasado</h3>
+                        <div class="value negative">R$ {{ total_apagar_atrasado|floatformat:2|intcomma }}</div>
+                    </div>
+                    <div class="dashboard-card">
+                        <h3>Vencem Hoje</h3>
+                        <div class="value negative">R$ {{ total_apagar_hoje|floatformat:2|intcomma }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <hr class="section-divider">
+
+            <div class="filter-container">
+                <form id="filter-form" method="get">
+                    <select name="period" id="period" onchange="this.form.submit()">
+                        <option value="current_month" {% if period == 'current_month' %}selected{% endif %}>Mês Atual</option>
+                        <option value="30" {% if period == '30' %}selected{% endif %}>Últimos 30 dias</option>
+                        <option value="90" {% if period == '90' %}selected{% endif %}>Últimos 90 dias</option>
+                        <option value="180" {% if period == '180' %}selected{% endif %}>Últimos 180 dias</option>
+                    </select>
+                </form>
+            </div>
+
+            <div>
+                <div class="section-header" style="border-left-color: #28a745;">Fluxo de Caixa (Período)</div>
+                <div class="middle-financial-grid">
+                    <div class="dashboard-card">
+                        <h3>Receitas</h3>
+                        <div class="value positive">R$ {{ total_receivable|floatformat:2|intcomma }}</div>
+                    </div>
+
+                    <div class="dashboard-card">
+                        <h3>Despesas</h3>
+                        <div class="value negative">R$ {{ total_payable|floatformat:2|intcomma }}</div>
+                    </div>
+
+                    <div class="dashboard-card">
+                        <h3>Saldo</h3>
+                        <div class="value {% if balance >= 0 %}positive{% else %}negative{% endif %}">
+                            R$ {{ balance|floatformat:2|intcomma }}
+                        </div>
+                    </div>
+
+                    <div class="dashboard-card">
+                        <h3>Saldo em Contas</h3>
+                        <div class="bank-list-container">
+                            {% for account in bank_accounts_balances %}
+                                <div class="bank-item">
+                                    <span>{{ account.bank_name }}</span>
+                                    <span>R$ {{ account.current_balance|floatformat:2|intcomma }}</span>
+                                </div>
+                            {% empty %}
+                                <span style="font-size: 0.8rem; color: #777;">Nenhuma conta.</span>
+                            {% endfor %}
+                        </div>
+                        <div class="bank-total">
+                            R$ {{ saldo_consolidado|floatformat:2|intcomma }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bottom-chart-section">
+                <h3 style="margin-bottom: 15px; color: var(--text-color); border-bottom: none;">Evolução do Caixa</h3>
+                <canvas id="cashflowChart"></canvas>
+            </div>
+
+        </div>
+    </div>
+    
+    <script src="{% static 'js/theme.js' %}"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        
+        // =========================================================
+        // 1. LÓGICA DE MENU E SIDEBAR (MANTIDA)
+        // =========================================================
+        const menuToggleButton = document.getElementById('menu-toggle');
+        const sidebar = document.querySelector('.sidebar');
+        if (menuToggleButton && sidebar) {
+            menuToggleButton.addEventListener('click', () => sidebar.classList.toggle('mobile-open'));
+        }
+
+        function setupSubmenuToggle(toggleId, submenuId) {
+            const toggleButton = document.getElementById(toggleId);
+            const submenu = document.getElementById(submenuId);
+            if (toggleButton && submenu) {
+                toggleButton.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    submenu.style.display = submenu.style.display === 'block' ? 'none' : 'block';
+                });
+            }
+        }
+        setupSubmenuToggle('financeiro-toggle', 'financeiro-submenu');
+        setupSubmenuToggle('comercial-toggle', 'comercial-submenu');
+        setupSubmenuToggle('configuracoes-toggle', 'configuracoes-submenu');
+
+
+        // =========================================================
+        // 2. CONFIGURAÇÃO DO GRÁFICO (AGORA COM COR FIXA)
+        // =========================================================
+        
+        let cashflowChartInstance = null;
+
+        function renderChart() {
+            const chartCanvas = document.getElementById('cashflowChart');
+            
+            // COR FIXA: Azul (#00bfff). Mude aqui se quiser outro tom de azul.
+            const fixedChartColor = '#1447efff'; 
+            // Cor da linha de grade (fixa em cinza claro transparente para não poluir)
+            const fixedGridColor = 'rgba(128, 128, 128, 0.2)'; 
+
+            if (chartCanvas) {
+                // Destrói gráfico anterior para evitar bugs de sobreposição
+                if (cashflowChartInstance) { 
+                    cashflowChartInstance.destroy(); 
+                }
+
+                cashflowChartInstance = new Chart(chartCanvas.getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: {{ chart_labels|safe }},
+                        datasets: [
+                            { 
+                                label: 'Despesas', 
+                                data: {{ chart_payable|safe }}, 
+                                borderColor: '#c62828', 
+                                backgroundColor: 'rgba(205, 34, 22, 1)', 
+                                fill: true, 
+                                order: 1 
+                            },
+                            { 
+                                label: 'Receitas', 
+                                data: {{ chart_receivable|safe }}, 
+                                borderColor: '#2E7D32', 
+                                backgroundColor: 'rgba(9, 219, 16, 0.82)', 
+                                fill: true, 
+                                order: 1 
+                            },
+                            { 
+                                label: 'Saldo Líquido', 
+                                data: {{ chart_balance|safe }}, 
+                                type: 'line', 
+                                borderColor: '#16a085', 
+                                backgroundColor: 'rgba(22, 160, 133, 0.1)', 
+                                fill: false, 
+                                tension: 0.1, 
+                                pointRadius: 3, 
+                                pointBackgroundColor: '#16a085', 
+                                order: 0 
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true, 
+                        maintainAspectRatio: false,
+                        // Layout Padding: Garante que os textos nas bordas não sejam cortados
+                        layout: {
+                            padding: {
+                                left: 10,
+                                right: 25,
+                                top: 25,
+                                bottom: 10
+                            }
+                        },
+                        plugins: { 
+                            legend: { 
+                                position: 'top', 
+                                labels: { 
+                                    color: fixedChartColor // <--- LEGENDA AZUL
+                                } 
+                            } 
+                        },
+                        scales: {
+                            x: { 
+                                grid: { color: fixedGridColor }, 
+                                ticks: { 
+                                    color: fixedChartColor, // <--- EIXO X AZUL
+                                    font: { size: 11 },
+                                    maxRotation: 45, 
+                                    minRotation: 45,
+                                    autoSkip: true,
+                                    maxTicksLimit: 12
+                                } 
+                            },
+                            y: { 
+                                beginAtZero: true, 
+                                grid: { color: fixedGridColor }, 
+                                ticks: { 
+                                    color: fixedChartColor, // <--- EIXO Y AZUL
+                                    font: { size: 11 }, 
+                                    callback: function(value) { return 'R$ ' + value.toLocaleString('pt-BR'); } 
+                                } 
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        // =========================================================
+        // 3. LÓGICA DE TEMA (CSS APENAS)
+        // =========================================================
+        
+        const themeDots = document.querySelectorAll('.theme-dot');
+        const body = document.body;
+        
+        function applyTheme(themeName) {
+            // 1. Atualiza a classe do Body (Fundo, Cards, Textos)
+            body.classList.remove('theme-white'); 
+            if (themeName === 'white') {
+                body.classList.add('theme-white');
+            }
+            
+            // 2. Salva preferência
+            localStorage.setItem('selectedTheme', themeName);
+            
+            // 3. Redesenha o gráfico (embora a cor seja fixa, garante redimensionamento correto)
+            renderChart();
+        }
+
+        // Evento de clique nas bolinhas de tema
+        themeDots.forEach(dot => {
+            dot.addEventListener('click', function() {
+                const newTheme = this.dataset.theme;
+                applyTheme(newTheme);
+            });
+        });
+
+        // Inicialização ao carregar a página
+        const savedTheme = localStorage.getItem('selectedTheme') || 'black';
+        applyTheme(savedTheme);
+        // =========================================================
+        // 4. LÓGICA DO BANNER DE FUNCIONALIDADES (ONBOARDING)
+        // =========================================================
+        
+        const bannerContainer = document.getElementById('feature-banner-container');
+        const closeButtons = document.querySelectorAll('[data-action="close-banner"]');
+
+        // Verifica se o usuário já fechou o banner antes
+        if (localStorage.getItem('hasClosedFeatureBanner') === 'true') {
+            if (bannerContainer) {
+                bannerContainer.style.display = 'none';
+            }
+        }
+
+        // Adiciona evento de clique a todos os botões "X"
+        closeButtons.forEach(button => {
+            button.addEventListener('click', function(event) {
+                // Previne que o clique no "X" acione o link do card
+                event.preventDefault(); 
+                event.stopPropagation();
+                
+                // Esconde o container inteiro
+                if (bannerContainer) {
+                    bannerContainer.style.display = 'none';
+                }
+                
+                // Salva a preferência no navegador
+                localStorage.setItem('hasClosedFeatureBanner', 'true');
+            });
+        });
+
+    });
+    </script>
+</body>
+</html>

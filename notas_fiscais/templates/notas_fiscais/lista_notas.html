@@ -1,0 +1,199 @@
+{% load static %}
+{% load humanize %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciamento de Notas Fiscais</title>
+    <link rel="stylesheet" href="{% static 'css/global.css' %}">
+    <link rel="stylesheet" href="{% static 'css/themes.css' %}">
+    <link rel="stylesheet" href="{% static 'css/sidebar.css' %}">
+    <link rel="stylesheet" href="{% static 'css/vendas.css' %}"> 
+</head>
+<body class="notas-fiscais-list-page">
+    
+    {% include 'accounts/_sidebar.html' %}
+
+    <div class="main-content">
+        {% include 'accounts/partials/bpo_banner.html' %}
+        <button id="menu-toggle">&#9776;</button>
+        <h1>Notas Fiscais Emitidas</h1>
+        {% if messages %}
+            <style>
+                /* Estilos Locais para as Mensagens */
+                .alert-box {
+                    padding: 15px;
+                    border-radius: 8px;
+                    margin-bottom: 10px;
+                    font-weight: 500;
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    border: 1px solid transparent;
+                }
+                
+                /* Cores baseadas nas tags do Django */
+                .msg-success { background-color: #d1e7dd; color: #0f5132; border-color: #badbcc; }
+                .msg-error   { background-color: #f8d7da; color: #842029; border-color: #f5c2c7; }
+                .msg-warning { background-color: #fff3cd; color: #664d03; border-color: #ffecb5; }
+                .msg-info    { background-color: #cff4fc; color: #055160; border-color: #b6effb; }
+                .msg-debug   { background-color: #e2e3e5; color: #41464b; border-color: #d3d6d8; }
+            </style>
+
+            <div class="messages-container" style="margin-bottom: 20px;">
+                {% for message in messages %}
+                    <div class="alert-box msg-{{ message.tags }}">
+                        
+                        {% if 'success' in message.tags %}
+                            <i class="fas fa-check-circle" style="font-size: 1.2em;"></i>
+                        {% elif 'error' in message.tags %}
+                            <i class="fas fa-times-circle" style="font-size: 1.2em;"></i>
+                        {% elif 'warning' in message.tags %}
+                            <i class="fas fa-exclamation-triangle" style="font-size: 1.2em;"></i>
+                        {% else %}
+                            <i class="fas fa-info-circle" style="font-size: 1.2em;"></i>
+                        {% endif %}
+
+                        <span>{{ message }}</span>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <div class="section-container">
+            <h3>Histórico de Emissões</h3>
+            
+            <form method="get" class="filter-form">
+                <div class="form-group">
+                    <label for="start_date">Data Inicial</label>
+                    <input type="date" name="start_date" id="start_date" value="{{ start_date|default:'' }}">
+                </div>
+                <div class="form-group">
+                    <label for="end_date">Data Final</label>
+                    <input type="date" name="end_date" id="end_date" value="{{ end_date|default:'' }}">
+                </div>
+                <div class="form-group">
+                    <label for="status">Status</label>
+                    <select name="status" id="status">
+                        <option value="">Todos</option>
+                        {% for key, value in status_choices %}
+                        <option value="{{ key }}" {% if status_filter == key %}selected{% endif %}>{{ value }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" style="margin-top: 0; padding: 10px 15px;">Filtrar</button>
+            </form>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>NF-e / Série</th>
+                        <th>Cliente</th>
+                        <th>Venda Origem</th>
+                        <th>Data Emissão</th>
+                        <th>Valor Total</th>
+                        <th>Status</th>
+                        <th>Arquivos</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for nota in page_obj %}
+                    <tr>
+                        <td><strong>{{ nota.numero_nf|default:"-" }}</strong> / {{ nota.serie|default:"-" }}</td>
+                        <td>{{ nota.cliente.nome }}</td>
+                        <td><a href="{% url 'vendas' %}?fetch_sale_data={{ nota.venda.id }}">#{{ nota.venda.id }}</a></td>
+                        <td>{{ nota.data_emissao|date:"d/m/Y H:i"|default:"-" }}</td>
+                        <td>R$ {{ nota.valor_total|intcomma }}</td>
+                        <td>
+                            <span class="status-tag status-{{ nota.status|lower }}">
+                                {{ nota.get_status_display }}
+                            </span>
+                        </td>
+                        <td class="actions-cell">
+                            {% if nota.url_pdf %}
+                                <a href="{{ nota.url_pdf }}" class="action-btn" target="_blank">Ver PDF</a>
+                            {% endif %}
+
+                            {% if nota.url_xml %}
+                                <a href="{{ nota.url_xml }}" class="action-btn" download>Baixar XML</a>
+                            {% endif %}
+                            {% if nota.status == 'PROCESSANDO' %}
+                                <a href="{% url 'consultar_nota' nota.id %}" 
+                                   class="action-btn" 
+                                   style="background-color: #ffc107; color: #000; margin-right: 5px;"
+                                   title="Verificar se a nota já foi autorizada">
+                                   Verificar
+                                </a>
+                            {% endif %}
+
+                            {% if nota.status == 'ERRO' or nota.status == 'PENDENTE' %}
+                                <a href="{% url 'excluir_nota' nota.id %}" 
+                                class="action-btn" 
+                                style="background-color: #dc3545; color: white; margin-left: 5px; cursor: pointer;"
+                                onclick="return confirm('Tem certeza que deseja excluir esta nota?');">
+                                Excluir
+                                </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="7">Nenhuma nota fiscal encontrada...</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            
+            <div class="pagination">
+                {% if page_obj.has_other_pages %}
+                    {% if page_obj.has_previous %}
+                        <a href="?page=1&status={{ status_filter }}&start_date={{ start_date }}&end_date={{ end_date }}">&laquo; Primeira</a>
+                        <a href="?page={{ page_obj.previous_page_number }}&status={{ status_filter }}&start_date={{ start_date }}&end_date={{ end_date }}">Anterior</a>
+                    {% endif %}
+                    <span class="current">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}.</span>
+                    {% if page_obj.has_next %}
+                        <a href="?page={{ page_obj.next_page_number }}&status={{ status_filter }}&start_date={{ start_date }}&end_date={{ end_date }}">Próxima</a>
+                        <a href="?page={{ page_obj.paginator.num_pages }}&status={{ status_filter }}&start_date={{ start_date }}&end_date={{ end_date }}">Última &raquo;</a>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <script src="{% static 'js/theme.js' %}"></script>
+    <script>
+    // Script do menu mobile (igual ao vendas.html)
+    document.addEventListener('DOMContentLoaded', function() {
+        const menuToggleButton = document.getElementById('menu-toggle');
+        const sidebar = document.querySelector('.sidebar');
+        if (menuToggleButton && sidebar) {
+            menuToggleButton.addEventListener('click', function() {
+                sidebar.classList.toggle('mobile-open');
+            });
+        }
+        
+        // Script do sidebar (copiado de vendas.html)
+        function setupSubmenuToggle(toggleId, submenuId) {
+            const toggleButton = document.getElementById(toggleId);
+            const submenu = document.getElementById(submenuId);
+            if (toggleButton && submenu) {
+                toggleButton.addEventListener('click', function(event) {
+                    event.preventDefault(); 
+                    submenu.style.display = submenu.style.display === 'block' ? 'none' : 'block';
+                });
+            }
+        }
+        setupSubmenuToggle('financeiro-toggle', 'financeiro-submenu');
+        setupSubmenuToggle('comercial-toggle', 'comercial-submenu');
+        setupSubmenuToggle('configuracoes-toggle', 'configuracoes-submenu');
+        
+        const activeLink = document.querySelector('.sidebar .submenu a.active');
+        if (activeLink) {
+            const parentSubmenu = activeLink.closest('.submenu');
+            if (parentSubmenu) {
+                parentSubmenu.style.display = 'block';
+            }
+        }
+    });
+    </script>
+</body>
+</html>

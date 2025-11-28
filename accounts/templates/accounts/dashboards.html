@@ -1,0 +1,1942 @@
+{% load static %}
+{% load humanize %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboards Financeiro</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <link rel="stylesheet" href="{% static 'css/global.css' %}">
+    <link rel="stylesheet" href="{% static 'css/sidebar.css' %}">
+    <link rel="stylesheet" href="{% static 'css/dashbord.css' %}">
+    <link rel="stylesheet" href="{% static 'css/themes.css' %}">
+    <link rel="stylesheet" href="{% static 'css/layout-responsive.css' %}">
+    
+</head>
+<body class="dashboard-page">
+    
+    {% include 'accounts/_sidebar.html' %}
+
+    <div class="main-content">
+        {% include 'accounts/partials/bpo_banner.html' %}
+        <button id="menu-toggle">&#9776;</button>
+        <h1 class="section-title">Dashboards Financeiro</h1>
+        <div class="filter-container">
+            <form method="get" style="display: flex; align-items: center; gap: 10px;">
+                <label for="period">Período:</label>
+                <select name="period" id="period" onchange="if (this.value !== 'custom') { this.form.submit(); }">
+                    <option value="30" {% if period == '30' %}selected{% endif %}>Últimos 30 dias</option>
+                    <option value="90" {% if period == '90' %}selected{% endif %}>Últimos 90 dias</option>
+                    <option value="180" {% if period == '180' %}selected{% endif %}>Últimos 180 dias</option>
+                    <option value="custom" {% if period == 'custom' %}selected{% endif %}>Personalizado</option>
+                </select>
+                <div id="custom-date" style="{% if period != 'custom' %}display: none;{% endif %}">
+                    <label for="start_date">Data inicial:</label>
+                    <input type="date" name="start_date" id="start_date" value="{{ start_date|default_if_none:'' }}">
+                    <label for="end_date">Data final:</label>
+                    <input type="date" name="end_date" id="end_date" value="{{ end_date|default_if_none:'' }}">
+                </div>
+                <button type="submit">Filtrar</button>
+            </form>
+        </div>
+        
+        
+        <div class="chart-container">
+            
+            <div class="chart">
+                <h3>Resumo do ano</h3>
+                <div class="resumo-chart-area"> <canvas id="cashFlowChart"></canvas></div>
+            </div>
+            <div class="text">
+                <h3 id="analise">Insights </h3>
+                <p>Nos últimos {{ period_label }} dias, o valor realizado de entradas foi:</p>
+                <p><strong>R$ {{ total_receivable|default:0|floatformat:2|intcomma }}</strong> e o previsto era de <strong>R$ {{ expected_receivable|default:0|floatformat:2|intcomma }}</strong>.</p>
+                <p>As saídas realizadas no mesmo período foram de:</p>
+                <p><strong>R$ {{ total_payable|default:0|floatformat:2|intcomma }}</strong> e o previsto era de <strong>R$ {{ expected_payable|default:0|floatformat:2|intcomma }}</strong>.</p>
+                <p>Variação em relação ao {{ comparison_period_label }}:</p>
+                <p class="variation">Total de entradas: {{ receivable_variation|default:0|floatformat:1 }}%
+                    {% if receivable_variation|default:0 >= 0 %}<span style="color: #0f0;">↑</span>{% else %}<span style="color: #f00;">↓</span>{% endif %}
+                </p>
+                <p class="variation">Total de saídas: {{ payable_variation|default:0|floatformat:1 }}%
+                    {% if payable_variation|default:0 >= 0 %}<span style="color: #f00;">↑</span>{% else %}<span style="color: #0f0;">↓</span>{% endif %}
+                </p>
+                <div class="variation-meter-container">
+                    <span class="meter-title">Variação de Entradas vs. {{ comparison_period_label }}</span>
+
+                    <div class="variation-meter">
+                        <div class="meter-arrow" id="meter-arrow-entradas"></div>
+                        <div class="meter-ruler"></div>
+                        <div class="meter-labels">
+                            <span>-100%</span>
+                            <span>0%</span>
+                            <span>+100%</span>
+                        </div>
+                    </div>
+                </div>
+               
+            </div>
+        </div>
+        <div class="lower-cards-wrapper">
+            <div class="cards-container">
+
+                <div class="card receivable">
+                    <h3>Entradas</h3><hr>
+                    <div class="card-content">
+                        <div class="value-group">
+                            <div class="subtitle">Período Filtrado</div>
+                            <div class="value">R$ {{ total_receivable|default:0|floatformat:2|intcomma }}</div>
+                        </div>
+                        <div class="value-group">
+                            <div class="subtitle">Neste ano</div>
+                            <div class="value">R$ {{ total_receivable_year|default:0|floatformat:2|intcomma }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card payable">
+                    <h3>Saídas</h3><hr>
+                    <div class="card-content">
+                        <div class="value-group">
+                            <div class="subtitle">Período Filtrado</div>
+                            <div class="value">R$ {{ total_payable|default:0|floatformat:2|intcomma }}</div>
+                        </div>
+                        <div class="value-group">
+                            <div class="subtitle">Neste ano</div>
+                            <div class="value">R$ {{ total_payable_year|default:0|floatformat:2|intcomma }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card balance">
+                    <h3>Geração de Caixa</h3><hr>
+                    <div class="card-content">
+                        <div class="value-group">
+                            <div class="subtitle">Período Filtrado</div>
+                            <div class="value">R$ {{ balance|default:0|floatformat:2|intcomma }}</div>
+                        </div>
+                        <div class="value-group">
+                            <div class="subtitle">Neste ano</div>
+                            <div class="value">R$ {{ balance_year|default:0|floatformat:2|intcomma }}</div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+        
+        <hr class="section-divider">
+
+        <div id="analise-de-contas-wrapper">
+
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; color: #000;">
+                <h3 class="section-title">Análise de Contas - Aging List</h3>
+                <div class="action-toggle-container">
+                    <a href="?view_type=pagar" class="action-toggle-button pagar {% if view_type == 'pagar' %}active{% endif %}">Pagar</a>
+                    <a href="?view_type=receber" class="action-toggle-button receber {% if view_type == 'receber' %}active{% endif %}">Receber</a>
+                </div>
+            </div>
+            <div class="receivables-insights-container">
+                <div class="insight-card"><div class="title">Valor a Vencer</div><hr><div class="value">R$ {{ insights_data.total_a_vencer|floatformat:2|intcomma }}</div></div>
+                <div class="insight-card"><div class="title">Atrasados</div><hr><div class="value">R$ {{ insights_data.total_atrasado|floatformat:2|intcomma }}</div></div>
+                <div class="insight-card">
+                    <div class="title">{% if view_type == 'pagar' %}Pago com Atraso{% else %}Recebido em Atraso{% endif %}</div><hr>
+                    <div class="value">
+                        {% if insights_data.percentual_pago_atrasado == "N/A" %} {{ insights_data.percentual_pago_atrasado }}
+                        {% else %} {{ insights_data.percentual_pago_atrasado|floatformat:2 }}% {% endif %}
+                    </div>
+                </div>
+                <div class="insight-card">
+                    <div class="title">Média de Dias p/ {% if view_type == 'pagar' %}Pagamento{% else %}Recebimento{% endif %}</div><hr>
+                    <div class="value">
+                        {% if insights_data.media_dias_pagamento == "N/A" %} {{ insights_data.media_dias_pagamento }}
+                        {% else %} {{ insights_data.media_dias_pagamento|floatformat:0 }} dias {% endif %}
+                    </div>
+                </div>
+                <div class="insight-card">
+                    <div class="title">{% if view_type == 'pagar' %}Taxa de Atraso{% else %}Inadimplência{% endif %}</div><hr>
+                    <div class="value">{{ insights_data.taxa_inadimplencia|floatformat:2 }}%</div>
+                </div>
+            </div>
+            <div class="client-analysis-container">
+                <div class="analysis-column">
+                    <h3>Valor em aberto por cliente</h3>
+                    <input type="text" id="client-search" placeholder="Pesquisar...">
+                    <div class="chart-wrapper">
+                        <canvas id="clientOpenAmountChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="analysis-column">
+                    <h3>Valor atrasado por período</h3>
+                    <div class="chart-wrapper">
+                        <canvas id="overdueByPeriodChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="analysis-column">
+                    <p class="doughnut-summary-text">
+                        Total em aberto de <strong>R$ {{ insights_data.total_a_vencer|add:insights_data.total_atrasado|floatformat:2|intcomma }}</strong>, onde <strong>R$ {{ insights_data.total_atrasado|floatformat:2|intcomma }}</strong> está atrasado.
+                    </p>
+                    <div class="chart-wrapper">
+                        <canvas id="openVsOverdueChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>    
+
+        
+
+        <hr class="section-divider">
+        
+        <h2 class="section-title">DRE - P&L (Gerêncial)</h2>
+        <div class="dre-cards-container">
+            <div class="card-dre">
+                <div class="card-dre-header"><h3>Receita Bruta</h3></div>
+                <div class="card-dre-body">
+                    <div class="card-dre-value" data-key="receita_bruta">R$ {{ dre.receita_bruta|default:0|floatformat:2|intcomma }}</div>
+                    <div class="card-dre-details">
+                        <p><strong>Melhor Mês:</strong> {{ dre.melhores_meses.receita_bruta.0|default:"-" }} (R$ {{ dre.melhores_meses.receita_bruta.1|default:0|floatformat:2|intcomma }})</p>
+                        <p><strong>Pior Mês:</strong> {{ dre.piores_meses.receita_bruta.0|default:"-" }} (R$ {{ dre.piores_meses.receita_bruta.1|default:0|floatformat:2|intcomma }})</p>
+                    </div>
+                    <div class="card-dre-margin"><span>Margem: {{ dre.margens.receita_bruta|default:0|floatformat:2 }}%</span></div>
+                </div>
+            </div>
+
+            <div class="card-dre">
+                <div class="card-dre-header"><h3>Impostos</h3></div>
+                <div class="card-dre-body">
+                    <div class="card-dre-value" data-key="impostos">R$ {{ dre.impostos|default:0|floatformat:2|intcomma }}</div>
+                    <div class="card-dre-details">
+                        <p><strong>Melhor Mês:</strong> {{ dre.melhores_meses.impostos.0|default:"-" }} (R$ {{ dre.melhores_meses.impostos.1|default:0|floatformat:2|intcomma }})</p>
+                        <p><strong>Pior Mês:</strong> {{ dre.piores_meses.impostos.0|default:"-" }} (R$ {{ dre.piores_meses.impostos.1|default:0|floatformat:2|intcomma }})</p>
+                    </div>
+                    <div class="card-dre-margin"><span>Margem: {{ dre.margens.impostos|default:0|floatformat:2 }}%</span></div>
+                </div>
+            </div>
+
+            <div class="card-dre">
+                <div class="card-dre-header"><h3>Lucro Bruto</h3></div>
+                <div class="card-dre-body">
+                    <div class="card-dre-value" data-key="lucro_bruto">R$ {{ dre.lucro_bruto|default:0|floatformat:2|intcomma }}</div>
+                     <div class="card-dre-details">
+                        <p><strong>Melhor Mês:</strong> {{ dre.melhores_meses.lucro_bruto.0|default:"-" }} (R$ {{ dre.melhores_meses.lucro_bruto.1|default:0|floatformat:2|intcomma }})</p>
+                        <p><strong>Pior Mês:</strong> {{ dre.piores_meses.lucro_bruto.0|default:"-" }} (R$ {{ dre.piores_meses.lucro_bruto.1|default:0|floatformat:2|intcomma }})</p>
+                    </div>
+                    <div class="card-dre-margin"><span>Margem: {{ dre.margens.lucro_bruto|default:0|floatformat:2 }}%</span></div>
+                </div>
+            </div>
+             <div class="card-dre">
+                <div class="card-dre-header"><h3>EBITDA</h3></div>
+                <div class="card-dre-body">
+                    <div class="card-dre-value" data-key="ebitda">R$ {{ dre.ebitda|default:0|floatformat:2|intcomma }}</div>
+                    <div class="card-dre-details">
+                        <p><strong>Melhor Mês:</strong> {{ dre.melhores_meses.ebitda.0|default:"-" }} (R$ {{ dre.melhores_meses.ebitda.1|default:0|floatformat:2|intcomma }})</p>
+                        <p><strong>Pior Mês:</strong> {{ dre.piores_meses.ebitda.0|default:"-" }} (R$ {{ dre.piores_meses.ebitda.1|default:0|floatformat:2|intcomma }})</p>
+                    </div>
+                    <div class="card-dre-margin"><span>Margem: {{ dre.margens.ebitda|default:0|floatformat:2 }}%</span></div>
+                </div>
+            </div>
+             <div class="card-dre">
+                <div class="card-dre-header"><h3>Lucro Líquido</h3></div>
+                <div class="card-dre-body">
+                    <div class="card-dre-value" data-key="lucro_liquido">R$ {{ dre.lucro_liquido|default:0|floatformat:2|intcomma }}</div>
+                     <div class="card-dre-details">
+                        <p><strong>Melhor Mês:</strong> {{ dre.melhores_meses.lucro_liquido.0|default:"-" }} (R$ {{ dre.melhores_meses.lucro_liquido.1|default:0|floatformat:2|intcomma }})</p>
+                        <p><strong>Pior Mês:</strong> {{ dre.piores_meses.lucro_liquido.0|default:"-" }} (R$ {{ dre.piores_meses.lucro_liquido.1|default:0|floatformat:2|intcomma }})</p>
+                    </div>
+                    <div class="card-dre-margin"><span>Margem: {{ dre.margens.lucro_liquido|default:0|floatformat:2 }}%</span></div>
+                </div>
+            </div>
+            <div class="card-dre" id="ponto-equilibrio-card">
+                <div class="card-dre-header">
+                    <h3>Ponto de Equilíbrio</h3>
+                    <span class="card-subtitle-en">(Break-even point)</span>
+                </div>
+                <div class="card-dre-body">
+                    <div class="card-dre-value" data-key="ponto_equilibrio">R$ {{ dre.ponto_equilibrio|default:0|floatformat:2|intcomma }}</div>
+                     <div class="card-dre-details">
+                        <p>Este é o faturamento mínimo necessário para cobrir todos os custos (fixos e variáveis) do período.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="chart-row-container">
+
+            <div class="chart-column-50">
+                <div class="chart-small" style="background-color: #fff; padding: 10px; height: 100%;">
+                    <h3 style="color: #333; text-align: left; font-weight: bold; margin-bottom: 15px;">Lucro Líquido por Mês/Ano</h3>
+                    <div style="height: 220px;"> 
+                        <canvas id="lucroBrutoWaterfallChart"></canvas> 
+                    </div>
+                </div>
+            </div>
+
+            <div class="chart-column-25">
+                <div class="chart-small" style="background-color: #fff; padding: 10px; height: 100%;">
+                    <h3 style="color: #333; text-align: left; font-weight: bold; margin-bottom: 15px;">Top 5 Despesas</h3>
+                    <div class="chart-container" style="min-height: 120px; background-color: #fff;">
+                        <canvas id="topExpensesChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chart-column-25">
+                <div class="chart-small" style="background-color: #fff; padding: 10px; height: 100%;">
+                    <h3 style="color: #333; text-align: left; font-weight: bold; margin-bottom: 8px;">Retirada de Sócios</h3>
+                    <div class="chart-container" style="min-height: 120px; background-color: #fff;">
+                        <div class="doughnut-wrapper">
+                            <canvas id="partnerWithdrawalChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="dre-placeholder">
+            <p style="text-align: center; padding: 40px; color: #888;">Carregando Demonstração de Resultados...</p>
+        </div>
+
+        <h1 class="section-title">KPIs</h1>
+
+        <div class="new-kpi-container">
+            <div class="kpi-card-item {% if new_kpi_cards.roi.is_na %}nao-aplicavel{% endif %}">
+                <h4 class="kpi-title">ROI (Retorno s/ Investimento)</h4>
+                <div class="kpi-value">{{ new_kpi_cards.roi.value }}</div>
+                <p class="kpi-description">{{ new_kpi_cards.roi.description }}</p>
+            </div>
+            <div class="kpi-card-item {% if new_kpi_cards.roa.is_na %}nao-aplicavel{% endif %}">
+                <h4 class="kpi-title">ROA (Retorno s/ Ativo)</h4>
+                <div class="kpi-value">{{ new_kpi_cards.roa.value }}</div>
+                <p class="kpi-description">{{ new_kpi_cards.roa.description }}</p>
+            </div>
+            <div class="kpi-card-item {% if new_kpi_cards.roe.is_na %}nao-aplicavel{% endif %}">
+                <h4 class="kpi-title">ROE (Retorno s/ Patr. Líquido)</h4>
+                <div class="kpi-value">{{ new_kpi_cards.roe.value }}</div>
+                <p class="kpi-description">{{ new_kpi_cards.roe.description }}</p>
+            </div>
+            <div class="kpi-card-item {% if new_kpi_cards.cac.is_na %}nao-aplicavel{% endif %}">
+                <h4 class="kpi-title">CAC (Custo de Aquisição de Cliente)</h4>
+                <div class="kpi-value">{{ new_kpi_cards.cac.value }}</div>
+                <p class="kpi-description">{{ new_kpi_cards.cac.description }}</p>
+            </div>
+            <div class="kpi-card-item {% if new_kpi_cards.payout_ratio.is_na %}nao-aplicavel{% endif %}">
+                <h4 class="kpi-title">Payout Ratio (%)</h4>
+                <div class="kpi-value">{{ new_kpi_cards.payout_ratio.value }}</div>
+                <p class="kpi-description">{{ new_kpi_cards.payout_ratio.description }}</p>
+            </div>
+            <div class="kpi-card-item {% if new_kpi_cards.lucros_retidos.is_na %}nao-aplicavel{% endif %}">
+                <h4 class="kpi-title">Lucros Retidos / Reinvestidos (%)</h4>
+                <div class="kpi-value">{{ new_kpi_cards.lucros_retidos.value }}</div>
+                <p class="kpi-description">{{ new_kpi_cards.lucros_retidos.description }}</p>
+            </div>
+            <div class="kpi-card-item {% if new_kpi_cards.divida_ebitda.is_na %}nao-aplicavel{% endif %}">
+                <h4 class="kpi-title">Dívida Líquida / EBITDA</h4>
+                <div class="kpi-value">{{ new_kpi_cards.divida_ebitda.value }}</div>
+                <p class="kpi-description">{{ new_kpi_cards.divida_ebitda.description }}</p>
+            </div>
+            <div class="kpi-card-item {% if new_kpi_cards.liquidez.is_na %}nao-aplicavel{% endif %}">
+                <h4 class="kpi-title">Índice de Liquidez</h4>
+                <div class="kpi-value">{{ new_kpi_cards.liquidez.value }}</div>
+                <p class="kpi-description">{{ new_kpi_cards.liquidez.description }}</p>
+            </div>
+            <div class="kpi-card-item {% if new_kpi_cards.taxa_crescimento_receita.is_na %}nao-aplicavel{% endif %}">
+                <h4 class="kpi-title">Taxa de Crescimento da Receita (%)</h4>
+                <div class="kpi-value">{{ new_kpi_cards.taxa_crescimento_receita.value }}</div>
+                <p class="kpi-description">{{ new_kpi_cards.taxa_crescimento_receita.description }}</p>
+            </div>
+            <div class="kpi-card-item {% if new_kpi_cards.geracao_caixa.is_na %}nao-aplicavel{% endif %}">
+                <h4 class="kpi-title">Capacidade de Geração de Caixa</h4>
+                <div class="kpi-value">{{ new_kpi_cards.geracao_caixa.value }}</div>
+                <p class="kpi-description">{{ new_kpi_cards.geracao_caixa.description }}</p>
+            </div>
+        </div>
+
+        <div class="insights-section">
+             <div class="insights-menu">
+                
+                <ul>
+                    <li class="active" data-chart="margem_bruta_percentual" data-label="% Margem Bruta" data-format="percent">% Margem Bruta</li>
+                    <li data-chart="ebitda_percentual" data-label="% EBITDA" data-format="percent">% EBITDA</li>
+                    <li data-chart="margem_liquida_percentual" data-label="% Margem Líquida" data-format="percent">% Margem Líquida</li>
+                    <li data-chart="custos" data-label="Custos" data-format="currency">Custos</li>
+                    <li data-chart="custos_percentual" data-label="% Custos" data-format="percent">% Custos</li>
+                    <li data-chart="margem_contribuicao" data-label="Margem de Contribuição" data-format="currency">Margem de Contribuição</li>
+                    <li data-chart="margem_contribuicao_percentual" data-label="% Margem de Contribuição" data-format="percent">% Margem de Contribuição</li>
+                    <li data-chart="ponto_equilibrio" data-label="Ponto de Equilíbrio" data-format="currency">Ponto de Equilíbrio</li>
+                </ul>
+             </div>
+            <div class="insights-chart-container">
+                {# ▼▼ ADICIONE UM WRAPPER PARA O GRÁFICO ▼▼ #}
+                <div class="chart-wrapper-70">
+                    <canvas id="insightsChart"></canvas>
+                </div>
+
+                {# ▼▼▼ ADICIONE ESTE NOVO BLOCO PARA O CARD EXPLICATIVO ▼▼▼ #}
+                <div id="kpi-explanation-card" class="kpi-card">
+                    <h3 id="kpi-card-title">Selecione um KPI</h3>
+                    <hr>
+                    <p id="kpi-card-text">Clique em um indicador no menu à esquerda para ver os detalhes e como ele é calculado.</p>
+                </div>
+                {# ▲▲▲ FIM DO NOVO BLOCO ▲▲▲ #}
+            </div>
+            
+        </div>
+        <div class="kpi-insights-wrapper">
+            <div style="text-align: center;">
+                <button id="kpi-insights-btn" class="analise-btn">Iniciar Insights</button>
+            </div>
+            <div id="kpi-insights-container" class="analise-container" style="display: none; margin-top: 20px;">
+                <div id="kpi-analise-resumo" class="analise-section">
+                    <h3>Análise do Período</h3>
+                    <p></p>
+                </div>
+                <div id="kpi-analise-comparativo" class="analise-section">
+                    <h3>Comparativo com Período Anterior</h3>
+                    <p></p>
+                </div>
+                <div id="kpi-analise-previsao" class="analise-section">
+                    <h3>Previsão para o Próximo Período</h3>
+                    <p></p>
+                </div>
+            </div>
+        </div>
+
+        <hr class="section-divider">
+
+        <h2 class="section-title">DFC - CASH FLOW</h2>
+        
+        <div class="dfc-top-row">
+            <div class="dfc-main-chart-70">
+                <div class="cash-flow-container">
+                    <div class="chart-area">
+                        <canvas id="cashFlowBarChart"></canvas>
+                    </div>
+                    <div class="mini-cards">
+                        <div class="mini-card active" data-view="monthly">Visão Mensal</div>
+                        <div class="mini-card" data-view="daily">Visão Diária</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dfc-doughnut-charts-30">
+                <div class="chart-half">
+                    <h3>Receitas por categorias</h3>
+                    <div class="chart-container">
+                       <canvas id="receivableCategoryChart"></canvas>
+                    </div>   
+                </div>
+                <div class="chart-half">
+                    <h3>Despesas por categorias</h3>
+                    <div class="chart-container">
+                       <canvas id="payableCategoryChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="fluxo-caixa-tabela-container">
+            <h3 class="fluxo-caixa-tabela-title">Fluxo de Caixa por Tabela</h3>
+            <div class="table-scroll-wrapper">
+                <table class="fluxo-caixa-tabela">
+                    <thead>
+                        <tr>
+                            <th>Métricas</th>
+                            {% for label in fluxo_caixa_tabela_data.labels %}
+                                <th>{{ label }}</th>
+                            {% endfor %}
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Entradas =></td>
+                            {% for valor in fluxo_caixa_tabela_data.entradas %}
+                                <td class="positivo">R$ {{ valor|floatformat:2|intcomma }}</td>
+                            {% endfor %}
+                            <td class="positivo">R$ {{ fluxo_caixa_tabela_data.totais.entradas|floatformat:2|intcomma }}</td>
+                        </tr>
+                        <tr>
+                            <td>Saídas =></td>
+                            {% for valor in fluxo_caixa_tabela_data.saidas %}
+                                <td class="negativo">-R$ {{ valor|floatformat:2|intcomma }}</td>
+                            {% endfor %}
+                            <td class="negativo">-R$ {{ fluxo_caixa_tabela_data.totais.saidas|floatformat:2|intcomma }}</td>
+                        </tr>
+                        <tr class="total-row">
+                            <td>Saldo  =></td>
+                            {% for valor in fluxo_caixa_tabela_data.geracao_caixa %}
+                                <td class="{% if valor >= 0 %}positivo{% else %}negativo{% endif %}">R$ {{ valor|floatformat:2|intcomma }}</td>
+                            {% endfor %}
+                            <td class="{% if fluxo_caixa_tabela_data.totais.geracao_caixa >= 0 %}positivo{% else %}negativo{% endif %}">R$ {{ fluxo_caixa_tabela_data.totais.geracao_caixa|floatformat:2|intcomma }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="pvr-section">
+            <div class="pvr-row">
+                <div class="pvr-column pvr-column-table">
+                    <div class="pvr-card">
+                        <h3>Previsão vs Realizado (Receitas)</h3>
+                        <div class="data-table-wrapper">
+                            <table class="data-table">
+                                <thead>
+                                    <tr><th>Categoria</th><th>Previsto</th><th>Realizado</th></tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in pvr_receitas %}
+                                    <tr>
+                                        <td>{{ item.category|default:'-' }}</td>
+                                        <td>R$ {{ item.expected|floatformat:2|intcomma }}</td>
+                                        <td>R$ {{ item.actual|floatformat:2|intcomma }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <td>TOTAL</td>
+                                        <td>R$ {{ pvr_receitas_total.expected|floatformat:2|intcomma }}</td>
+                                        <td>R$ {{ pvr_receitas_total.actual|floatformat:2|intcomma }}</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="pvr-column pvr-column-graph">
+                    <div class="pvr-card">
+                        <h3>Previsão vs Realizado (Receitas - Gráfico)</h3>
+                        <div class="pvr-chart-container">
+                            <canvas id="pvrReceitasChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="pvr-row pvr-row-despesas">
+                <div class="pvr-column pvr-column-table">
+                    <div class="pvr-card">
+                        <h3>Previsão vs Realizado (Despesas)</h3>
+                        <div class="data-table-wrapper">
+                            <table class="data-table">
+                                <thead>
+                                    <tr><th>Categoria</th><th>Previsto</th><th>Realizado</th></tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in pvr_despesas %}
+                                    <tr>
+                                        <td>{{ item.category|default:'-' }}</td>
+                                        <td>R$ {{ item.expected|floatformat:2|intcomma }}</td>
+                                        <td>R$ {{ item.actual|floatformat:2|intcomma }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <td>TOTAL</td>
+                                        <td>R$ {{ pvr_despesas_total.expected|floatformat:2|intcomma }}</td>
+                                        <td>R$ {{ pvr_despesas_total.actual|floatformat:2|intcomma }}</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="pvr-column pvr-column-graph">
+                    <div class="pvr-card">
+                        <h3>Previsão vs Realizado (Despesas - Gráfico)</h3>
+                        <div class="pvr-chart-container">
+                            <canvas id="pvrDespesasChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="dcf-section">
+            <h3 class="dcf-main-title">Fluxo de Caixa Descontado (DCF - Discounted Cash Flow)</h3>
+            <div class="dcf-container">
+                <div class="dcf-inputs">
+                    <h4>Premissas da Projeção</h4>
+                    <div class="input-group">
+                        <label>Geração de Caixa Base (Últimos 12 Meses)</label>
+                        <input type="text" id="dcf-base-cf" value="R$ {{ geracao_caixa_ltm|floatformat:2|intcomma }}" disabled>
+                        <small>Este é o ponto de partida, com base no seu histórico.</small>
+                    </div>
+                    <div class="input-group">
+                        <label for="dcf-growth-rate">Taxa de Crescimento Anual (%)</label>
+                        <input type="number" id="dcf-growth-rate" value="5" step="1">
+                        <small>Quanto você espera que seu fluxo de caixa cresça anualmente.</small>
+                    </div>
+                    <div class="input-group">
+                        <label for="dcf-discount-rate">Taxa de Desconto (WACC %)</label>
+                        <input type="number" id="dcf-discount-rate" value="12" step="0.5">
+                        <small>Representa o risco do seu negócio. PMEs costumam usar de 12% a 20%.</small>
+                    </div>
+                    <div class="input-group">
+                        <label for="dcf-years">Anos de Projeção</label>
+                        <input type="number" id="dcf-years" value="5" min="3" max="10">
+                        <small>Número de anos para a projeção de crescimento (padrão: 5).</small>
+                    </div>
+                    <div class="input-group">
+                        <label for="dcf-perpetuity-rate">Crescimento na Perpetuidade (%)</label>
+                        <input type="number" id="dcf-perpetuity-rate" value="2.5" step="0.5">
+                        <small>Crescimento esperado após o período de projeção (padrão: 2.5%).</small>
+                    </div>
+                </div>
+                <div class="dcf-results">
+                    <h4>Projeção e Resultado</h4>
+                    <div class="table-scroll-wrapper">
+                        <table class="fluxo-caixa-tabela" id="dcf-projection-table">
+                            <thead>
+                                <tr>
+                                    <th>Ano</th>
+                                    <th>Fluxo de Caixa Projetado</th>
+                                    <th>Valor Presente</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                </tbody>
+                        </table>
+                    </div>
+                    <div class="dcf-final-value">
+                        <span>Valuation Estimado (DCF)</span>
+                        <strong id="dcf-valuation-result">R$ 0,00</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div style="text-align: center; margin-top: 15px;">
+            <button id="dfc-analise-btn" class="analise-btn">Iniciar Análise</button>
+        </div>
+        <div id="dfc-analise-container" class="analise-container" style="display: none; margin-top: 20px;">
+            <div class="analise-section">
+                <h3>Pontos Positivos</h3>
+                <ul id="dfc-pontos-positivos"></ul>
+            </div>
+            <div class="analise-section">
+                <h3>Pontos Negativos</h3>
+                <ul id="dfc-pontos-negativos"></ul>
+            </div>
+            <div class="analise-section">
+                <h3>Sugestões de Melhoria</h3>
+                <ul id="dfc-sugestoes"></ul>
+            </div>
+        </div>
+        
+
+        <hr class="section-divider">
+
+        <h2 class="section-title">Valuation (Estimativa)</h2>
+        <div class="valuation-section">
+            <div class="valuation-explanation">
+                <h4>Método: Múltiplo de EBITDA</h4>
+                <p>
+                    Esta é uma estimativa simplificada do valor de mercado da sua empresa. Ela é calculada multiplicando-se o <strong>EBITDA dos Últimos 12 Meses (LTM)</strong> por um <strong>múltiplo</strong>. Este múltiplo pode variar drasticamente com base no seu setor, crescimento e risco. Use o campo abaixo para simular diferentes cenários.
+                </p>
+                <div class="valuation-sector-selector">
+                    <label for="sector-select">Para um múltiplo sugerido, selecione o setor da sua empresa:</label>
+                    <select id="sector-select">
+                        {% for setor in setores_valuation %}
+                            <option value="{{ setor.multiplo_js }}">{{ setor.nome }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="valuation-calculator">
+                <div class="valuation-item">
+                    <span>EBITDA (Últimos 12 Meses)</span>
+                    <strong id="ebitda-ltm-value" data-ebitda="{{ ebitda_ltm_js }}">R$ {{ ebitda_ltm|floatformat:2|intcomma }}</strong>
+                </div>
+                <div class="valuation-operator">X</div>
+                <div class="valuation-item">
+                    <label for="multiplo-ebitda">Múltiplo</label>
+                    <input type="number" id="multiplo-ebitda" value="{{ multiplo_ebitda|floatformat:1 }}" step="0.5">
+                </div>
+                <div class="valuation-operator">=</div>
+                <div class="valuation-item result">
+                    <span>Valuation Estimado</span>
+                    <strong id="resultado-valuation">R$ {{ valuation_ebitda|floatformat:2|intcomma }}</strong>
+                </div>
+            </div>
+        </div>
+        <div style="text-align: center; margin: 40px 0;">
+            <button id="gerar-laudo-btn" class="analise-btn">Gerar Laudo Financeiro</button>
+        </div>
+    {{ client_open_amount_labels|json_script:"client-labels-data" }}
+    {{ client_open_amount_data|json_script:"client-data-data" }}
+    {{ open_vs_overdue_data|json_script:"open-overdue-data" }}
+    {{ overdue_by_period_labels|json_script:"overdue-labels-data" }}
+    {{ overdue_by_period_data|json_script:"overdue-data-data" }}
+        
+    </div>
+    <script src="{% static 'js/theme.js' %}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            
+            Chart.register(ChartDataLabels);
+            Chart.defaults.plugins.datalabels.display = false;
+           
+            window.addEventListener('beforeunload', function() {
+                sessionStorage.setItem('scrollPosition', window.scrollY);
+            });
+
+            // Quando a nova página termina de carregar, executa esta lógica
+            window.addEventListener('load', function() {
+                // Pega a posição que foi salva
+                const scrollPosition = sessionStorage.getItem('scrollPosition');
+                
+                // Se uma posição foi encontrada...
+                if (scrollPosition) {
+                    // Rola a tela até aquela posição
+                    window.scrollTo(0, parseInt(scrollPosition, 10));
+                    // Remove o item da memória para não afetar outras navegações
+                    sessionStorage.removeItem('scrollPosition');
+                }
+            });
+            // --- FIM DO NOVO BLOCO ---
+            // ▲▲▲ O RESTO DO SEU SCRIPT CONTINUA NORMALMENTE ABAIXO ▲▲▲
+            const menuToggleButton = document.getElementById('menu-toggle');
+            const sidebar = document.querySelector('.sidebar');
+
+            if (menuToggleButton && sidebar) {
+                menuToggleButton.addEventListener('click', function() {
+                    sidebar.classList.toggle('mobile-open');
+                });
+            }
+            // --- INÍCIO DO SCRIPT DO MENU ---
+            function setupSubmenuToggle(toggleId, submenuId) {
+                const toggleButton = document.getElementById(toggleId);
+                const submenu = document.getElementById(submenuId);
+                if (toggleButton && submenu) {
+                    toggleButton.addEventListener('click', function(event) {
+                        event.preventDefault();
+                        submenu.style.display = submenu.style.display === 'block' ? 'none' : 'block';
+                    });
+                }
+            }
+            setupSubmenuToggle('financeiro-toggle', 'financeiro-submenu');
+            setupSubmenuToggle('comercial-toggle', 'comercial-submenu');
+            setupSubmenuToggle('configuracoes-toggle', 'configuracoes-submenu');
+
+            // Expande o submenu que contém o link ativo na página atual
+            const activeLink = document.querySelector('.sidebar .submenu a.active');
+            if (activeLink) {
+                const parentSubmenu = activeLink.closest('.submenu');
+                if (parentSubmenu) {
+                    parentSubmenu.style.display = 'block';
+                }
+            }
+            // Lógica para o menu de dashboards retrátil
+            const dashboardToggle = document.getElementById('dashboard-toggle');
+            const dashboardSubmenu = document.getElementById('dashboard-submenu');
+            if (dashboardToggle && dashboardSubmenu) {
+                dashboardSubmenu.style.display = 'block'; 
+                dashboardToggle.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    dashboardSubmenu.style.display = dashboardSubmenu.style.display === 'block' ? 'none' : 'block';
+                });
+            }
+
+            // ▼▼▼ COLOQUE O CÓDIGO PARA CARREGAR A DRE AQUI ▼▼▼
+            // --- INÍCIO: Lógica para carregar a DRE dinamicamente ---
+
+            // Esta função será chamada para carregar o conteúdo da DRE
+            // ▼▼▼ COLE ESTA VERSÃO CORRIGIDA NO LUGAR DA SUA FUNÇÃO carregarDRE ATUAL ▼▼▼
+            // Em dashboards.html, substitua as duas funções (carregarDRE e ativarScriptsDaDRE) por estas:
+
+            // SUBSTITUA SUA FUNÇÃO carregarDRE ATUAL POR ESTA VERSÃO COMPLETA
+
+            function carregarDRE(queryString = window.location.search) {
+                const urlParams = new URLSearchParams(queryString);
+                const period = urlParams.get('period') || '90';
+                const startDate = urlParams.get('start_date') || '';
+                const endDate = urlParams.get('end_date') || '';
+                const regime = urlParams.get('regime') || 'caixa';
+
+                const dreUrl = `{% url 'dre' %}?period=${period}&start_date=${startDate}&end_date=${endDate}&regime=${regime}`;
+                const placeholder = document.getElementById('dre-placeholder');
+
+                fetch(dreUrl)
+                    .then(response => {
+                        if (!response.ok) throw new Error(`Erro de servidor: ${response.status}`);
+                        return response.text();
+                    })
+                    .then(html => {
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(html, 'text/html');
+
+                        const regimeToggle = doc.querySelector('.regime-toggle-container');
+                        const dreSection = doc.querySelector('.dre-section');
+                        const analiseBtnContainer = doc.querySelector('#analise-btn')?.parentElement;
+                        const analiseContainer = doc.querySelector('#analise-container');
+                        const dreDataJsonScript = doc.getElementById('dre-data-json');
+                        const dreDataAnteriorJsonScript = doc.getElementById('dre-data-anterior-json');
+                        
+                        // --- INÍCIO DA LÓGICA DE ATUALIZAÇÃO DOS CARDS ---
+                        const dreCardsDataJsonScript = doc.getElementById('dre-cards-data-json');
+
+                        if (dreCardsDataJsonScript) {
+                            const cardsData = JSON.parse(dreCardsDataJsonScript.textContent);
+                            const formatCurrency = (value) => {
+                                const num = parseFloat(value) || 0;
+                                return 'R$ ' + num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                            };
+
+                            // Atualiza o valor de cada card usando o atributo data-key que adicionamos
+                            for (const key in cardsData) {
+                                const cardValueElement = document.querySelector(`.card-dre-value[data-key="${key}"]`);
+                                if (cardValueElement) {
+                                    cardValueElement.textContent = formatCurrency(cardsData[key]);
+                                }
+                            }
+                        }
+                        // --- FIM DA LÓGICA DE ATUALIZAÇÃO DOS CARDS ---
+
+                        if (dreSection && placeholder) {
+                            placeholder.innerHTML = '';
+                            if (regimeToggle) placeholder.appendChild(regimeToggle);
+                            placeholder.appendChild(dreSection);
+                            if (analiseBtnContainer) placeholder.appendChild(analiseBtnContainer);
+                            if (analiseContainer) placeholder.appendChild(analiseContainer);
+
+                            document.getElementById('dre-data-json')?.remove();
+                            document.getElementById('dre-data-anterior-json')?.remove();
+                            if (dreDataJsonScript) document.body.appendChild(dreDataJsonScript);
+                            if (dreDataAnteriorJsonScript) document.body.appendChild(dreDataAnteriorJsonScript);
+
+                            ativarScriptsDaDRE();
+                        } else {
+                            placeholder.innerHTML = `<p style="text-align: center; color: #ff5555; padding: 40px;">Erro: Não foi possível carregar a estrutura da DRE.</p>`;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Erro detalhado ao carregar a DRE:', error);
+                        placeholder.innerHTML = `<p style="text-align: center; color: #ff5555; padding: 40px;">Ocorreu um erro ao carregar a DRE.</p>`;
+                    });
+            }
+
+            // Em dashboards.html, substitua a sua função ativarScriptsDaDRE() inteira por esta:
+
+            // COLE ESTA FUNÇÃO CORRIGIDA NO LUGAR DA ANTIGA `ativarScriptsDaDRE` EM dashboards.html
+            function ativarScriptsDaDRE() {
+                // --- SCRIPTS DE INTERAÇÃO (sem alterações) ---
+                const detailCells = document.querySelectorAll('#dre-placeholder .has-details');
+                detailCells.forEach(cell => {
+                    cell.addEventListener('click', function(event) {
+                        event.stopPropagation();
+                        document.querySelectorAll('#dre-placeholder .has-details.active').forEach(activeCell => {
+                            if (activeCell !== this) activeCell.classList.remove('active');
+                        });
+                        this.classList.toggle('active');
+                    });
+                });
+                document.addEventListener('click', () => {
+                    document.querySelectorAll('#dre-placeholder .has-details.active').forEach(c => c.classList.remove('active'));
+                });
+                document.querySelectorAll('.expandable-label').forEach(label => {
+                    label.addEventListener('click', function() {
+                        const targetId = this.dataset.target;
+                        const detailsRow = document.querySelector(targetId);
+                        if (detailsRow) {
+                            detailsRow.classList.toggle('expanded');
+                        }
+                    });
+                });
+                
+                // --- LÓGICA DA ANÁLISE DRE (CORRIGIDA E SEM DUPLICAÇÃO) ---
+                const analiseBtn = document.getElementById('analise-btn');
+                const analiseContainer = document.getElementById('analise-container');
+                if (analiseBtn && document.getElementById('dre-data-json')) {
+                    function findTotal(data, key) {
+                        const row = data.find(item => item.key === key);
+                        return row ? parseFloat(row.total_geral || 0) : 0;
+                    }
+
+                    // ▼▼▼ COLE ESTE BLOCO COMPLETO NOS DOIS ARQUIVOS, NO LUGAR DO "addEventListener" ANTIGO ▼▼▼
+
+                    // ▼▼▼ SUBSTITUA O BLOCO "addEventListener" ANTIGO POR ESTE NOVO BLOCO COMPLETO (NOS DOIS ARQUIVOS) ▼▼▼
+
+                    analiseBtn.addEventListener('click', function() {
+                        if (analiseContainer.style.display === 'none' || analiseContainer.style.display === '') {
+                            
+                            // --- 1. COLETA E CÁLCULO DOS DADOS ---
+                            const dreData = JSON.parse(document.getElementById('dre-data-json').textContent);
+                            const dreDataAnterior = JSON.parse(document.getElementById('dre-data-anterior-json').textContent);
+
+                            const receitaBruta = findTotal(dreData, 'RECEITAS_BRUTAS');
+                            const deducao = findTotal(dreData, 'DEDUCAO_RECEITA_BRUTA');
+                            const custos = findTotal(dreData, 'CUSTOS_CSP_CMV');
+                            const despesasOperacionais = findTotal(dreData, 'DESPESAS_OPERACIONAIS');
+                            const depreciacao = findTotal(dreData, 'DEPRECIACAO');
+                            const naoOperacionais = findTotal(dreData, 'NAO_OPERACIONAIS');
+                            const tributacao = findTotal(dreData, 'TRIBUTACAO');
+                            const distribuicaoLucro = findTotal(dreData, 'DISTRIBUICAO_LUCRO_SOCIOS');
+                            const resultadoFinalAnterior = findTotal(dreDataAnterior, 'RESULTADO_FINAL');
+
+                            const receitaLiquida = receitaBruta - deducao;
+                            const lucroBruto = receitaLiquida - custos;
+                            const ebitda = lucroBruto - despesasOperacionais;
+                            const ebit = ebitda - depreciacao;
+                            const lair = ebit - naoOperacionais;
+                            const lucroLiquidoFinal = lair - tributacao;
+                            const resultadoFinal = lucroLiquidoFinal - distribuicaoLucro;
+                            
+                            // --- 2. CÁLCULO DE KPIs ---
+                            const margemBruta = receitaLiquida > 0 ? (lucroBruto / receitaLiquida) * 100 : 0;
+                            const margemEbitda = receitaLiquida > 0 ? (ebitda / receitaLiquida) * 100 : 0;
+                            const margemLiquida = receitaLiquida > 0 ? (lucroLiquidoFinal / receitaLiquida) * 100 : 0;
+                            const percentualCustos = receitaLiquida > 0 ? (custos / receitaLiquida) * 100 : 0;
+                            const percentualDespesasOp = receitaLiquida > 0 ? (despesasOperacionais / receitaLiquida) * 100 : 0;
+
+                            // --- 3. LÓGICA DE DIAGNÓSTICO (RESTAURADA) ---
+                            let positivos = [], negativos = [], sugestoes = [];
+
+                            if (resultadoFinal > 0) {
+                                positivos.push(`✅ **Resultado Positivo:** A operação gerou um resultado final (lucro retido) de R$ ${resultadoFinal.toLocaleString('pt-BR', {minimumFractionDigits: 2})}.`);
+                            } else {
+                                negativos.push(`❌ **Resultado Negativo:** A operação consumiu R$ ${Math.abs(resultadoFinal).toLocaleString('pt-BR', {minimumFractionDigits: 2})} do caixa no período.`);
+                            }
+                            if (margemBruta > 40) {
+                                positivos.push(`📈 **Boa Margem Bruta (${margemBruta.toFixed(1)}%):** Sua empresa é eficiente em controlar os custos diretos.`);
+                            } else if (margemBruta < 20 && receitaLiquida > 0) {
+                                negativos.push(`📉 **Baixa Margem Bruta (${margemBruta.toFixed(1)}%):** Os custos diretos estão consumindo grande parte da sua receita.`);
+                            }
+                            if (margemEbitda > 20) {
+                                positivos.push(`👍 **Excelente Geração de Caixa Operacional:** O EBITDA representa ${margemEbitda.toFixed(1)}% da sua receita líquida.`);
+                            } else if (ebitda < 0 && receitaLiquida > 0) {
+                                negativos.push(`🚨 **EBITDA Negativo:** Alerta! Sua operação principal não está gerando caixa.`);
+                            }
+                            if (margemLiquida > 10) {
+                                positivos.push(`💰 **Ótima Rentabilidade Final:** Sua margem líquida de ${margemLiquida.toFixed(1)}% é um forte indicador de saúde financeira.`);
+                            } else if (lucroLiquidoFinal < 0 && receitaLiquida > 0) {
+                                negativos.push(`📉 **Prejuízo no Período:** O lucro líquido foi negativo em R$ ${Math.abs(lucroLiquidoFinal).toLocaleString('pt-BR', {minimumFractionDigits: 2})}.`);
+                            }
+
+                            if (lucroLiquidoFinal <= 0 && receitaLiquida > 0) {
+                                sugestoes.push('O resultado foi negativo. É crucial identificar a causa raiz do prejuízo.');
+                                if (lucroBruto <= 0) {
+                                    sugestoes.push('**Foco nos Custos:** A baixa margem bruta é o principal problema. Revise sua precificação, negocie com fornecedores e otimize processos.');
+                                } else if (ebitda <= 0) {
+                                    sugestoes.push('**Foco nas Despesas Operacionais:** As despesas com vendas, marketing e administrativas estão consumindo todo o lucro. Faça um pente-fino nessas áreas.');
+                                } else {
+                                    sugestoes.push('**Foco no Não-Operacional:** Sua operação é saudável, mas o resultado foi impactado por despesas financeiras, impostos ou outros.');
+                                }
+                            } else {
+                                if (percentualCustos > 60) sugestoes.push(`**Otimizar Custos (${percentualCustos.toFixed(1)}%):** Seus custos diretos estão elevados. Otimizar essa linha pode aumentar sua margem.`);
+                                if (percentualDespesasOp > 25) sugestoes.push(`**Controlar Despesas (${percentualDespesasOp.toFixed(1)}%):** Suas despesas operacionais representam uma fatia considerável da receita. Busque maior eficiência.`);
+                                if (sugestoes.length === 0 && positivos.length > 0) sugestoes.push('**Manter a Excelência:** O desempenho é sólido! O foco é manter a consistência e monitorar os KPIs.');
+                            }
+                            
+                            // --- 4. PREENCHIMENTO DO HTML (COMPLETO) ---
+                            
+                            document.querySelector('#analise-resumo p').innerHTML = `No período, sua operação alcançou uma <strong>Margem Bruta de ${margemBruta.toFixed(2).replace('.',',')}%</strong> e uma <strong>Margem Líquida final de ${margemLiquida.toFixed(2).replace('.',',')}%</strong>.`;
+                            
+                            const diferenca = resultadoFinal - resultadoFinalAnterior;
+                            const percentualDiferenca = resultadoFinalAnterior !== 0 ? (diferenca / Math.abs(resultadoFinalAnterior)) * 100 : (resultadoFinal !== 0 ? 100 : 0);
+                            let comparativoHTML = `O <strong>Resultado Final</strong> foi de <strong>R$ ${resultadoFinal.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</strong>. Em comparação com o período anterior, `;
+                            if (diferenca >= 0) comparativoHTML += `houve uma <span class="positivo">melhora de ${percentualDiferenca.toFixed(2).replace('.',',')}%</span>.`;
+                            else comparativoHTML += `houve uma <span class="negativo">piora de ${Math.abs(percentualDiferenca).toFixed(2).replace('.',',')}%</span>.`;
+                            document.querySelector('#analise-comparativo p').innerHTML = comparativoHTML;
+
+                            // Seção de Benchmark (lógica dinâmica que já estava correta)
+                            const sectorSelect = document.getElementById('sector-benchmark-select');
+                            const feedbackBenchmarkEl = document.getElementById('benchmark-feedback');
+                            function updateBenchmarkAnalysis() {
+                                if (!feedbackBenchmarkEl || !sectorSelect) return;
+                                const seu_setor = sectorSelect.value;
+                                const suaMargem = margemLiquida;
+                                let feedback = '';
+                                if (seu_setor === 'Serviços') {
+                                    if (suaMargem >= 20) feedback = `<span class="positivo">Sua margem (${suaMargem.toFixed(1)}%) está dentro ou acima da média de 20% para Serviços.</span>`;
+                                    else feedback = `<span class="negativo">Sua margem (${suaMargem.toFixed(1)}%) está abaixo da média de 20% para Serviços.</span>`;
+                                } else if (seu_setor === 'Lojas e Comércio') {
+                                    if (suaMargem >= 10) feedback = `<span class="positivo">Sua margem (${suaMargem.toFixed(1)}%) está na faixa de 10-15% para Lojas e Comércio.</span>`;
+                                    else feedback = `<span class="negativo">Sua margem (${suaMargem.toFixed(1)}%) está abaixo da faixa de 10-15% para Lojas e Comércio.</span>`;
+                                } else if (seu_setor === 'Indústria') {
+                                    if (suaMargem >= 6) feedback = `<span class="positivo">Sua margem (${suaMargem.toFixed(1)}%) está na faixa de 6-8% para Indústria.</span>`;
+                                    else feedback = `<span class="negativo">Sua margem (${suaMargem.toFixed(1)}%) está abaixo da faixa de 6-8% para Indústria.</span>`;
+                                } else if (seu_setor === 'Atacadista') {
+                                    if (suaMargem >= 4) feedback = `<span class="positivo">Sua margem (${suaMargem.toFixed(1)}%) está na faixa de 4-6% para Atacadista.</span>`;
+                                    else feedback = `<span class="negativo">Sua margem (${suaMargem.toFixed(1)}%) está abaixo da faixa de 4-6% para Atacadista.</span>`;
+                                } else {
+                                    feedback = 'Selecione um setor para ver a comparação.';
+                                }
+                                feedbackBenchmarkEl.innerHTML = feedback;
+                            }
+                            if (sectorSelect) sectorSelect.addEventListener('change', updateBenchmarkAnalysis);
+                            updateBenchmarkAnalysis(); // Chama a função para o estado inicial
+
+                            // LÓGICA DE PREENCHIMENTO DOS PONTOS DE DESTAQUE (RESTAURADA)
+                            const positivosUl = document.querySelector('#pontos-positivos ul');
+                            const negativosUl = document.querySelector('#pontos-negativos ul');
+                            positivosUl.innerHTML = ''; 
+                            negativosUl.innerHTML = '';
+                            (positivos.length > 0 ? positivos : ['Nenhum ponto positivo de destaque neste período.']).forEach(txt => positivosUl.innerHTML += `<li>${txt}</li>`);
+                            (negativos.length > 0 ? negativos : ['Nenhum ponto negativo de destaque neste período.']).forEach(txt => negativosUl.innerHTML += `<li>${txt}</li>`);
+                            
+                            // LÓGICA DE PREENCHIMENTO DAS SUGESTÕES (RESTAURADA)
+                            const sugestoesUl = document.querySelector('#sugestoes-melhoria ul');
+                            sugestoesUl.innerHTML = '';
+                            (sugestoes.length > 0 ? sugestoes : ['Nenhuma sugestão específica necessária no momento. Continue monitorando!']).forEach(txt => sugestoesUl.innerHTML += `<li>${txt}</li>`);
+                            
+                            // Exibe o container
+                            analiseContainer.style.display = 'block';
+                            this.textContent = 'Ocultar Análise';
+                        } else {
+                            analiseContainer.style.display = 'none';
+                            this.textContent = 'Iniciar Análise';
+                        }
+                    });
+                }
+
+                // --- Lógica para o seletor de Regime (Caixa/Competência) ---
+                const placeholder = document.getElementById('dre-placeholder');
+                const regimeToggleContainer = placeholder.querySelector('.regime-toggle-container');
+                if (regimeToggleContainer) {
+                    regimeToggleContainer.addEventListener('click', function(event) {
+                        // Verifica se o clique foi em um dos botões (que são links <a>)
+                        if (event.target.tagName === 'A') {
+                            event.preventDefault(); // Impede a navegação imediata
+
+                            // Pega a URL ATUAL da página de dashboard
+                            const currentUrl = new URL(window.location.href);
+
+                            // Pega a URL do botão que foi clicado (ex: ...?regime=competencia)
+                            const clickedUrl = new URL(event.target.href);
+
+                            // Extrai o novo regime ('caixa' ou 'competencia') do botão clicado
+                            const newRegime = clickedUrl.searchParams.get('regime');
+
+                            // Atualiza o parâmetro 'regime' na URL ATUAL da página
+                            currentUrl.searchParams.set('regime', newRegime);
+                            
+                            // Manda o navegador para a nova URL, forçando um recarregamento completo da página
+                            window.location.href = currentUrl.toString();
+                        }
+                    });
+                }
+            }
+
+            // Inicia o carregamento da DRE assim que a página estiver pronta
+            carregarDRE();
+
+            // --- FIM: Lógica para carregar a DRE dinamicamente ---
+
+
+            // Lógica para o filtro de período personalizado
+            const periodSelect = document.getElementById('period');
+            const customDateDiv = document.getElementById('custom-date');
+            if(periodSelect) {
+                periodSelect.addEventListener('change', function() {
+                    if (this.value === 'custom') {
+                        customDateDiv.style.display = 'flex';
+                    } else {
+                        customDateDiv.style.display = 'none';
+                        document.getElementById('start_date').value = '';
+                        document.getElementById('end_date').value = '';
+                    }
+                });
+            }
+
+            // ▼▼▼ COLE ESTA NOVA FUNÇÃO CORRIGIDA NO LUGAR DA ANTIGA ▼▼▼
+            
+
+
+            // --- GRÁFICOS DO DASHBOARD FINANCEIRO ---
+            const cashFlowCtx = document.getElementById('cashFlowChart');
+            if (cashFlowCtx) {
+                new Chart(cashFlowCtx.getContext('2d'), {
+                    type: 'line',
+                    data: {
+                        labels: JSON.parse('{{ cashflow_labels|safe }}'),
+                        // Em dashboards.html, dentro do <script>
+                        datasets: [
+                            {
+                                label: 'Entradas',
+                                data: JSON.parse('{{ cashflow_receivable|safe }}'),
+                                borderColor: 'rgba(22, 199, 49, 1)',      /* Verde sólido para a linha */
+                                backgroundColor: 'rgba(22, 199, 49, 0.4)', /* Verde com 40% de opacidade para a área */
+                                fill: true,
+                                tension: 0.4,
+                                pointRadius: 0
+                            }, {
+                                label: 'Saídas',
+                                data: JSON.parse('{{ cashflow_payable|safe }}'),
+                                borderColor: 'rgba(255, 0, 0, 1)',       /* Vermelho sólido para a linha */
+                                backgroundColor: 'rgba(255, 0, 0, 0.4)',  /* Vermelho com 40% de opacidade para a área */
+                                fill: true,
+                                tension: 0.4,
+                                pointRadius: 0
+                            }
+                        ]
+                    },
+                    options: {
+                         responsive: true, 
+                         maintainAspectRatio: false, 
+                         interaction: {         // <-- ADICIONE ESTE BLOCO
+                                mode: 'index',
+                                intersect: false,
+                         }, 
+                         scales: { y: { beginAtZero: true, ticks: {color: '#fff', font: { size: 10 }} } , x: { ticks: {color: '#fff', font: { size: 10 }, maxRotation: 45, minRotation: 45 }}} , plugins: { legend: { labels: {color: '#fff'}}}}
+                });
+            }
+
+            // --- INÍCIO DA ALTERAÇÃO: GRÁFICOS DO DASHBOARD FLUXO DE CAIXA ---
+            const fcMonthlyData = {
+                labels: JSON.parse('{{ fc_monthly_labels|safe }}'),
+                receivables: JSON.parse('{{ fc_monthly_receivable|safe }}'),
+                payables: JSON.parse('{{ fc_monthly_payable|safe }}')
+            };
+            const fcDailyData = {
+                labels: JSON.parse('{{ fc_daily_labels|safe }}'),
+                receivables: JSON.parse('{{ fc_daily_receivable|safe }}'),
+                payables: JSON.parse('{{ fc_daily_payable|safe }}')
+            };
+
+            let fcEvolutionChart;
+            function initializeFCEvolutionChart(viewType) {
+                const ctx = document.getElementById('cashFlowBarChart').getContext('2d');
+                if (fcEvolutionChart) { fcEvolutionChart.destroy(); }
+                
+                const dataToShow = (viewType === 'daily') ? fcDailyData : fcMonthlyData;
+
+                fcEvolutionChart = new Chart(ctx, {
+                    type: 'bar', // Tipo de gráfico fixo
+                    data: {
+                        labels: dataToShow.labels,
+                        datasets: [{
+                            label: 'Entradas',
+                            data: dataToShow.receivables,
+                            backgroundColor: '#1a8f1eff',
+                            borderColor: '#25ab25ff',
+                            borderWidth: 1,
+                            barPercentage: 1.2,
+                        }, {
+                            label: 'Saídas',
+                            data: dataToShow.payables,
+                            backgroundColor: '#ff0000',
+                            borderColor: '#cc0000',
+                            borderWidth: 1,
+                            barPercentage: 1.2,
+                        }]
+                    },
+                    options: { 
+                        responsive: true,
+                        maintainAspectRatio: false, /* Adicionado para respeitar a altura fixa do container */
+                        scales: { y: { beginAtZero: true, ticks: { color: '#000', font: { size: 10 } } }, x: { ticks: { color: '#000', font: { size: 10 } } } }, 
+                        plugins: { legend: { position: 'top', labels: { color: '#000' } } } 
+                    }
+                });
+            }
+
+            // Inicialização e eventos do gráfico de evolução de caixa
+            const fcContainer = document.querySelector('.cash-flow-container');
+            if (fcContainer) {
+                const fcChartCtx = fcContainer.querySelector('#cashFlowBarChart');
+                if (fcChartCtx) {
+                    initializeFCEvolutionChart('monthly'); // Inicia com a visão mensal
+
+                    const fcMiniCards = fcContainer.querySelectorAll('.mini-card');
+                    fcMiniCards.forEach(card => {
+                        card.addEventListener('click', function() {
+                            fcMiniCards.forEach(c => c.classList.remove('active'));
+                            this.classList.add('active');
+                            const view = this.getAttribute('data-view');
+                            initializeFCEvolutionChart(view);
+                        });
+                    });
+                }
+            }
+            
+            const receivableCategoryCtx = document.getElementById('receivableCategoryChart');
+            if (receivableCategoryCtx) {
+                new Chart(receivableCategoryCtx.getContext('2d'), {
+                    type: 'doughnut', // <-- TIPO NOVO
+                    data: {
+                        labels: JSON.parse('{{ receivable_category_labels|safe }}'),
+                        datasets: [{
+                            label: 'Valor Recebido',
+                            data: JSON.parse('{{ receivable_category_data|safe }}'),
+                            backgroundColor: ['#28a745', '#20c997', '#17a2b8', '#6f42c1', '#0d6efd'], // Array de cores
+                            hoverOffset: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'bottom', labels: { color: '#000', boxWidth: 12, font: { size: 11 } } }
+                        }
+                    }
+                });
+            }
+            const payableCategoryCtx = document.getElementById('payableCategoryChart');
+            if (payableCategoryCtx) {
+                new Chart(payableCategoryCtx.getContext('2d'), {
+                    type: 'doughnut', // <-- TIPO NOVO
+                    data: {
+                        labels: JSON.parse('{{ payable_category_labels|safe }}'),
+                        datasets: [{
+                            label: 'Valor Pago',
+                            data: JSON.parse('{{ payable_category_data|safe }}'),
+                            backgroundColor: ['#dc3545', '#fd7e14', '#ffc107', '#6c757d', '#343a40'], // Array de cores
+                            hoverOffset: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'bottom', labels: { color: '#000', boxWidth: 12, font: { size: 11 } } }
+                        }
+                    }
+                });
+            }
+
+
+            // --- GRÁFICOS DO DASHBOARD KPIS ---
+            const waterfallLabels = JSON.parse('{{ waterfall_labels|safe }}');
+            const waterfallCanvas = document.getElementById('lucroBrutoWaterfallChart');
+            if (waterfallLabels.length > 0 && waterfallCanvas) {
+                new Chart(waterfallCanvas.getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: waterfallLabels,
+                        datasets: [{ data: JSON.parse('{{ waterfall_data|safe }}'), backgroundColor: JSON.parse('{{ waterfall_bg_colors|safe }}'), barPercentage: 0.8, categoryPercentage: 1.0 }]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(context) { const raw = context.raw; const isTotal = context.label === 'Total'; let value; if (isTotal) { value = raw[1]; } else { value = raw[1] - raw[0]; } return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value); } } } },
+                        scales: { y: { beginAtZero: true, ticks: { color: '#555', font: { size: 10 }, callback: function(value) { return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0 }).format(value); } } }, x: { grid: { display: false }, ticks: { color: '#555', font: { size: 10 } } } }
+                    }
+                });
+            }
+            const insightsMenuItems = document.querySelectorAll('.insights-menu li');
+            const insightsChartCanvas = document.getElementById('insightsChart');
+            if (insightsChartCanvas && insightsMenuItems.length > 0) {
+                const insightsLabels = JSON.parse('{{ insights_labels|safe }}');
+                const insightsData = JSON.parse('{{ insights_charts_data|safe }}');
+                let insightsChart;
+                const formatCurrency = (value) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+                const formatPercent = (value) => `${(value || 0).toFixed(2)}%`;
+                // ▼▼▼ ADICIONE ESTE OBJETO DE TEXTOS EXPLICATIVOS ▼▼▼
+                const kpiExplanations = {
+                    'margem_bruta_percentual': "<strong>Cálculo:</strong> (Lucro Bruto / Receita Líquida) * 100.<br><br>Mostra a porcentagem de receita que sobra após subtrair os custos diretos (CSP/CMV). Indica a eficiência da operação principal.",
+                    'ebitda_percentual': "<strong>Cálculo:</strong> (EBITDA / Receita Líquida) * 100.<br><br>Representa a lucratividade operacional da empresa antes de juros, impostos, depreciação e amortização. Mede a geração de caixa puramente operacional.",
+                    'margem_liquida_percentual': "<strong>Cálculo:</strong> (Lucro Líquido / Receita Líquida) * 100.<br><br>É o indicador final de lucratividade. Mostra quanto da receita se transformou em lucro efetivo após todas as deduções de custos, despesas e impostos.",
+                    'custos': "<strong>Cálculo:</strong> Soma de todos os custos diretos (CSP/CMV) no período.<br><br>Representa o valor total gasto para produzir ou adquirir os bens e serviços que foram vendidos.",
+                    'custos_percentual': "<strong>Cálculo:</strong> (Custos / Receita Líquida) * 100.<br><br>Indica qual porcentagem da sua receita líquida é consumida pelos custos diretos. É fundamental para o controle de precificação e eficiência.",
+                    'margem_contribuicao': "<strong>Cálculo:</strong> Receita Líquida - Custos Variáveis.<br><br>Mostra o quanto 'sobra' da receita de vendas para pagar as despesas fixas e gerar lucro. É um indicador vital para a análise de ponto de equilíbrio.",
+                    'margem_contribuicao_percentual': "<strong>Cálculo:</strong> (Margem de Contribuição / Receita Líquida) * 100.<br><br>Versão percentual da Margem de Contribuição, útil para comparar a rentabilidade entre diferentes produtos ou serviços.",
+                    'ponto_equilibrio': "<strong>Cálculo:</strong> Custos e Despesas Fixas / (% Margem de Contribuição).<br><br>Indica o faturamento mínimo necessário para que a empresa cubra todos os seus custos e despesas, operando no 'zero a zero'."
+                };
+                // ▲▲▲ FIM DO NOVO OBJETO ▲▲▲
+                function renderInsightsChart(dataKey, label, formatType) {
+                    if (insightsChart) { insightsChart.destroy(); }
+                    insightsChart = new Chart(insightsChartCanvas.getContext('2d'), {
+                        type: 'bar',
+                        data: {
+                            labels: insightsLabels,
+                            datasets: [{ label: label, data: insightsData[dataKey], backgroundColor: 'rgba(127, 18, 22, 0.93)', borderColor: 'rgba(190, 131, 221, 0.91)', borderWidth: 1, barPercentage: 0.8, categoryPercentage: 0.8 }]
+                        },
+                        options: {
+                            responsive: true, maintainAspectRatio: false,
+                            plugins: { legend: {
+                                 display: true, 
+                                 position: 'top', 
+                                 labels: { color: '#000', font: {size: 12} } }, tooltip: { callbacks: { label: function(context) { let value = context.raw; return formatType === 'currency' ? formatCurrency(value) : formatPercent(value); } } } },
+                            scales: { y: { beginAtZero: true, ticks: { color: '#000', font: {size: 10}, callback: function(value) { return formatType === 'currency' ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value) : `${value}%`; } } }, x: { ticks: { color: '#000', font: {size: 10} } } }
+                        }
+                    });
+                }
+                
+                // ▼▼▼ COLE ESTA NOVA FUNÇÃO AUXILIAR AQUI ▼▼▼
+                function updateKpiCard(menuItemElement) {
+                    const cardTitle = document.getElementById('kpi-card-title');
+                    const cardText = document.getElementById('kpi-card-text');
+                    const kpiKey = menuItemElement.dataset.chart;
+                    const kpiLabel = menuItemElement.dataset.label;
+
+                    if (cardTitle && cardText) {
+                        cardTitle.textContent = kpiLabel;
+                        // Busca a explicação no objeto que criamos
+                        cardText.innerHTML = kpiExplanations[kpiKey] || 'Explicação para este indicador não encontrada.';
+                    }
+                }
+
+                // ▼▼▼ AGORA, SUBSTITUA O SEU forEach POR ESTE ▼▼▼
+                const initialItem = insightsMenuItems[0];
+                if(initialItem && insightsData && insightsData[initialItem.dataset.chart]) {
+                    renderInsightsChart(initialItem.dataset.chart, initialItem.dataset.label, initialItem.dataset.format);
+                    updateKpiCard(initialItem); // <-- CHAMA A FUNÇÃO NA CARGA INICIAL
+                }
+
+                insightsMenuItems.forEach(item => {
+                    item.addEventListener('click', function() {
+                        insightsMenuItems.forEach(i => i.classList.remove('active'));
+                        this.classList.add('active');
+                        renderInsightsChart(this.dataset.chart, this.dataset.label, this.dataset.format);
+                        updateKpiCard(this); // <-- CHAMA A FUNÇÃO NO CLIQUE
+                    });
+                });
+            }
+            // Substitua a função antiga por esta
+
+            // Em dashboards.html, dentro da tag <script>
+            // SUBSTITUA A FUNÇÃO ANTIGA POR ESTA VERSÃO COMPLETA E REVISADA
+
+            function ativarScriptsAnaliseContas() {
+                console.log("--- Iniciando ativação dos scripts de Análise de Contas ---");
+
+                try {
+                    // --- PONTO DE DEBUG: Vamos verificar os dados que estão chegando ---
+                    const clientLabels = JSON.parse(document.getElementById('client-labels-data').textContent);
+                    const clientData = JSON.parse(document.getElementById('client-data-data').textContent);
+                    
+                    // Esta linha irá nos dizer o tipo de dado que estamos recebendo. O CORRETO é 'object'.
+                    console.log("Tipo de 'clientLabels':", typeof clientLabels, "| Valor:", clientLabels);
+                    
+                    const openVsOverdueData = JSON.parse(document.getElementById('open-overdue-data').textContent);
+                    const overdueByPeriodLabels = JSON.parse(document.getElementById('overdue-labels-data').textContent);
+                    const overdueByPeriodData = JSON.parse(document.getElementById('overdue-data-data').textContent);
+
+                    // --- INÍCIO DA RENDERIZAÇÃO DOS GRÁFICOS ---
+                    
+                    const clientChartCanvas = document.getElementById('clientOpenAmountChart');
+                    let clientChart;
+                    
+                    function renderClientChart(labels, data) {
+                        if (clientChart) { clientChart.destroy(); }
+                        if (!clientChartCanvas) return;
+                        // Validação: Se labels não for uma lista (array), não renderiza.
+                        if (!Array.isArray(labels)) {
+                            console.error("Erro: 'labels' para o gráfico de cliente não é uma lista (array).");
+                            return;
+                        }
+                        clientChart = new Chart(clientChartCanvas, { // Removido .getContext('2d') para compatibilidade
+                            type: 'bar',
+                            data: {
+                                labels: labels,
+                                datasets: [{ label: 'Valor em Aberto', data: data, backgroundColor: '#33cc33' }]
+                            },
+                            options: {
+                                indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+                                plugins: { legend: { display: false } }
+                            }
+                        });
+                    }
+                    renderClientChart(clientLabels, clientData);
+                    
+                    const clientSearchInput = document.getElementById('client-search');
+                    if(clientSearchInput) {
+                        clientSearchInput.addEventListener('keyup', function(e) {
+                            const searchTerm = e.target.value.toLowerCase();
+                            const filteredLabels = []; const filteredData = [];
+                            if (Array.isArray(clientLabels)) {
+                                clientLabels.forEach((label, index) => {
+                                    if (label.toLowerCase().includes(searchTerm)) {
+                                        filteredLabels.push(label);
+                                        filteredData.push(clientData[index]);
+                                    }
+                                });
+                                renderClientChart(filteredLabels, filteredData);
+                            }
+                        });
+                    }
+
+                    const openVsOverdueCanvas = document.getElementById('openVsOverdueChart');
+                    if (openVsOverdueCanvas) {
+                        new Chart(openVsOverdueCanvas, {
+                            type: 'doughnut',
+                            data: {
+                                labels: ['A Vencer', 'Atrasado'],
+                                datasets: [{ data: openVsOverdueData, backgroundColor: ['#16ca1fff', '#ff3333'] }]
+                            },
+                            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+                        });
+                    }
+
+                    const overdueByPeriodCanvas = document.getElementById('overdueByPeriodChart');
+                    if(overdueByPeriodCanvas) {
+                        new Chart(overdueByPeriodCanvas, {
+                            type: 'bar',
+                            data: {
+                                labels: overdueByPeriodLabels,
+                                datasets: [{ label: 'Valor Atrasado', data: overdueByPeriodData, backgroundColor: ['#ffcdd2', '#ef9a9a', '#e57373', '#d32f2f'] }]
+                            },
+                            options: {
+                                responsive: true, maintainAspectRatio: false,
+                                plugins: { legend: { display: false } },
+                                scales: { y: { beginAtZero: true, ticks: { callback: function(value) { return 'R$ ' + value.toLocaleString('pt-BR'); } } } }
+                            }
+                        });
+                    }
+                    console.log("--- Scripts de Análise de Contas ativados com sucesso ---");
+                } catch (e) {
+                    console.error("ERRO FATAL ao ativar scripts de Análise de Contas:", e);
+                }
+            }
+
+            // Chame a função uma vez para a primeira carga da página
+            ativarScriptsAnaliseContas();
+
+            // ▼▼▼ COLE ESTE NOVO BLOCO NO SEU SCRIPT ▼▼▼
+
+            // --- LÓGICA PARA TROCA DINÂMICA DA ANÁLISE DE CONTAS ---
+            const actionToggleContainer = document.querySelector('.action-toggle-container');
+            if (actionToggleContainer) {
+                actionToggleContainer.addEventListener('click', function(event) {
+                    // Verifica se o clique foi em um dos botões (que são links <a>)
+                    if (event.target.tagName === 'A') {
+                        event.preventDefault(); // Impede o recarregamento da página!
+
+                        const wrapper = document.getElementById('analise-de-contas-wrapper');
+                        const url = event.target.href;
+
+                        // Mostra uma mensagem de "Carregando..."
+                        wrapper.innerHTML = '<p style="text-align: center; padding: 40px; color: #888;">Carregando análise...</p>';
+
+                        // Busca o novo conteúdo em segundo plano
+                        fetch(url)
+                            .then(response => response.text())
+                            .then(html => {
+                                const parser = new DOMParser();
+                                const doc = parser.parseFromString(html, 'text/html');
+                                
+                                // Encontra a seção no novo conteúdo
+                                const newContent = doc.getElementById('analise-de-contas-wrapper');
+                                
+                                if (newContent) {
+                                    // Substitui o conteúdo antigo pelo novo
+                                    wrapper.innerHTML = newContent.innerHTML;
+                                    
+                                    // Reativa os scripts dos gráficos na seção que acabamos de carregar
+                                    ativarScriptsAnaliseContas();
+                                }
+                            });
+                    }
+                });
+            }
+    
+            // ▼▼▼ COLE ESTE NOVO BLOCO NO LUGAR DO CÓDIGO DO GRÁFICO DE BARRAS ANTIGO ▼▼▼
+
+            // --- LÓGICA DO MEDIDOR DE VARIAÇÃO (RÉGUA) ---
+            function setupVariationMeter(arrowId, variationValue) {
+                const arrowElement = document.getElementById(arrowId);
+                if (!arrowElement) return;
+
+                // 1. Limita o valor entre -100 e 100 para a seta não sair da régua
+                const clampedValue = Math.max(-100, Math.min(100, variationValue));
+
+                // 2. Converte o valor (-100 a 100) para uma posição percentual (0% a 100%)
+                // Ex: -100 -> 0%,  0 -> 50%,  100 -> 100%
+                const positionPercentage = (clampedValue + 100) / 2;
+
+                // 3. Aplica a posição à seta
+                arrowElement.style.left = positionPercentage + '%';
+            }
+
+            // Pega o valor da variação do Django e chama a função para posicionar a seta
+            const receivableVariation = parseFloat('{{ receivable_variation|default:0 }}');
+            setupVariationMeter('meter-arrow-entradas', receivableVariation);
+
+            // --- FIM DO NOVO BLOCO ---
+
+            // Em dashboards.html, cole este bloco dentro do seu script principal
+
+            // --- NOVOS GRÁFICOS DA SEÇÃO DRE ---
+
+            
+            // 1. Gráfico TOP 5 DESPESAS (Barras Horizontais)
+            const topExpensesCanvas = document.getElementById('topExpensesChart');
+            if (topExpensesCanvas) {
+                const topExpensesLabels = JSON.parse('{{ top_despesas_labels_json|safe }}');
+                const topExpensesData = JSON.parse('{{ top_despesas_data_json|safe }}');
+
+                // --- INÍCIO DA NOVA LÓGICA PARA TRUNCAR TEXTOS LONGOS ---
+                const characterLimit = 15; // Defina o limite de caracteres que você quer exibir
+                const truncatedLabels = topExpensesLabels.map(label => {
+                    if (label.length > characterLimit) {
+                        // Se o texto for maior que o limite, corta e adiciona "..."
+                        return label.substring(0, characterLimit).trim() + '...';
+                    }
+                    return label; // Se for curto, mantém o original
+                });
+                // --- FIM DA NOVA LÓGICA ---
+
+                new Chart(topExpensesCanvas.getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: truncatedLabels, // <-- ALTERADO: Usa os novos textos truncados
+                        datasets: [{
+                            label: 'Total Gasto',
+                            data: topExpensesData,
+                            backgroundColor: 'rgba(221, 28, 31, 1)',
+                            borderColor: 'rgba(151, 15, 17, 1)',
+                            borderWidth: 1,
+                            barPercentage: 0.6 
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            x: { ticks: { font: { size: 10 }, callback: value => 'R$ ' + value.toLocaleString('pt-BR') } },
+                            y: { ticks: { font: { size: 11 } } }
+                        }
+                    }
+                });
+            }
+
+            // 2. Gráfico RETIRADA DE SÓCIOS (Rosca) - AJUSTE FINO DE ESPAÇAMENTO
+            const partnerWithdrawalCanvas = document.getElementById('partnerWithdrawalChart');
+            if (partnerWithdrawalCanvas) {
+                const partnerLabels = JSON.parse('{{ retirada_socios_labels_json|safe }}');
+                const partnerData = JSON.parse('{{ retirada_socios_data_json|safe }}');
+                
+                new Chart(partnerWithdrawalCanvas.getContext('2d'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: partnerLabels,
+                        datasets: [{
+                            label: 'Retirada',
+                            data: partnerData,
+                            backgroundColor: ['#dc3545', '#d29121ff','#28a745' , '#17a2b8', '#6610f2'],
+                            hoverOffset: 4,
+                            cutout: '50%'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        // 1. ADICIONADO: Pequeno padding para evitar que as porcentagens cortem nas laterais
+                        layout: {
+                            padding: 15 
+                        },
+                        plugins: {
+                            datalabels: {
+                                display: true,
+                                formatter: (value, ctx) => {
+                                    const numericValue = Number(value) || 0;
+                                    const total = ctx.chart.data.datasets[0].data
+                                        .map(Number)
+                                        .reduce((acc, val) => acc + (val || 0), 0);
+                                    const percentage = total > 0 ? (numericValue / total) * 100 : 0;
+                                    return `${percentage.toFixed(2).replace('.', ',')}%`;
+                                },
+                                color: '#726e6eff',
+                                font: {
+                                    weight: 'bold',
+                                    // 2. AJUSTADO: Fonte da porcentagem ligeiramente menor
+                                    size: 11,
+                                },
+                                anchor: 'end',
+                                align: 'end',
+                                offset: 8
+                            },
+                            legend: {
+                                position: 'bottom',
+                                align: 'start',
+                                labels: {
+                                    boxWidth: 12,
+                                    // 3. AJUSTADO: Padding da legenda reduzido para "descer" os nomes
+                                    padding: 20, 
+                                    font: { size: 12 }
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    title: function(context) {
+                                        return context[0].label;
+                                    },
+                                    label: function(context) {
+                                        const value = context.raw || 0;
+                                        return `Valor: R$ ${value.toLocaleString('pt-BR')}`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+            // --- INÍCIO: LÓGICA PARA INSIGHTS DOS KPIS ---
+            const kpiInsightsBtn = document.getElementById('kpi-insights-btn');
+            const kpiInsightsContainer = document.getElementById('kpi-insights-container');
+
+            if (kpiInsightsBtn && kpiInsightsContainer) {
+                const analysisData = JSON.parse('{{ kpi_analysis_data|safe }}');
+
+                kpiInsightsBtn.addEventListener('click', function() {
+                    if (kpiInsightsContainer.style.display === 'none') {
+                        // --- GERA O TEXTO DA ANÁLISE ---
+
+                        // 1. Resumo do Período Atual
+                        const resumoP = kpiInsightsContainer.querySelector('#kpi-analise-resumo p');
+                        resumoP.innerHTML = `Nos últimos ${analysisData.period_label} dias, sua <strong>Margem Bruta</strong> foi de <strong>${analysisData.current_margem_bruta.toFixed(2).replace('.', ',')}%</strong> e seu <strong>% EBITDA</strong> foi de <strong>${analysisData.current_ebitda_percentual.toFixed(2).replace('.', ',')}%</strong>.`;
+                        
+                        // 2. Comparativo com Período Anterior
+                        const comparativoP = kpiInsightsContainer.querySelector('#kpi-analise-comparativo p');
+                        const difMargem = analysisData.current_margem_bruta - analysisData.previous_margem_bruta;
+                        const difEbitda = analysisData.current_ebitda_percentual - analysisData.previous_ebitda_percentual;
+                        
+                        let comparativoHTML = `Em comparação com o ${analysisData.comparison_period_label}:<br>`;
+                        comparativoHTML += `Sua Margem Bruta teve uma variação de <strong class="${difMargem >= 0 ? 'positivo' : 'negativo'}">${difMargem.toFixed(2).replace('.', ',')} p.p.</strong>.<br>`;
+                        comparativoHTML += `Seu % EBITDA teve uma variação de <strong class="${difEbitda >= 0 ? 'positivo' : 'negativo'}">${difEbitda.toFixed(2).replace('.', ',')} p.p.</strong>.`;
+                        comparativoP.innerHTML = comparativoHTML;
+
+                        // 3. Previsão para o Próximo Período (baseado em tendência simples)
+                        const previsaoP = kpiInsightsContainer.querySelector('#kpi-analise-previsao p');
+                        const tendenciaMargem = analysisData.current_margem_bruta + difMargem;
+                        const tendenciaEbitda = analysisData.current_ebitda_percentual + difEbitda;
+                        previsaoP.innerHTML = `Mantendo a tendência atual, a previsão para os próximos ${analysisData.period_label} dias é de uma <strong>Margem Bruta</strong> de aproximadamente <strong>${tendenciaMargem.toFixed(2).replace('.', ',')}%</strong> e um <strong>% EBITDA</strong> em torno de <strong>${tendenciaEbitda.toFixed(2).replace('.', ',')}%</strong>.`;
+
+                        // Mostra a análise
+                        kpiInsightsContainer.style.display = 'block';
+                        this.textContent = 'Ocultar Insights';
+                    } else {
+                        // Oculta a análise
+                        kpiInsightsContainer.style.display = 'none';
+                        this.textContent = 'Iniciar Insights';
+                    }
+                });
+            }
+            // --- FIM: LÓGICA PARA INSIGHTS DOS KPIS ---
+            // Em dashboards.html, dentro do <script>, substitua a lógica do valuation por esta:
+
+            // --- INÍCIO: LÓGICA FINAL E GARANTIDA PARA O CALCULADOR DE VALUATION ---
+            const multiploInput = document.getElementById('multiplo-ebitda');
+            const ebitdaElement = document.getElementById('ebitda-ltm-value');
+            const resultadoElement = document.getElementById('resultado-valuation');
+
+            if (multiploInput && ebitdaElement && resultadoElement) {
+                
+                const formatCurrency = (value) => {
+                    return 'R$ ' + value.toLocaleString('pt-BR', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    });
+                };
+
+                function calcularValuation() {
+                    // Lê o valor do input, garantindo que use ponto como decimal
+                    const multiplo = parseFloat(multiploInput.value.replace(',', '.')) || 0;
+                    
+                    // Lê o valor puro do data-attribute, que agora garantimos que usa ponto
+                    const ebitda = parseFloat(ebitdaElement.dataset.ebitda) || 0;
+                    
+                    const novoValuation = ebitda * multiplo;
+                    
+                    resultadoElement.textContent = formatCurrency(novoValuation);
+                }
+
+                // Adiciona o evento de interação ao campo do múltiplo
+                multiploInput.addEventListener('input', calcularValuation);
+
+                // Garante que, ao carregar a página, o cálculo seja executado
+                // para exibir o valor correto e preencher o campo do múltiplo se estiver vazio.
+                if (!multiploInput.value) {
+                    multiploInput.value = "{{ multiplo_ebitda_js }}";
+                }
+                calcularValuation();
+            }
+            // --- FIM: LÓGICA FINAL E GARANTIDA ---
+            // --- INÍCIO: LÓGICA CORRIGIDA PARA O SELETOR DE SETOR DO VALUATION ---
+            const sectorSelect = document.getElementById('sector-select');
+
+            if (sectorSelect && multiploInput) {
+                
+                sectorSelect.addEventListener('change', function() {
+                    // Pega o valor do seletor (que agora já vem com ponto: "5.0")
+                    const novoMultiplo = this.value;
+                    
+                    // 1. Atualiza o campo do múltiplo
+                    multiploInput.value = novoMultiplo;
+                    
+                    // 2. Chama a função de cálculo diretamente para garantir a atualização
+                    // A função calcularValuation() já foi definida no script anterior.
+                    calcularValuation();
+                });
+            }
+            
+
+            
+
+            // --- INÍCIO: NOVOS GRÁFICOS PREVISTO VS REALIZADO (COM CORES DINÂMICAS) ---
+
+            // A função agora aceita um parâmetro 'colors' para definir a paleta do gráfico
+            function createPvrChart(canvasId, chartData, colors) {
+                const canvas = document.getElementById(canvasId);
+                if (canvas && chartData) {
+                    new Chart(canvas, {
+                        type: 'bar',
+                        data: {
+                            labels: chartData.labels,
+                            datasets: [
+                                {
+                                    label: 'Previsto',
+                                    data: chartData.expected,
+                                    backgroundColor: colors.previstoBg,
+                                    borderColor: colors.previstoBorder,
+                                    borderWidth: 1
+                                },
+                                {
+                                    label: 'Realizado',
+                                    data: chartData.actual,
+                                    backgroundColor: colors.realizadoBg,
+                                    borderColor: colors.realizadoBorder,
+                                    borderWidth: 1
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true, maintainAspectRatio: false,
+                            plugins: { legend: { position: 'top', labels: { color: '#000' } } },
+                            scales: { y: { beginAtZero: true, ticks: { color: '#000', font: { size: 10 } } }, x: { ticks: { color: '#000', font: { size: 10 } } } }
+                        }
+                    });
+                }
+            }
+
+            // Paleta de cores para o gráfico de RECEITAS (azul e verde)
+            const colorsReceitas = {
+                previstoBg: 'rgba(54, 162, 235, 0.5)',
+                previstoBorder: 'rgba(54, 162, 235, 1)',
+                realizadoBg: 'rgba(75, 192, 192, 0.5)',
+                realizadoBorder: 'rgba(75, 192, 192, 1)'
+            };
+
+            // NOVA paleta de cores para o gráfico de DESPESAS (vermelhos)
+            const colorsDespesas = {
+                previstoBg: 'rgba(161, 40, 59, 0.6)',      // Vermelho Escuro
+                previstoBorder: 'rgba(161, 40, 59, 1)',
+                realizadoBg: 'rgba(220, 53, 69, 0.5)',     // Vermelho Claro
+                realizadoBorder: 'rgba(220, 53, 69, 1)'
+            };
+
+            // Cria o gráfico de Receitas usando a paleta de cores de receita
+            const pvrReceitasData = JSON.parse('{{ pvr_receitas_chart_json|safe }}');
+            createPvrChart('pvrReceitasChart', pvrReceitasData, colorsReceitas);
+
+            // Cria o gráfico de Despesas usando a nova paleta de cores de despesa
+            const pvrDespesasData = JSON.parse('{{ pvr_despesas_chart_json|safe }}');
+            createPvrChart('pvrDespesasChart', pvrDespesasData, colorsDespesas);
+
+            // --- FIM: NOVOS GRÁFICOS ---
+
+            // --- INÍCIO: LÓGICA PARA ANÁLISE DO FLUXO DE CAIXA (DFC) ---
+            const dfcAnaliseBtn = document.getElementById('dfc-analise-btn');
+            const dfcAnaliseContainer = document.getElementById('dfc-analise-container');
+
+            if (dfcAnaliseBtn && dfcAnaliseContainer) {
+                const dfcData = JSON.parse('{{ dfc_analysis_data_json|safe }}');
+
+                dfcAnaliseBtn.addEventListener('click', function() {
+                    if (dfcAnaliseContainer.style.display === 'none') {
+                        const positivosUl = document.getElementById('dfc-pontos-positivos');
+                        const negativosUl = document.getElementById('dfc-pontos-negativos');
+                        const sugestoesUl = document.getElementById('dfc-sugestoes');
+
+                        // Limpa as listas antigas
+                        positivosUl.innerHTML = '';
+                        negativosUl.innerHTML = '';
+                        sugestoesUl.innerHTML = '';
+
+                        let positivos = [], negativos = [], sugestoes = [];
+
+                        // 1. Análise do Saldo (Geração de Caixa)
+                        if (dfcData.saldo_atual > 0) {
+                            positivos.push(`✅ O período fechou com <strong>geração de caixa positiva</strong> de R$ ${dfcData.saldo_atual.toLocaleString('pt-BR', {minimumFractionDigits: 2})}.`);
+                        } else {
+                            negativos.push(`❌ O período fechou com <strong>consumo de caixa</strong> de R$ ${Math.abs(dfcData.saldo_atual).toLocaleString('pt-BR', {minimumFractionDigits: 2})}.`);
+                            sugestoes.push('Seu caixa diminuiu. Priorize a redução das principais despesas ou explore formas de antecipar recebimentos.');
+                        }
+
+                        // 2. Comparativo com período anterior
+                        if (dfcData.saldo_atual > dfcData.saldo_anterior) {
+                            positivos.push('📈 A geração de caixa foi <strong>melhor</strong> que no período anterior.');
+                        } else {
+                            negativos.push('📉 A geração de caixa foi <strong>pior</strong> que no período anterior.');
+                        }
+
+                        // 3. Análise das Top Categorias
+                        if (dfcData.top_receitas.length > 0) {
+                            positivos.push(`👍 Sua principal fonte de receita foi <strong>${dfcData.top_receitas[0].category}</strong>, gerando R$ ${dfcData.top_receitas[0].actual.toLocaleString('pt-BR', {minimumFractionDigits: 2})}.`);
+                        }
+                        if (dfcData.top_despesas.length > 0) {
+                            negativos.push(`👎 Sua principal despesa foi <strong>${dfcData.top_despesas[0].category}</strong>, com um total de R$ ${dfcData.top_despesas[0].actual.toLocaleString('pt-BR', {minimumFractionDigits: 2})}.`);
+                            sugestoes.push(`Avalie sua principal despesa (${dfcData.top_despesas[0].category}). Existe alguma oportunidade de renegociação ou otimização de custos nesta área?`);
+                        }
+                        
+                        // 4. Análise de Tendência Mensal
+                        if (dfcData.meses_positivos > dfcData.meses_negativos) {
+                            positivos.push(`📊 A tendência do ano é positiva: <strong>${dfcData.meses_positivos} de ${dfcData.total_meses} meses</strong> tiveram geração de caixa.`);
+                        } else {
+                            negativos.push(`📊 Fique atento à tendência do ano: <strong>${dfcData.meses_negativos} de ${dfcData.total_meses} meses</strong> tiveram consumo de caixa.`);
+                        }
+
+                        // Preenche as listas no HTML
+                        if (positivos.length === 0) positivos.push('Nenhum ponto positivo de destaque identificado.');
+                        if (negativos.length === 0) negativos.push('Nenhum ponto negativo de destaque identificado.');
+                        if (sugestoes.length === 0 && dfcData.saldo_atual > 0) sugestoes.push('O fluxo de caixa está saudável. Continue monitorando suas principais fontes de receita e despesa para manter o bom desempenho.');
+                        
+                        positivos.forEach(item => { positivosUl.innerHTML += `<li>${item}</li>`; });
+                        negativos.forEach(item => { negativosUl.innerHTML += `<li>${item}</li>`; });
+                        sugestoes.forEach(item => { sugestoesUl.innerHTML += `<li>${item}</li>`; });
+
+                        // Mostra o container
+                        dfcAnaliseContainer.style.display = 'block';
+                        this.textContent = 'Ocultar Análise';
+                    } else {
+                        dfcAnaliseContainer.style.display = 'none';
+                        this.textContent = 'Iniciar Análise';
+                    }
+                });
+            }
+            // --- FIM: LÓGICA PARA ANÁLISE DO FLUXO DE CAIXA (DFC) ---
+
+        });
+        // COLE ESTE NOVO BLOCO DE CÓDIGO JAVASCRIPT
+
+        // --- INÍCIO: LÓGICA DA CALCULADORA DE FLUXO DE CAIXA DESCONTADO (DCF) ---
+        const dcfBaseCfInput = document.getElementById('dcf-base-cf');
+        const dcfGrowthRateInput = document.getElementById('dcf-growth-rate');
+        const dcfDiscountRateInput = document.getElementById('dcf-discount-rate');
+        const dcfYearsInput = document.getElementById('dcf-years');
+        const dcfPerpetuityRateInput = document.getElementById('dcf-perpetuity-rate');
+        const dcfProjectionTableBody = document.querySelector('#dcf-projection-table tbody');
+        const dcfValuationResult = document.getElementById('dcf-valuation-result');
+
+        // Formata um número para o padrão de moeda brasileiro
+        const formatCurrency = (value) => {
+            return (value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        };
+
+        function calculateDCF() {
+            if (!dcfBaseCfInput) return; // Se a calculadora não estiver na página, para a execução
+
+            // 1. Coleta os valores dos inputs
+            const baseCF = parseFloat('{{ geracao_caixa_ltm_js }}') || 0;
+            const growthRate = parseFloat(dcfGrowthRateInput.value) / 100 || 0;
+            const discountRate = parseFloat(dcfDiscountRateInput.value) / 100 || 0;
+            const years = parseInt(dcfYearsInput.value) || 5;
+            const perpetuityRate = parseFloat(dcfPerpetuityRateInput.value) / 100 || 0;
+
+            let projectedCFs = [];
+            let currentCF = baseCF;
+
+            // 2. Calcula o fluxo de caixa projetado para cada ano
+            for (let i = 1; i <= years; i++) {
+                currentCF = currentCF * (1 + growthRate);
+                projectedCFs.push({ year: i, cf: currentCF });
+            }
+
+            // 3. Traz cada fluxo de caixa para o valor presente e soma
+            let sumOfPresentValues = 0;
+            dcfProjectionTableBody.innerHTML = ''; // Limpa a tabela
+            projectedCFs.forEach(item => {
+                const presentValue = item.cf / Math.pow((1 + discountRate), item.year);
+                sumOfPresentValues += presentValue;
+
+                // Adiciona a linha na tabela de projeção
+                const row = `<tr>
+                    <td>${item.year}</td>
+                    <td>${formatCurrency(item.cf)}</td>
+                    <td>${formatCurrency(presentValue)}</td>
+                </tr>`;
+                dcfProjectionTableBody.innerHTML += row;
+            });
+
+            // 4. Calcula o Valor Terminal e seu Valor Presente
+            const lastProjectedCF = projectedCFs[projectedCFs.length - 1].cf;
+            const terminalValue = (lastProjectedCF * (1 + perpetuityRate)) / (discountRate - perpetuityRate);
+            const presentValueTerminal = terminalValue / Math.pow((1 + discountRate), years);
+
+            // 5. Calcula o Valuation Final
+            const finalValuation = sumOfPresentValues + presentValueTerminal;
+
+            // 6. Atualiza o resultado na tela
+            dcfValuationResult.textContent = formatCurrency(finalValuation);
+        }
+
+        // Adiciona "ouvintes" para recalcular sempre que um valor for alterado
+        const dcfInputs = [dcfGrowthRateInput, dcfDiscountRateInput, dcfYearsInput, dcfPerpetuityRateInput];
+        dcfInputs.forEach(input => {
+            if (input) {
+                input.addEventListener('input', calculateDCF);
+            }
+        });
+
+        // Calcula o valor inicial ao carregar a página
+        calculateDCF();
+        // --- FIM DA LÓGICA DCF ---
+    </script>
+    <script> 
+
+        document.addEventListener('DOMContentLoaded', function() {
+            
+
+            // ▼▼▼ ADICIONE ESTE NOVO BLOCO PARA O LAUDO ▼▼▼
+            const laudoModal = document.getElementById('laudo-modal');
+            const laudoBtn = document.getElementById('gerar-laudo-btn');
+            const closeBtn = laudoModal.querySelector('.close-btn');
+            const laudoTexto = document.getElementById('laudo-texto');
+
+            if (laudoBtn) {
+                laudoBtn.addEventListener('click', function() {
+                    // 1. Mostra o modal com a mensagem de "carregando"
+                    laudoTexto.innerHTML = '<p>Gerando análise, por favor aguarde...</p>';
+                    laudoModal.style.display = 'block';
+
+                    // 2. Pega os filtros atuais da URL
+                    const queryString = window.location.search;
+                    const url = `{% url "gerar_laudo_financeiro" %}${queryString}`;
+
+                    // 3. Chama a nova view no backend para gerar o laudo
+                    fetch(url)
+                        .then(response => response.json())
+                        .then(data => {
+                            // 4. Preenche o modal com o texto do laudo recebido
+                            laudoTexto.innerHTML = data.laudo_html;
+                        })
+                        .catch(error => {
+                            console.error('Erro ao gerar o laudo:', error);
+                            laudoTexto.innerHTML = '<p style="color: red;">Ocorreu um erro ao gerar a análise. Tente novamente.</p>';
+                        });
+                });
+            }
+
+            // Lógica para fechar o modal
+            if (closeBtn) {
+                closeBtn.onclick = function() {
+                    laudoModal.style.display = 'none';
+                }
+            }
+            window.onclick = function(event) {
+                if (event.target == laudoModal) {
+                    laudoModal.style.display = 'none';
+                }
+            }
+            // ▲▲▲ FIM DO NOVO BLOCO PARA O LAUDO ▲▲▲
+
+        });
+
+
+
+    </script>
+
+    <div id="laudo-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <div id="laudo-texto">
+                <p>Gerando análise, por favor aguarde...</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

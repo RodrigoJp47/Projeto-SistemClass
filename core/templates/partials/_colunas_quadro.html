@@ -1,0 +1,127 @@
+<div class="quadro-container" id="quadro-container"
+     hx-post="{% url 'atualizar_status_cartoes' quadro.id %}"
+     hx-trigger="update-board from:body"
+     hx-include="[name]"
+     hx-target="this"
+     hx-swap="outerHTML">
+
+    <div class="coluna" id="fixo">
+        <h3>Informações Fixas</h3>
+        {% for cartao in cartoes_fixo %}
+            <div class="cartao" style="border-left-color: #9b59b6;" 
+                 data-id="{{ cartao.id }}" 
+                 data-title="{{ cartao.titulo }}" 
+                 data-description="{{ cartao.descricao|linebreaksbr }}"
+                 data-anexo-url="{% if cartao.anexo %}{{ cartao.anexo.url }}{% endif %}">
+                
+                <input type="hidden" name="fixo" value="{{ cartao.id }}">
+                <h4>{{ cartao.titulo }}</h4>
+                <p>{{ cartao.descricao|linebreaksbr }}</p>
+
+                {% if cartao.anexo %}
+                <div class="anexo-link">
+                    <a href="{{ cartao.anexo.url }}" target="_blank">Ver Anexo</a>
+                </div>
+                {% endif %}
+
+                <div class="actions">
+                    <a href="#" class="btn btn-primary expand-btn">Expandir</a>
+                    <a href="{% url 'editar_cartao' cartao.id %}" class="btn btn-secondary">Editar</a>
+                    <a href="{% url 'deletar_cartao' cartao.id %}" class="btn btn-danger">Deletar</a>
+                </div>
+            </div>
+        {% empty %}
+            <p style="color: #777;">Nenhum cartão aqui.</p>
+        {% endfor %}
+    </div>
+
+    <div class="coluna" id="fazer">
+        <h3>A Fazer</h3>
+        {% for cartao in cartoes_fazer %}
+            <div class="cartao"
+                 data-id="{{ cartao.id }}" 
+                 data-title="{{ cartao.titulo }}" 
+                 data-description="{{ cartao.descricao|linebreaksbr }}"
+                 data-anexo-url="{% if cartao.anexo %}{{ cartao.anexo.url }}{% endif %}">
+                
+                <input type="hidden" name="fazer" value="{{ cartao.id }}">
+                <h4>{{ cartao.titulo }}</h4>
+                <p>{{ cartao.descricao|linebreaksbr }}</p>
+
+                {% if cartao.anexo %}
+                <div class="anexo-link">
+                    <a href="{{ cartao.anexo.url }}" target="_blank">Ver Anexo</a>
+                </div>
+                {% endif %}
+
+                <div class="actions">
+                    <a href="#" class="btn btn-primary expand-btn">Expandir</a>
+                    <a href="{% url 'editar_cartao' cartao.id %}" class="btn btn-secondary">Editar</a>
+                    <a href="{% url 'deletar_cartao' cartao.id %}" class="btn btn-danger">Deletar</a>
+                </div>
+            </div>
+        {% empty %}
+            <p style="color: #777;">Nenhum cartão aqui.</p>
+        {% endfor %}
+    </div>
+
+    <div class="coluna" id="andamento">
+        <h3>Em Andamento</h3>
+        {% for cartao in cartoes_andamento %}
+            <div class="cartao" style="border-left-color: #f1c40f;"
+                 data-id="{{ cartao.id }}" 
+                 data-title="{{ cartao.titulo }}" 
+                 data-description="{{ cartao.descricao|linebreaksbr }}"
+                 data-anexo-url="{% if cartao.anexo %}{{ cartao.anexo.url }}{% endif %}">
+                
+                <input type="hidden" name="andamento" value="{{ cartao.id }}">
+                <h4>{{ cartao.titulo }}</h4>
+                <p>{{ cartao.descricao|linebreaksbr }}</p>
+
+                {% if cartao.anexo %}
+                <div class="anexo-link">
+                    <a href="{{ cartao.anexo.url }}" target="_blank">Ver Anexo</a>
+                </div>
+                {% endif %}
+
+                <div class="actions">
+                    <a href="#" class="btn btn-primary expand-btn">Expandir</a>
+                    <a href="{% url 'editar_cartao' cartao.id %}" class="btn btn-secondary">Editar</a>
+                    <a href="{% url 'deletar_cartao' cartao.id %}" class="btn btn-danger">Deletar</a>
+                </div>
+            </div>
+        {% empty %}
+            <p style="color: #777;">Nenhum cartão aqui.</p>
+        {% endfor %}
+    </div>
+
+    <div class="coluna" id="concluido">
+        <h3>Concluído</h3>
+        {% for cartao in cartoes_concluido %}
+            <div class="cartao" style="border-left-color: #2ecc71;"
+                 data-id="{{ cartao.id }}" 
+                 data-title="{{ cartao.titulo }}" 
+                 data-description="{{ cartao.descricao|linebreaksbr }}"
+                 data-anexo-url="{% if cartao.anexo %}{{ cartao.anexo.url }}{% endif %}">
+                
+                <input type="hidden" name="concluido" value="{{ cartao.id }}">
+                <h4>{{ cartao.titulo }}</h4>
+                <p>{{ cartao.descricao|linebreaksbr }}</p>
+
+                {% if cartao.anexo %}
+                <div class="anexo-link">
+                    <a href="{{ cartao.anexo.url }}" target="_blank">Ver Anexo</a>
+                </div>
+                {% endif %}
+
+                <div class="actions">
+                    <a href="#" class="btn btn-primary expand-btn">Expandir</a>
+                    <a href="{% url 'editar_cartao' cartao.id %}" class="btn btn-secondary">Editar</a>
+                    <a href="{% url 'deletar_cartao' cartao.id %}" class="btn btn-danger">Deletar</a>
+                </div>
+            </div>
+        {% empty %}
+            <p style="color: #777;">Nenhum cartão aqui.</p>
+        {% endfor %}
+    </div>
+</div>

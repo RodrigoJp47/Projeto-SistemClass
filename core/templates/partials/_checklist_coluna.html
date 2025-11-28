@@ -1,0 +1,25 @@
+{% load static %} 
+<div class="checklist-coluna" id="checklist-coluna-{{ tipo_id }}">
+    
+    <h3> {{ tipo_titulo }}</h3>
+    
+    <div id="progresso-container-{{ tipo_id }}">
+        {% include 'partials/_checklist_progresso.html' with progresso=progresso tipo=tipo_id %}
+    </div>
+
+    <ul class="checklist-lista" id="checklist-lista-{{ tipo_id }}">
+        {% for item in items %}
+            {% include 'partials/_checklist_item.html' with item=item %}
+        {% endfor %}
+    </ul>
+
+    <form class="form-checklist"
+          id="form-{{ tipo_id }}" hx-post="{% url 'adicionar_checklist_item' quadro.id tipo_id %}"
+          hx-target="#progresso-container-{{ tipo_id }}" hx-swap="innerHTML" hx-indicator="#loading-{{ tipo_id }}">
+        
+        {% csrf_token %}
+        {{ form_item.titulo }}
+        <button type="submit" class="btn btn-primary btn-add-item">Adicionar</button>
+        <span id="loading-{{ tipo_id }}" class="htmx-indicator">Salvando...</span>
+    </form>
+</div>

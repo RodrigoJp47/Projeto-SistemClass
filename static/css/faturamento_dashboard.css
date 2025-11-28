@@ -1,0 +1,1308 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background-color: #fff;
+    color: #000;
+    display: flex;
+    min-height: 100vh;
+}
+.main-content {
+    /* Mantido o margin-left original de 290px para acomodar a sidebar */
+    margin-left: 270px;
+    padding: 20px;
+    width: calc(100% - 270px);
+    overflow-y: auto;
+}
+
+.header {
+    color: #000;
+    font-size: var(--font-size-h2);
+    font-weight: bold;
+    margin-top: 40px;
+    margin-bottom: var(--spacing-md);
+    border-bottom: 2px solid var(--color-border);
+    padding-bottom: 10px;
+}
+/* faturamento_dashboard.css */
+
+/* ADICIONE ESTA REGRA: */
+.header h1 {
+    color: #000 !important; /* Força o H1 dentro do .header a ser preto */
+}
+/* ==========================================================================
+   3. ESTILOS DE COMPONENTES GENÉRICOS (ESPECÍFICOS DO DASHBOARD)
+   ========================================================================== */
+
+.grid-container {
+    display: grid;
+    gap: var(--spacing-md); /* Alterado */
+}
+
+.full-width-card {
+    grid-column: 1 / -1;
+}
+
+/* Estilos base de tabela (poderiam ir para global.css se usadas em mais lugares) */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: var(--spacing-sm); /* Alterado */
+}
+
+th,
+td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--color-border); /* Alterado */
+}
+
+th {
+    background-color: #E9ECEF;
+    color: var(--color-text-primary); /* Alterado */
+}
+
+tr:hover {
+    background-color: #E9ECEF;
+}
+
+/* ==========================================================================
+   4. SEÇÃO: FATURAMENTO E INSIGHTS (TOPO)
+   ========================================================================== */
+.faturamento-section {
+    display: flex;
+    gap: var(--spacing-md); /* Alterado */
+    margin-bottom: var(--spacing-md); /* Alterado */
+    flex-wrap: wrap;
+}
+
+.faturamento-chart-area {
+    flex: 2;
+    min-width: 400px;
+    background-color: var(--color-background-dark); /* Alterado */
+    color: var(--color-text-light); /* Alterado */
+    padding: 25px;
+    border-radius: var(--border-radius-lg); /* Alterado */
+    display: flex;
+    flex-direction: column;
+}
+
+.faturamento-insights-area {
+    flex: 1;
+    min-width: 300px;
+    background: var(--color-background-dark); /* Alterado */
+    color: #E0E0E0;
+    padding: 25px;
+    border-radius: var(--border-radius-lg); /* Alterado */
+}
+
+.faturamento-title {
+    font-size: var(--font-size-h2); /* Alterado */
+    font-weight: bold;
+    margin: 0 0 10px 0;
+    color: var(--color-text-light); /* Alterado */
+}
+
+.faturamento-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-md); /* Alterado */
+}
+
+.faturamento-subtitle {
+    font-size: var(--font-size-lg); /* Alterado */
+    color: #A0A0A0;
+}
+
+.faturamento-controls {
+    display: flex;
+    background-color: #333;
+    border-radius: 20px;
+    padding: 4px;
+}
+
+.faturamento-controls .control-btn {
+    padding: 8px 16px;
+    color: #A0A0A0;
+    text-decoration: none;
+    font-size: var(--font-size-sm); /* Alterado */
+    border-radius: 18px;
+    transition: background-color 0.3s, color 0.3s;
+    font-weight: 500;
+}
+
+.faturamento-controls .control-btn.active,
+.faturamento-controls .control-btn:hover {
+    background-color: #555;
+    color: var(--color-text-light); /* Alterado */
+}
+
+.faturamento-chart-container {
+    flex-grow: 1;
+    position: relative;
+    min-height: 200px;
+}
+
+.insights-title {
+    font-size: var(--font-size-lg); /* Alterado */
+    color: var(--color-text-light); /* Alterado */
+    margin-top: 0;
+    margin-bottom: 40px;
+    display: flex;
+    align-items: center;
+}
+
+.insights-title svg {
+    color: #a9a9a9;
+}
+
+.insights-text {
+    font-size: var(--font-size-base); /* Alterado */
+    line-height: 1.9;
+    color: #C0C0C0;
+}
+
+.insights-text strong {
+    color: var(--color-text-light); /* Alterado */
+    font-weight: 600;
+}
+
+/* ==========================================================================
+   5. SEÇÃO: CARDS DE RESUMO DE VENDAS (VERDE, ROXO, CINZA)
+   ========================================================================== */
+.cards-vendas-container {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--spacing-md); /* Alterado */
+    margin-top: var(--spacing-md); /* Alterado */
+}
+
+.card-vendas {
+    padding: var(--spacing-md); /* Alterado */
+    border-radius: var(--border-radius-lg); /* Alterado */
+    color: var(--color-text-light); /* Alterado */
+    text-align: center;
+}
+
+
+/* NOVO CÓDIGO COM DEGRADÊ */
+.card-vendas-verde { 
+    background-image: linear-gradient(to right, #1c7531, #28a745); 
+}
+.card-vendas-roxo { 
+    background-image: linear-gradient(to right, #1d19e8, #6f42c1); 
+}
+.card-vendas-cinza { 
+    background-image: linear-gradient(to right, #961db4, #6d0371); 
+}
+.card-vendas-amarelo { 
+    background-image: linear-gradient(to right, #7b5f0c, #937313ce); 
+}
+
+.card-vendas h3 {
+    margin: 0 0 10px 0;
+    font-size: var(--font-size-h4); /* Alterado */
+    font-weight: 600;
+}
+
+.card-vendas hr {
+    border: none;
+    height: 1px;
+    background-color: rgba(255, 255, 255, 0.3);
+    margin: 10px 0;
+}
+
+.card-vendas-content {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    margin-top: var(--spacing-sm); /* Alterado */
+}
+
+.card-vendas-subtitle {
+    font-size: var(--font-size-h4); /* Alterado */
+    margin: 0 0 5px 0;
+    opacity: 0.8;
+}
+
+.card-vendas-value {
+    font-size: var(--font-size-h4); /* Alterado */
+    font-weight: 700;
+    margin: 0;
+}
+
+/* ==========================================================================
+   6. SEÇÃO: CARDS DE INFORMAÇÕES GERAIS (4 CARDS)
+   ========================================================================== */
+.info-cards-container {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-top: 30px;
+}
+
+/* .info-card usa o .card global, mas adiciona estilos de layout interno */
+.info-card {
+    padding: var(--spacing-sm); /* Alterado */
+    background-color: #d5e9d89c;
+    border-radius: 5%;
+}
+
+.info-card-header h4 {
+    color: var(--color-text-primary); /* Alterado */
+    margin: 0 0 10px 0;
+    font-weight: 600;
+}
+
+.info-card-body {
+    flex-grow: 1;
+}
+
+.info-card-value {
+    color: var(--color-text-primary); /* Alterado */
+    font-size: var(--font-size-h3); /* Alterado */
+    font-weight: 700;
+    margin: 5px 0;
+}
+
+.info-card-footer {
+    margin-top: 10px;
+    border-top: 1px solid var(--color-border); /* Alterado */
+    padding-top: var(--spacing-sm); /* Alterado */
+    font-size: var(--font-size-sm); /* Alterado */
+    color: var(--color-text-secondary); /* Alterado */
+}
+
+.info-card-footer p {
+    margin: 5px 0;
+    text-align: left;
+}
+
+.info-card-footer p strong {
+    color: #343a40;
+}
+
+/* ==========================================================================
+   7. SEÇÃO: MAPA E GRÁFICOS DE VENDAS (VERSÃO CORRIGIDA E ESTÁVEL)
+   ========================================================================== */
+.layout-mapa-vendas {
+    display: grid;
+    grid-template-columns: 25% 1fr;
+    gap: var(--spacing-md); /* Alterado */
+    margin-top: var(--spacing-md); /* Alterado */
+    align-items: stretch; 
+}
+
+.coluna-mapa, .coluna-graficos-empilhados {
+    min-width: 0; 
+}
+
+.coluna-graficos-empilhados {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md); /* Alterado */
+}
+
+.layout-mapa-vendas .card {
+    height: 100%;
+    width: 100%;
+}
+
+.layout-mapa-vendas .chart-container {
+    overflow: hidden; 
+    min-height: 150px;
+}
+
+.monthly-sales-container {
+    height: 300px;
+}
+
+.bottom-chart-row {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--spacing-md); /* Alterado */
+}
+
+.bottom-chart-row .card {
+    height: 280px;
+}
+
+.scrollable-chart-container {
+    position: relative;
+    overflow-y: auto;
+    height: 100%;
+}
+
+.map-container { 
+    background-color: var(--color-accent-blue) !important; /* Alterado */
+    border: 1px solid #444 !important;
+    color: var(--color-text-light) !important; /* Alterado */
+}
+
+.map-container .card-title {
+    color: #E0E0E0 !important;
+}
+
+#map_container_wrapper svg {
+    transform: scale(1.8); 
+    transform-origin: center;
+}
+
+/* ==========================================================================
+   8. SEÇÃO: ANÁLISE DE VENDAS MENSAL (GRÁFICO DINÂMICO)
+   ========================================================================== */
+.layout-container-vendas {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md); /* Alterado */
+    margin-top: var(--spacing-md); /* Alterado */
+}
+
+.vendas-cards-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--spacing-md); /* Alterado */
+}
+
+/* A classe .novo-card pode ser simplificada para usar a base .card */
+.novo-card {
+    background-color: rgba(118, 106, 204, 0.278); /* Alterado */
+    border: 1px solid rgba(118, 106, 204, 0.8); /* Alterado */
+    border-radius: var(--border-radius-md); /* Alterado */
+    padding: var(--spacing-md); /* Alterado */
+    text-align: center;
+}
+
+.novo-card .card-title {
+    font-size: var(--font-size-h4); /* Alterado */
+    color: #000; /* Alterado */
+    margin-bottom: 10px;
+}
+
+.novo-card .card-value {
+    font-size: 12px; /* Alterado */
+    font-weight: bold;
+    color: var(--color-text-primary); /* Alterado */
+}
+
+.dashboard-section {
+    display: flex;
+    background-color: var(--color-background-light); /* Alterado */
+    padding: var(--spacing-md); /* Alterado */
+    border-radius: var(--border-radius-md); /* Alterado */
+    gap: var(--spacing-md); /* Alterado */
+    
+}
+
+.indicador-menu {
+    flex: 0 0 200px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.indicador-menu button {
+    background-color: #f0f0f0;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 12px;
+    text-align: left;
+    cursor: pointer;
+    width: 100%;
+    font-size: 13px;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.indicador-menu button:hover {
+    background-color: #e0e0e0;
+}
+
+.indicador-menu button.active {
+    background-color: #2c3e50;
+    color: var(--color-text-light); /* Alterado */
+    font-weight: bold;
+}
+
+.indicador-chart-area {
+    flex-grow: 1;
+    min-width: 300px;
+}
+
+.indicador-chart-area .chart-container {
+    height: 220px;
+}
+
+/* ==========================================================================
+   9. SEÇÃO: GRÁFICOS TOP 10 (CLIENTES, PRODUTOS, SERVIÇOS)
+   ========================================================================== */
+.charts-grid {
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    margin-top: var(--spacing-md); /* Alterado */
+}
+
+.charts-grid .card .card-title {
+    font-size: var(--font-size-sm); /* Alterado */
+}
+
+.charts-grid .chart-container {
+    height: 220px;
+}
+
+.card[style*="background-color: #000"] {
+    border-color: #333;
+}
+
+.card[style*="background-color: #000"] .card-title {
+    color: var(--color-text-light); /* Alterado */
+}
+
+/* ==========================================================================
+   10. SEÇÃO: ANÁLISE ABC
+   ========================================================================== */
+.abc-layout-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-md); /* Alterado */
+    margin-top: var(--spacing-md); /* Alterado */
+    align-items: stretch;
+}
+
+.abc-summary-card {
+    flex: 3; /* ALTERADO DE 3 PARA 2 PARA DIMINUIR A LARGURA */
+    display: flex;
+    width: 100%;
+    border-radius: var(--border-radius-lg);
+    color: var(--color-text-light);
+    padding: var(--spacing-sm); /* ALTERADO PARA DIMINUIR O ESPAÇAMENTO INTERNO */
+    background: linear-gradient(90deg, #4604b8 0%, #636aba 100%);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    text-align: center;
+}
+
+.abc-group {
+    flex: 1;
+    padding: 0 25px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.abc-group:not(:last-child) {
+    border-right: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.abc-group h3 {
+    font-size: var(--font-size-base); /* ALTERADO DE 'lg' (14px) PARA 'base' (12px) */
+    margin-top: 0;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.abc-group p {
+    font-size: 11px; /* ALTERADO DE 13px PARA 11px */
+    line-height: 1.4;
+    margin: 0;
+    color: #EAEAEA;
+}
+
+.abc-group p strong {
+    font-weight: 700;
+    color: var(--color-text-light); /* Alterado */
+}
+
+.abc-legend-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    justify-content: center;
+}
+
+.abc-legend-item {
+    background-color: #170846;
+    color: #dcd6d6; /* Alterado */
+    border-radius: var(--border-radius-md); /* Alterado */
+    padding: 8px;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm); /* Alterado */
+}
+
+.abc-legend-letter {
+    font-size: var(--font-size-lg); /* Alterado */
+    font-weight: bold;
+    line-height: 1;
+}
+
+.abc-legend-text {
+    font-size: 10px;
+    line-height: 1.3;
+}
+
+.abc-chart-table-grid {
+    display: grid;
+    grid-template-columns: 7fr 3fr;
+    gap: var(--spacing-md); /* Alterado */
+    margin-top: var(--spacing-md); /* Alterado */
+}
+
+.abc-chart-table-grid > .card {
+    min-width: 0;
+}
+
+.abc-chart-table-grid .card-title {
+    font-size: 13px;
+}
+
+.abc-chart-table-grid .table-wrapper {
+    flex-grow: 1;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.abc-details-table th,
+.abc-details-table td {
+    font-size: var(--font-size-sm); /* Alterado */
+    padding: 8px;
+}
+
+.abc-A { color: #198754; font-weight: bold; }
+.abc-B { color: #FFC107; font-weight: bold; }
+.abc-C { color: #DC3545; font-weight: bold; }
+
+body.theme-white .abc-details-table td:not([class*="abc-"]) {
+    color: var(--color-text-primary) !important; /* Alterado */
+}
+
+/* ==========================================================================
+   11. SEÇÃO: ANÁLISE POR CLIENTE
+   ========================================================================== */
+.top-cards {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--spacing-md); /* Alterado */
+    margin: var(--spacing-md) 0; /* Alterado */
+}
+
+.top-cards .card-value {
+    font-size: 12px; /* Altera o tamanho do valor (ex: de 16px para 14px) */
+}
+
+.cliente-analysis-grid {
+    display: grid;
+    grid-template-columns: 1fr 2fr 2fr;
+    grid-template-rows: 1fr 1fr;
+    gap: var(--spacing-md); /* Alterado */
+    margin-bottom: var(--spacing-md); /* Alterado */
+    max-height: 600px;
+    grid-template-areas:
+        "buttons barchart table"
+        "buttons linechart linechart";
+}
+
+.cliente-buttons-area { grid-area: buttons; }
+.cliente-barchart-area { grid-area: barchart; }
+.cliente-table-area { grid-area: table; }
+.cliente-linechart-area { grid-area: linechart; }
+
+.cliente-analysis-grid .card {
+    min-height: 0;
+}
+.cliente-analysis-grid .chart-container,
+.cliente-analysis-grid .table-wrapper {
+    flex-grow: 1;
+    position: relative;
+    overflow-y: auto;
+}
+
+.analise-cliente-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.analise-cliente-btn {
+    background-color: #f0f0f0;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 12px;
+    text-align: left;
+    cursor: pointer;
+    width: 100%;
+    font-size: 12px;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.analise-cliente-btn:hover {
+    background-color: #e9ecef;
+}
+
+.analise-cliente-btn.active {
+    background-color: #495057;
+    color: var(--color-text-light); /* Alterado */
+    font-weight: bold;
+}
+
+.cliente-table-area table {
+    font-size: var(--font-size-sm); /* Alterado */
+}
+.cliente-table-area table th,
+.cliente-table-area table td {
+    padding: 6px 8px;
+    color: #515051;
+}
+
+/* ==========================================================================
+   12. SEÇÃO: ANÁLISE POR VENDEDOR
+   ========================================================================== */
+
+
+.vendedor-cards-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--spacing-md); /* Alterado */
+    margin-bottom: var(--spacing-md); /* Alterado */
+}
+
+.layout-vendedor-grid {
+    display: grid;
+    grid-template-columns: 2fr 3fr;
+    gap: var(--spacing-sm); /* Alterado */
+    align-items: stretch;
+}
+
+.coluna-vendedor-esquerda {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm); /* Alterado */
+}
+
+.coluna-vendedor-esquerda .vendedor-top3-cards-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-sm); /* Alterado */
+}
+
+.coluna-vendedor-esquerda .vendedor-top3-cards-row .card {
+    background-color: transparent;
+    border: none;
+    color: var(--color-text-light); /* Alterado */
+}
+
+.coluna-vendedor-esquerda .vendedor-top3-cards-row .card .card-title,
+.coluna-vendedor-esquerda .vendedor-top3-cards-row .card .card-value {
+    color: var(--color-text-light) !important; /* Alterado */
+}
+
+.vendedor-top3-cards-row .card:first-child .card-value {
+    font-size: 11px; /* Altere este valor como desejar */
+}
+/* Ajuste de fonte para o segundo card (Qtd. Vendas) */
+.vendedor-top3-cards-row .card:nth-child(2) .card-value {
+    font-size: 11px; /* Altere este valor como desejar */
+}
+
+.coluna-vendedor-esquerda .vendedor-top3-cards-row .card:first-child {
+    background-image: linear-gradient(to right, #6d0371, var(--color-accent-purple)); /* Alterado */
+}
+
+.coluna-vendedor-esquerda .vendedor-top3-cards-row .card:last-child {
+    background-image: linear-gradient(to right, var(--color-accent-purple), #9e93de); /* Alterado */
+}
+
+.podium-card {
+    background-color: var(--color-background-light); /* Alterado */
+    border: 1px solid #EAECEE;
+    padding: var(--spacing-md); /* Alterado */
+    border-radius: var(--border-radius-md); /* Alterado */
+    justify-content: center;
+}
+
+.podium-title {
+    display: none;
+}
+
+.podium-container {
+    width: 100%;
+    height: 150px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    gap: 5px;
+}
+
+.podium-column {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    flex-grow: 1;
+    max-width: 30%;
+}
+
+.vendedor-info {
+    text-align: center;
+    margin-bottom: 8px;
+    color: #566573;
+}
+
+.vendedor-info .vendedor-nome {
+    font-size: var(--font-size-sm); /* Alterado */
+    font-weight: 500;
+}
+
+.vendedor-info .vendedor-valor {
+    font-size: var(--font-size-h4); /* Alterado */
+    font-weight: bold;
+}
+
+.podium-step {
+    width: 100%;
+    max-width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--border-radius-md) var(--border-radius-md) 0 0; /* Alterado */
+    color: white;
+}
+
+.podium-step.rank-1 { background-color: #6d0371; height: 100px; }
+.podium-step.rank-2 { background-color: #a848ce; height: 80px; }
+.podium-step.rank-3 { background-color: #9e93de; height: 65px; }
+
+.podium-step .rank {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.vendedor-table-container {
+    background-color: var(--color-background-dark-soft); /* Alterado */
+    padding: 0;
+    border-radius: var(--border-radius-md); /* Alterado */
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.vendedor-table {
+    width: 100%;
+    border-collapse: collapse;
+    color: var(--color-text-light); /* Alterado */
+}
+
+.vendedor-table th,
+.vendedor-table td {
+    padding: 12px 8px;
+    text-align: left;
+    font-size: 11px; /* Alterado */
+    vertical-align: middle;
+}
+
+.vendedor-table thead th,
+.vendedor-table tfoot th {
+    background-color: var(--color-background-dark); /* Alterado */
+    color: var(--color-text-light); /* <-- ADICIONE ESTA LINHA */
+    position: sticky;
+    top: 0;
+    z-index: 3;
+}
+
+.vendedor-table thead {
+    border-bottom: 2px solid #7F8C8D;
+}
+
+.vendedor-table tbody tr:not(:last-child) {
+    border-bottom: 1px solid #34495E;
+}
+
+.vendedor-table tbody tr:hover {
+    background-color: #0a73dc;
+}
+
+.vendedor-table tbody tr td {
+    position: relative;
+    z-index: 2;
+}
+
+.vendedor-table .value-bar {
+    background-color: rgba(142, 68, 173, 0.6);
+    height: 100%;
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
+}
+
+.coluna-vendedor-direita {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm); /* Alterado */
+}
+
+.coluna-vendedor-direita .card {
+    flex: 1;
+}
+
+/* Estilo para a porcentagem dentro dos cards de valor */
+.card-value-percentage {
+    font-size: 0.7em; /* Deixa a fonte um pouco menor */
+    font-weight: 500; /* Deixa a fonte menos espessa que o valor principal */
+    opacity: 0.8;     /* Deixa a cor um pouco mais suave */
+    margin-left: 8px; /* Adiciona um pequeno espaço */
+}
+
+/* Cole este bloco no seu faturamento_dashboard.css */
+
+.vd-novo-card {
+    background-color: #460752; /* Cor de fundo azul que você escolheu */
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius-md);
+    padding: var(--spacing-md);
+    text-align: center;
+}
+
+.vd-novo-card .card-title {
+    color: #ffffff; /* Cor do texto do TÍTULO */
+    font-size: 12px;
+}
+
+.vd-novo-card .card-value {
+    color: #ffffff; /* Cor do texto do VALOR */
+    font-size: 11px;
+}
+/* ==========================================================================
+   14. SEÇÃO: METAS E VELOCÍMETRO
+   ========================================================================== */
+.grid-container-metas {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-md);
+    align-items: stretch;
+}
+
+.velocimetro-card {
+    display: flex;
+    flex-direction: column;
+}
+
+.velocimetro-info {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 20px;
+    font-size: var(--font-size-lg);
+}
+
+.velocimetro-info .info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.velocimetro-info .info-item span {
+    color: var(--color-text-secondary);
+}
+
+
+/* ==========================================================================
+   15. ESTILOS DO VELOCÍMETRO (VERSÃO FINAL E CENTRALIZADA)
+   ========================================================================== */
+
+.velocimetro-chart-container {
+    position: relative; /* Cria o "molde" para os elementos internos */
+    flex-grow: 1;
+    min-height: 150px;
+    width: 100%;
+}
+
+#velocimetroChart {
+    /* Centraliza o canvas no meio do container */
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    max-height: 40%; 
+    max-width: 40%;  
+}
+
+.velocimetro-text {
+    /* Centraliza o texto do percentual */
+    position: absolute;
+    top: 50%; /* ALTERAÇÃO 1: Aumentado de 60% para 70% para descer o texto e criar margem */
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 12px;
+    font-weight: bold;
+    color: var(--color-text-primary);
+    opacity: 0.8;
+    z-index: 2;
+}
+
+.velocimetro-seta {
+    width: 0;
+    height: 0;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-bottom: 50px solid #343a40;
+    
+    
+    /* Centraliza a base da seta */
+    position: absolute;
+    left: 50%;
+    bottom: 50px; /* Posição da base da seta */
+    transform: translateX(-50%) rotate(0deg); /* Rotação será aplicada inline */
+    transform-origin: bottom center;
+    transition: transform 0.5s ease-in-out;
+    z-index: 1;
+}
+
+
+
+.velocimetro-info .info-item strong {
+    color: #343a40;
+}
+
+.velocimetro-info .info-item span {
+    color: #6c757d;
+}
+
+/* ==========================================================================
+   FILTRO DE PERÍODO
+   ========================================================================== */
+.filtro-container label,
+.filtro-container select,
+.filtro-container input[type="date"],
+.filtro-container button {
+    font-size: var(--font-size-base); /* Define o tamanho da fonte para 14px */
+}
+
+/* ==========================================================================
+   AJUSTE DE FONTES - VELOCÍMETRO DE METAS
+   ========================================================================== */
+
+/* Título principal do card */
+.velocimetro-card .card-title {
+    font-size: var(--font-size-h4); /* Ex: 14px */
+}
+
+/* Itens de informação (Meta Atual, Meta Anual, etc.) */
+.velocimetro-info .info-item {
+    font-size: var(--font-size-base); /* Ex: 14px */
+}
+
+/* Percentual principal no centro do gráfico */
+.velocimetro-text {
+    font-size: 1.3em; /* Use 'em' para um tamanho relativo e grande */
+}
+
+
+
+/* Adicione esta regra ao final do arquivo, antes das @media queries */
+.velocimetro-card .card-title-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 15px; /* Adiciona um espaço abaixo */
+}
+
+
+/* Estilo para o container do título e filtro do velocímetro */
+.velocimetro-card .card-title-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 15px;
+}
+
+/* Estilo específico para o botão ativo do filtro do velocímetro */
+.velocimetro-card .faturamento-controls .control-btn.active {
+    background-color: var(--color-accent-green);
+    color: var(--color-background-dark); /* Cor do texto escura para melhor contraste */
+}
+
+
+/* Novo container para o texto do percentual */
+.velocimetro-percentual-container {
+    text-align: center;
+    margin-bottom: -15px; /* Move o texto um pouco para baixo, sobrepondo o espaço do gráfico */
+    position: relative;
+    z-index: 2; /* Garante que fique na frente do gráfico se houver sobreposição */
+}
+
+.velocimetro-percentual-valor {
+    font-size: 1.5em; /* Tamanho grande para o número */
+    font-weight: bold;
+    color: var(--color-text-primary);
+    margin-bottom: 5px;
+}
+
+.velocimetro-percentual-texto {
+    font-size: 1em; /* Tamanho normal para o texto "Da meta" */
+    color: var(--color-text-secondary);
+    margin-top: -5px; /* Aproxima o texto do número */
+}
+
+/* ==========================================================================
+   RODAPÉ DO VELOCÍMETRO
+   ========================================================================== */
+.velocimetro-footer {
+    text-align: center;
+    margin-top: auto; /* Empurra o rodapé para o fundo do card */
+    padding-top: 10px;
+    font-size: var(--font-size-sm); /* Tamanho de fonte pequeno (ex: 12px) */
+    color: var(--color-text-secondary); /* Cor sutil */
+    border-top: 1px solid var(--color-border); /* Linha divisória */
+    width: 100%;
+}
+
+.layout-vendedor-grid > div {
+    min-width: 0;
+}
+
+/* Estilos para os cards da Análise por Clientes */
+
+.top-cards .card {
+    background-color: rgba(118, 106, 204, 0.307); /* << Cor de fundo azul escuro (exemplo) */
+    border: 1px solid rgba(118, 106, 204, 0.8); /* Cor da borda um pouco mais clara */
+}
+
+/* Ajusta a cor do texto do título do card para um cinza claro */
+.top-cards .card .card-title {
+    color: #000; 
+}
+
+/* Ajusta a cor do valor principal do card para branco */
+.top-cards .card .card-value {
+    color: #000; 
+}
+
+/* Em static/css/faturamento_dashboard.css */
+
+/* ==========================================================================
+   ESTILOS PARA O MODAL DO LAUDO COMERCIAL
+   ========================================================================== */
+
+/* Fundo escuro */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.6);
+}
+
+/* Caixa de conteúdo */
+.modal-content {
+    background-color: #fefefe;
+    color: #333;
+    margin: 5% auto;
+    padding: 25px;
+    border: 1px solid #888;
+    width: 80%;
+    max-width: 800px;
+    border-radius: 8px;
+    position: relative;
+    font-family: Arial, sans-serif;
+}
+
+/* Botão de fechar */
+.close-btn {
+    color: #aaa;
+    position: absolute;
+    top: 10px;
+    right: 20px;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+.close-btn:hover {
+    color: #000;
+}
+
+/* Estilos do Título do Laudo (H2) */
+.modal-content h2 {
+    background-color: #1e0250; /* Roxo do seu tema comercial */
+    color: #fff;
+    padding: 15px;
+    text-align: center;
+    margin: -25px -25px 0 -25px;
+    border-radius: 8px 8px 0 0;
+    font-size: 16px;
+    line-height: 1.6;
+}
+.modal-content h2 small {
+    font-size: 12px;
+    font-weight: normal;
+}
+.modal-content hr {
+    margin-top: 0;
+    margin-bottom: 20px;
+    border: 0;
+    border-top: 1px solid #eee;
+}
+
+/* Estilos do conteúdo do laudo */
+#laudo-comercial-texto h3,
+#laudo-comercial-texto h4 {
+    color: #260264; /* Roxo */
+    margin-top: 30px;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 5px;
+}
+#laudo-comercial-texto h3 {
+    text-align: left;
+    font-size: 14px;
+    margin-bottom: 25px;
+}
+#laudo-comercial-texto h4 {
+    font-size: 12px;
+}
+#laudo-comercial-texto p {
+    font-size: 12px;
+    line-height: 1.8;
+    margin-bottom: 15px;
+}
+#laudo-comercial-texto p strong {
+    font-size: 12px;
+    color: #210258; /* Roxo */
+    margin-right: 5px;
+}
+
+.analise-btn {
+    display: block;
+    width: fit-content;
+    margin: 40px auto;
+    background-color: #07501d;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 25px;
+    font-size: 12px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.2s;
+}
+.analise-btn:hover {
+    background-color: #07501d;
+    transform: scale(1.05);
+}
+/* ==========================================================================
+   13. ESTILOS DE RESPONSIVIDADE (@media)
+   ========================================================================== */
+
+/* Telas de tablet e menores (até 1200px) */
+@media (max-width: 1200px) {
+    .charts-grid {
+        grid-template-columns: 1fr;
+    }
+    .cards-vendas-container,
+    .top-cards,
+    .info-cards-container,
+    .vendas-cards-row,
+    .vendedor-cards-row {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .layout-mapa-vendas,
+    .layout-vendedor-grid {
+        grid-template-columns: 1fr;
+    }
+    .abc-chart-table-grid {
+        grid-template-columns: 1fr;
+    }
+    .bottom-chart-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Telas de tablet (orientação retrato) e menores (até 992px) */
+@media (max-width: 992px) {
+    .faturamento-section,
+    
+    .abc-layout-container {
+        flex-direction: column;
+    }
+
+    .abc-summary-card {
+        flex-direction: column;
+        gap: var(--spacing-md); /* Alterado */
+    }
+
+    .abc-group {
+        padding: 0;
+    }
+
+    .abc-group:not(:last-child) {
+        border-right: none;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+        padding-bottom: var(--spacing-md); /* Alterado */
+    }
+
+    .cliente-analysis-grid {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto;
+        grid-template-areas:
+            "buttons"
+            "barchart"
+            "table"
+            "linechart";
+        max-height: none;
+    }
+    .grid-container-metas {
+        grid-template-columns: 1fr; /* Empilha os cards em telas menores */
+    }
+}
+
+/* Telas de celular (até 768px) */
+@media screen and (max-width: 768px) {
+    #menu-toggle {
+        display: block;
+    }
+    .sidebar {
+        transform: translateX(-100%);
+        transition: transform 0.3s ease-in-out;
+    }
+    .sidebar.mobile-open {
+        transform: translateX(0);
+    }
+    .main-content {
+        margin-left: 0;
+        width: 100%;
+        padding: var(--spacing-sm); /* Alterado */
+    }
+
+    .grid-container,
+    .top-cards,
+    .charts-grid,
+    .cards-vendas-container,
+    .info-cards-container,
+    .vendas-cards-row,
+    .vendedor-cards-row {
+        grid-template-columns: 1fr !important;
+    }
+
+    .dashboard-section,
+    .analise-cliente-section {
+        flex-direction: column;
+    }
+
+    .faturamento-chart-area,
+    .faturamento-insights-area,
+    .indicador-chart-area,
+    .analise-cliente-chart-area {
+        min-width: 0;
+    }
+}

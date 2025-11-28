@@ -1,0 +1,213 @@
+/* static/css/importar_ofx.css (VERSÃO FINAL E CORRIGIDA) */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+/* ▼▼▼ ESTE É O BLOCO QUE CORRIGE A SOBREPOSIÇÃO ▼▼▼ */
+.main-content {
+    margin-left: 270px;
+    padding: 20px;
+    width: calc(100% - 270px);
+    overflow-y: auto;
+}
+/* ▲▲▲ FIM DO BLOCO DE CORREÇÃO ▲▲▲ */
+
+
+.page-header {
+    border-bottom: 1px solid #444; /* Cor base do tema escuro */
+    padding-bottom: 15px;
+    margin-bottom: 30px;
+}
+
+.form-container {
+    background-color: #222; /* Cor base do tema escuro */
+    padding: 25px;
+    border-radius: 8px;
+    border: 1px solid #333; /* Cor base do tema escuro */
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+/* ... (o resto do arquivo continua exatamente como na minha resposta anterior) ... */
+.form-container h3,
+.description,
+.form-group label {
+    color: #FFFFFF; /* Cor base do tema escuro */
+}
+
+.form-container h3 {
+    margin-top: 0;
+    margin-bottom: 10px;
+}
+
+.description {
+    font-size: 12px;
+    margin-bottom: 25px;
+    line-height: 1.6;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+}
+
+.form-container select,
+.form-container input[type="file"] {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #444;
+    border-radius: 4px;
+    background-color: #333;
+    color: #FFFFFF;
+}
+
+.form-error {
+    color: #ff4d4d;
+    font-size: 13px;
+    margin-top: 5px;
+}
+
+.form-container button {
+    background-color: rgb(5, 88, 5);
+    color: #fff;
+    padding: 12px 25px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.2s;
+    width: 100%;
+    font-size: 14px;
+}
+
+.form-container button:hover {
+    background-color: #0c0;
+}
+
+.messages {
+    max-width: 700px;
+    margin: 0 auto 20px auto;
+    padding: 15px;
+    border-radius: 5px;
+}
+
+.messages .success {
+    background-color: #28a745;
+    color: #fff;
+}
+
+.messages .error {
+    background-color: #dc3545;
+    color: #fff;
+}
+
+/* Adicionar ao final do arquivo */
+
+/* Estilos para a caixa de mensagem de retorno */
+.messages p {
+    padding: 15px;
+    border-radius: 5px;
+    font-weight: bold;
+    margin: 0;
+}
+
+.messages .success {
+    background-color: #28a745; /* Fundo verde */
+    color: #FFFFFF; /* Texto branco */
+}
+
+.messages .error {
+    background-color: #dc3545; /* Fundo vermelho */
+    color: #FFFFFF; /* Texto branco */
+}
+
+
+/* --- NOVOS ESTILOS PARA A SECÇÃO CONTA AZUL --- */
+
+/* Margem entre as duas caixas */
+.mt-4 {
+    margin-top: 2rem; /* Adiciona espaço acima da caixa do Conta Azul */
+}
+
+/* Estilo do botão de conexão */
+.conta-azul-integration .btn-conta-azul {
+    display: inline-flex; /* Para alinhar ícone e texto */
+    align-items: center; /* Alinha verticalmente */
+    justify-content: center; /* Centraliza horizontalmente */
+    padding: 12px 25px;
+    border-radius: 4px;
+    background-color: #0073cf; /* Azul Conta Azul */
+    color: #FFFFFF;
+    border: none;
+    text-decoration: none; /* Remove sublinhado do link */
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    font-size: 14px; /* Tamanho igual ao botão OFX */
+    width: 100%; /* Ocupa a largura total como o outro botão */
+    box-sizing: border-box; /* Garante que padding não aumente a largura */
+}
+
+.conta-azul-integration .btn-conta-azul:hover {
+    background-color: #005a9e; /* Azul mais escuro no hover */
+}
+
+/* Ícone dentro do botão */
+.conta-azul-integration .btn-conta-azul i {
+    margin-right: 8px; /* Espaço entre ícone e texto */
+}
+
+/* Estilo para a mensagem de status "Conectado" */
+.conta-azul-integration .integration-status {
+    display: flex;
+    align-items: center;
+    padding: 12px 15px;
+    border-radius: 4px;
+    margin-top: 10px; /* Espaço acima da mensagem */
+}
+
+.conta-azul-integration .integration-status.success {
+    background-color: #d1e7dd; /* Verde suave (Bootstrap success background) */
+    color: #0f5132; /* Verde escuro (Bootstrap success text) */
+    border: 1px solid #badbcc; /* Borda suave */
+}
+
+.conta-azul-integration .integration-status i {
+    margin-right: 10px; /* Espaço entre ícone e texto */
+    font-size: 1.2em; /* Ícone um pouco maior */
+}
+
+/* Estilo para link de desconectar (opcional, para o futuro) */
+.conta-azul-integration .disconnect-link {
+    margin-left: auto; /* Empurra o link para a direita */
+    color: #dc3545; /* Vermelho (Bootstrap danger) */
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 0.9em;
+}
+
+.conta-azul-integration .disconnect-link:hover {
+    text-decoration: underline;
+}
+
+/* Pequeno texto informativo */
+.conta-azul-integration small {
+    color: #aaa; /* Cinza claro */
+    display: block; /* Garante que fica numa linha separada */
+    margin-top: 5px;
+}
+
+/* Ajuste no container de mensagens geral (se necessário) */
+.messages.container { /* Garante especificidade */
+     padding: 0; /* Remove padding extra se o container já tiver */
+}
+
+.messages p {
+    margin-bottom: 0.5rem; /* Adiciona espaço entre múltiplas mensagens */
+}

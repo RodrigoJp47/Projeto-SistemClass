@@ -1,0 +1,144 @@
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+{% load static %}
+{% with perms=employee_perms %}
+<link rel="stylesheet" href="{% static 'css/sidebar.css' %}">
+<div class="sidebar">
+    <div>
+        <div class="sidebar-header">
+            <h2>Menu</h2>
+            <button id="desktop-toggle-btn" title="Recolher menu">«</button>
+            <button id="theme-toggle-btn" title="Alterar tema">
+                <svg id="theme-icon-sun" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+                <svg id="theme-icon-moon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+            </button>
+        </div>
+        <ul>
+            {% if not is_employee or perms.can_access_home %}
+            <li>
+                <a href="{% url 'home' %}" class="{% if request.resolver_match.url_name == 'home' %}active{% endif %}">
+                    <i class="fas fa-home"></i> <span class="text">Home</span>
+                </a>
+            </li>
+            {% endif %}
+
+            {% if not is_employee or perms.can_access_contas_pagar or perms.can_access_contas_receber or perms.can_access_tarefas or perms.can_access_orcamento_anual or perms.can_access_painel_financeiro or perms.can_access_fornecedores or perms.can_access_clientes_financeiro %}
+            <li class="has-submenu">
+                <a href="#" id="financeiro-toggle">
+                    <i class="fas fa-dollar-sign"></i> <span class="text">Financeiro</span>
+                </a>
+                <ul id="financeiro-submenu" class="submenu">
+                    {% if not is_employee or perms.can_access_contas_pagar %}<li><a href="{% url 'contas_pagar' %}" class="{% if request.resolver_match.url_name == 'contas_pagar' %}active{% endif %}">Contas a Pagar</a></li>{% endif %}
+                    {% if not is_employee or perms.can_access_contas_receber %}<li><a href="{% url 'contas_receber' %}" class="{% if request.resolver_match.url_name == 'contas_receber' %}active{% endif %}">Contas a Receber</a></li>{% endif %}
+                    {% if not is_employee or perms.can_access_tarefas %}<li><a href="{% url 'tarefas_home' %}" class="{% if request.path|slice:':8' == '/tarefas/' %}active{% endif %}">Gestão de Tarefas</a></li>{% endif %}
+                    {% if not is_employee or perms.can_access_orcamento_anual %}<li><a href="{% url 'orcamento_anual' %}" class="{% if request.resolver_match.url_name == 'orcamento_anual' %}active{% endif %}">Orçamento Anual</a></li>{% endif %}
+                    {% if not is_employee or perms.can_access_painel_financeiro %}<li><a href="{% url 'dashboards' %}" class="{% if request.resolver_match.url_name == 'dashboards' %}active{% endif %}">Painel Financeiro</a></li>{% endif %}
+                    {% if not is_employee or perms.can_access_fornecedores %}<li><a href="{% url 'fornecedores' %}" class="{% if request.resolver_match.url_name == 'fornecedores' %}active{% endif %}">Fornecedores</a></li>{% endif %}
+                    {% if not is_employee or perms.can_access_clientes_financeiro %}<li><a href="{% url 'clientes' %}" class="{% if request.resolver_match.url_name == 'clientes' %}active{% endif %}">Clientes</a></li>{% endif %}
+                </ul>
+            </li>
+            {% endif %}
+
+            {% if not is_employee or perms.can_access_painel_vendas or perms.can_access_notas_fiscais or perms.can_access_orcamentos_venda or perms.can_access_contratos or perms.can_access_cadastros_comercial or perms.can_access_vendas or perms.can_access_metas_comerciais or perms.can_access_precificacao %}
+            <li class="has-submenu">
+                <a href="#" id="comercial-toggle">
+                    <i class="fas fa-chart-bar"></i> <span class="text">Comercial</span>
+                </a>
+                <ul id="comercial-submenu" class="submenu">
+                    {% if not is_employee or perms.can_access_painel_vendas %}<li><a href="{% url 'faturamento_dashboard' %}" class="{% if request.resolver_match.url_name == 'faturamento_dashboard' %}active{% endif %}">Painel de Vendas</a></li>{% endif %}
+                    {% if not is_employee or perms.can_access_notas_fiscais %}<li><a href="{% url 'lista_notas_fiscais' %}" class="{% if request.resolver_match.url_name == 'lista_notas_fiscais' or request.resolver_match.url_name == 'emitir_nota' %}active{% endif %}">Notas Fiscais</a></li>{% endif %}
+                    {% if not is_employee or perms.can_access_orcamentos_venda %}<li><a href="{% url 'orcamentos_venda' %}" class="{% if request.resolver_match.url_name == 'orcamentos_venda' %}active{% endif %}">Orçamentos</a></li>{% endif %}
+                    {% if not is_employee or perms.can_access_contratos %}<li><a href="{% url 'gerenciamento_contratos' %}" class="{% if request.resolver_match.url_name == 'gerenciamento_contratos' %}active{% endif %}">Gestão de Contratos</a></li>{% endif %}
+                    {% if not is_employee or perms.can_access_cadastros_comercial %}<li><a href="{% url 'comercial_cadastros' %}" class="{% if request.resolver_match.url_name == 'comercial_cadastros' %}active{% endif %}">Cadastros</a></li>{% endif %}
+                    {% if not is_employee or perms.can_access_vendas %}<li><a href="{% url 'vendas' %}" class="{% if request.resolver_match.url_name == 'vendas' %}active{% endif %}">Vendas</a></li>{% endif %}
+                    {% if not is_employee or perms.can_access_metas_comerciais %}<li><a href="{% url 'metas_comerciais' %}" class="{% if request.resolver_match.url_name == 'metas_comerciais' %}active{% endif %}">Gestão de Metas</a></li>{% endif %}
+                    {% if not is_employee or perms.can_access_precificacao %}<li><a href="{% url 'precificacao' %}" class="{% if request.resolver_match.url_name == 'precificacao' %}active{% endif %}">Precificação</a></li>{% endif %}
+                </ul>
+            </li>
+            {% endif %}
+
+            {% if not is_employee %}
+                <li class="has-submenu">
+                    <a href="#" id="configuracoes-toggle">
+                        <i class="fas fa-cogs"></i> <span class="text">Configurações</span>
+                    </a>
+                    <ul id="configuracoes-submenu" class="submenu">
+                        <li><a href="{% url 'cadastrar_bancos' %}" class="{% if request.resolver_match.url_name == 'cadastrar_bancos' %}active{% endif %}">Cadastrar Bancos</a></li>
+                        <li><a href="{% url 'importar_ofx' %}" class="{% if request.resolver_match.url_name == 'importar_ofx' %}active{% endif %}">Integrações</a></li>
+                        <li><a href="{% url 'company_profile' %}" class="{% if request.resolver_match.url_name == 'company_profile' %}active{% endif %}">Perfil da Empresa</a></li>
+                        <li><a href="{% url 'manage_users' %}" class="{% if request.resolver_match.url_name == 'manage_users' %}active{% endif %}">Gerenciar Usuários</a></li>
+                        
+                        <li>
+                            <a href="https://wa.me/5531993413530?text=Olá!%20Preciso%20de%20ajuda%20com%20o%20Sistema." target="_blank">
+                                <i class="fab fa-whatsapp"></i> Suporte
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+            {% endif %}
+
+            {% if user.is_authenticated %}
+                <li>
+                    <a href="{% url 'logout' %}">
+                        <i class="fas fa-sign-out-alt"></i> <span class="text">Sair</span>
+                    </a>
+                </li>
+            {% else %}
+                <li><a href="{% url 'login' %}">Login</a></li>
+            {% endif %}
+        </ul>
+    </div>
+
+    <div class="sidebar-footer">
+        <div class="logo-container">
+            <img class="logo-dark" src="{% static 'images/logo_escuro.jpeg' %}" alt="Logo Financlass">
+            
+            <img class="logo-light" src="{% static 'images/logo_claro.jpeg' %}" alt="Logo Financlass">
+            
+            <p>SistemClass</p>
+        </div>
+        
+    </div>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Encontra os elementos que vamos manipular
+        const desktopToggleButton = document.getElementById('desktop-toggle-btn');
+        const sidebar = document.querySelector('.sidebar');
+        // Assumindo que o seu conteúdo principal tem a classe 'main-content'
+        const mainContent = document.querySelector('.main-content'); 
+
+        // Função que aplica o estado (recolhido ou não) nos elementos
+        function applySidebarState(isCollapsed) {
+            if (isCollapsed) {
+                sidebar.classList.add('sidebar-collapsed');
+                if (mainContent) mainContent.classList.add('sidebar-collapsed');
+                desktopToggleButton.innerHTML = '»'; // Seta para a direita (expandir)
+                desktopToggleButton.title = 'Expandir menu';
+                document.querySelectorAll('.submenu').forEach(submenu => submenu.style.display = 'none');
+            } else {
+                sidebar.classList.remove('sidebar-collapsed');
+                if (mainContent) mainContent.classList.remove('sidebar-collapsed');
+                desktopToggleButton.innerHTML = '«'; // Seta para a esquerda (recolher)
+                desktopToggleButton.title = 'Recolher menu';
+            }
+        }
+
+        // Ao carregar a página, verifica se o estado "recolhido" estava salvo
+        const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+        applySidebarState(isCollapsed);
+
+        // Adiciona a funcionalidade de clique ao botão
+        if (desktopToggleButton) {
+            desktopToggleButton.addEventListener('click', function() {
+                const currentState = sidebar.classList.contains('sidebar-collapsed');
+                // Salva o novo estado (o contrário do atual) no navegador
+                localStorage.setItem('sidebarCollapsed', !currentState);
+                // Aplica o novo estado na tela
+                applySidebarState(!currentState);
+            });
+        }
+    });
+    </script>
+ {% endwith %}
+</div>
