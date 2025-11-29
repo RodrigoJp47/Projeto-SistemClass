@@ -744,3 +744,25 @@ class AnuncioGlobal(models.Model):
 
 
 
+# Em accounts/models.py
+
+class ClassificacaoAutomatica(models.Model):
+    TIPO_CHOICES = (
+        ('PAYABLE', 'Contas a Pagar'),
+        ('RECEIVABLE', 'Contas a Receber'),
+    )
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    termo = models.CharField(max_length=200, help_text="Termo para identificar (ex: 'Uber', 'Cemig')")
+    categoria = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True)
+    dre_area = models.CharField(max_length=50, choices=DRE_AREAS)
+    tipo = models.CharField(max_length=20, choices=TIPO_CHOICES)
+
+    class Meta:
+        # Garante que não haja regras duplicadas para o mesmo termo e tipo
+        unique_together = ('user', 'termo', 'tipo')
+        verbose_name = "Regra de Classificação"
+        verbose_name_plural = "Regras de Classificação"
+
+    def __str__(self):
+        return f"{self.termo} -> {self.categoria.name if self.categoria else 'Sem Categoria'}"
+

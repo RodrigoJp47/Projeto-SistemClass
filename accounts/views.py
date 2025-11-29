@@ -76,12 +76,50 @@ from .models import (
 
 from .models import CompanyUserLink
 
+from .models import ClassificacaoAutomatica
+
 MESES_ABREVIADOS = {
     1: 'Jan', 2: 'Fev', 3: 'Mar', 4: 'Abr', 5: 'Mai', 6: 'Jun',
     7: 'Jul', 8: 'Ago', 9: 'Set', 10: 'Out', 11: 'Nov', 12: 'Dez'
 }
 
 
+
+def aprender_classificacao(user, nome, categoria, dre_area, tipo):
+    """
+    Salva ou atualiza a regra de classificação baseada no nome da conta.
+    """
+    if nome and categoria and dre_area:
+        # Usamos update_or_create para garantir que se o usuário mudar de ideia,
+        # a regra seja atualizada.
+        ClassificacaoAutomatica.objects.update_or_create(
+            user=user,
+            termo__iexact=nome.strip(), # Busca case-insensitive
+            tipo=tipo,
+            defaults={
+                'termo': nome.strip(), # Garante a formatação correta
+                'categoria': categoria,
+                'dre_area': dre_area
+            }
+        )
+
+def prever_classificacao(user, descricao, tipo):
+    """
+    Tenta encontrar uma categoria e DRE baseada na descrição.
+    Retorna uma tupla (categoria, dre_area) ou (None, None).
+    """
+    # Busca todas as regras desse usuário para o tipo (Pagar/Receber)
+    regras = ClassificacaoAutomatica.objects.filter(user=user, tipo=tipo)
+    
+    descricao_lower = descricao.lower()
+    
+    # Verifica se algum termo conhecido está contido na descrição que veio do banco/OFX
+    # Ex: Se a regra é "Uber" e a descrição é "UBER *VIAGEM", vai dar match.
+    for regra in regras:
+        if regra.termo.lower() in descricao_lower:
+            return regra.categoria, regra.dre_area
+            
+    return None, None
 # Em accounts/views.py
 
 @login_required
@@ -272,10 +310,15 @@ def company_profile_view(request):
                 # 3. INTEGRAÇÃO COM FOCUS NFE (LÓGICA INTELIGENTE SAAS)
                 if profile.cnpj:
                     try:
-                        # Ambiente Focus (Dinâmico baseado no DEBUG)
-                        # FORÇADO PRODUÇÃO (Conta Mestra)
-                        BASE_URL = "https://api.focusnfe.com.br"
-                        API_TOKEN = settings.NFE_TOKEN_PRODUCAO
+                        # Ambiente Focus (Dinâmico REALMENTE baseado no settings)
+                        BASE_URL = settings.FOCUS_API_URL
+                        
+                        if settings.DEBUG:
+                            API_TOKEN = settings.NFE_TOKEN_HOMOLOGACAO
+                            print("⚠️ MODO HOMOLOGAÇÃO ATIVADO")
+                        else:
+                            API_TOKEN = settings.NFE_TOKEN_PRODUCAO
+                            print("🚀 MODO PRODUÇÃO ATIVADO")
 
                         # --- DEBUG DE CONEXÃO ---
                         token_masked = f"{API_TOKEN[:4]}...{API_TOKEN[-4:]}" if API_TOKEN else "None"
@@ -1401,20 +1444,51 @@ def importar_ofx_view(request):
                         existing_fitids.add(fitid)
 
                         if amount < 0:
+                            # --- LÓGICA INTELIGENTE PARA PAGAR ---
+                            # 1. Tenta prever com base no dicionário
+                            cat_prevista, dre_prevista = prever_classificacao(request.user, name, 'PAYABLE')
+                            
+                            # 2. Define os valores finais (usa o previsto ou o padrão)
+                            categoria_final = cat_prevista if cat_prevista else payable_category
+                            dre_final = dre_prevista if dre_prevista else 'OPERACIONAL'
+                            
                             PayableAccount.objects.create(
-                                user=request.user, name=name, description=description, due_date=date, # Usa a data do OFX
-                                amount=abs(amount), category=payable_category, dre_area='OPERACIONAL',
-                                payment_method='PIX', occurrence='AVULSO', is_paid=False, 
-                                cost_type='VARIAVEL', bank_account=bank_account,
-                                ofx_import=ofx_import, fitid=fitid
+                                user=request.user, 
+                                name=name, 
+                                description=description, 
+                                due_date=date,
+                                amount=abs(amount), 
+                                category=categoria_final, # <--- USA A PREVISÃO
+                                dre_area=dre_final,       # <--- USA A PREVISÃO
+                                payment_method='PIX', 
+                                occurrence='AVULSO', 
+                                is_paid=False, 
+                                cost_type='VARIAVEL', 
+                                bank_account=bank_account,
+                                ofx_import=ofx_import, 
+                                fitid=fitid
                             )
                         else:
+                            # --- LÓGICA INTELIGENTE PARA RECEBER ---
+                            cat_prevista, dre_prevista = prever_classificacao(request.user, name, 'RECEIVABLE')
+                            
+                            categoria_final = cat_prevista if cat_prevista else receivable_category
+                            dre_final = dre_prevista if dre_prevista else 'BRUTA'
+
                             ReceivableAccount.objects.create(
-                                user=request.user, name=name, description=description, due_date=date, # Usa a data do OFX
-                                amount=amount, category=receivable_category, dre_area='BRUTA', 
-                                payment_method='PIX', occurrence='AVULSO', is_received=False, 
-                                bank_account=bank_account, # <<< ADICIONEI O BANCO AQUI
-                                ofx_import=ofx_import, fitid=fitid
+                                user=request.user, 
+                                name=name, 
+                                description=description, 
+                                due_date=date,
+                                amount=amount, 
+                                category=categoria_final, # <--- USA A PREVISÃO
+                                dre_area=dre_final,       # <--- USA A PREVISÃO
+                                payment_method='PIX', 
+                                occurrence='AVULSO', 
+                                is_received=False, 
+                                bank_account=bank_account,
+                                ofx_import=ofx_import, 
+                                fitid=fitid
                             )
                 
                 # --- MENSAGENS DE SUCESSO MELHORADAS ---
@@ -1866,6 +1940,17 @@ def contas_pagar(request):
                 
                 form.instance.user = request.user
                 account = form.save()
+
+                # ▼▼▼ ADICIONE ESTE BLOCO ▼▼▼
+                # Ensina o dicionário
+                aprender_classificacao(
+                    user=request.user,
+                    nome=account.name,
+                    categoria=account.category,
+                    dre_area=account.dre_area,
+                    tipo='PAYABLE'
+                )
+                # ▲▲▲ FIM DO BLOCO ▲▲▲
                 
                 is_recorrente_agora = form.cleaned_data.get('occurrence') == 'RECORRENTE'
                 recurrence_count = form.cleaned_data.get('recurrence_count')
@@ -2375,6 +2460,17 @@ def contas_receber(request):
                 
                 form.instance.user = request.user
                 account = form.save()
+
+                # ▼▼▼ ADICIONE ESTE BLOCO ▼▼▼
+                # Ensina o dicionário
+                aprender_classificacao(
+                    user=request.user,
+                    nome=account.name,
+                    categoria=account.category,
+                    dre_area=account.dre_area,
+                    tipo='RECEIVABLE'
+                )
+                # ▲▲▲ FIM DO BLOCO ▲▲▲
 
                 is_recorrente_agora = form.cleaned_data.get('occurrence') == 'RECORRENTE'
                 recurrence_count = form.cleaned_data.get('recurrence_count')

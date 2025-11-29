@@ -347,7 +347,7 @@ from django.utils import timezone
 from decimal import Decimal, InvalidOperation
 
 from accounts.models import ContaAzulCredentials as ContaAzulToken
-from accounts.models import ReceivableAccount, PayableAccount, Category
+from accounts.models import ReceivableAccount, PayableAccount, Category, ClassificacaoAutomatica
 
 CLIENT_ID = os.environ.get('CONTA_AZUL_CLIENT_ID')
 CLIENT_SECRET = os.environ.get('CONTA_AZUL_CLIENT_SECRET')
@@ -356,7 +356,17 @@ API_BASE_URL = 'https://api-v2.contaazul.com'
 
 class Command(BaseCommand):
     help = "Sincroniza Contas (Abertas, Atrasadas e Quitadas) sem sobrepor edições manuais."
-
+    # --- COLE O BLOCO AQUI ---
+    def prever_classificacao(self, user, descricao, tipo):
+        # Busca regras do usuário para o tipo (Pagar/Receber)
+        regras = ClassificacaoAutomatica.objects.filter(user=user, tipo=tipo)
+        descricao_lower = descricao.lower()
+        
+        for regra in regras:
+            if regra.termo.lower() in descricao_lower:
+                return regra.categoria, regra.dre_area
+        return None, None
+    # -------------------------
     def handle(self, *args, **options):
         User = get_user_model()
         self.stdout.write(self.style.SUCCESS("--- Iniciando sincronização Conta Azul ---"))
@@ -437,7 +447,7 @@ class Command(BaseCommand):
 
             # --- Período de busca de 45 dias ---
             data_fim_dt = timezone.now().date()
-            data_inicio_dt = data_fim_dt - timedelta(days=45)
+            data_inicio_dt = data_fim_dt - timedelta(days=90)
             data_inicio_str = data_inicio_dt.strftime('%Y-%m-%d')
             data_fim_str = data_fim_dt.strftime('%Y-%m-%d')
 
@@ -498,28 +508,49 @@ class Command(BaseCommand):
                             data_venc = datetime.strptime(data_venc_str, '%Y-%m-%d').date() if data_venc_str else None
                             if not data_venc: continue
                             
-                            categoria_padrao, _ = Category.objects.get_or_create(name='Receita V2 Padrão')
+                            # 1. Define a categoria padrão
+                            # ADICIONEI user=user para garantir que a categoria seja criada para o usuário certo
+                            categoria_padrao, _ = Category.objects.get_or_create(name='Receita V2 Padrão', category_type='RECEIVABLE', user=user)
+                            
+                            # 2. Tenta prever a classificação inteligente
+                            cat_inteligente, dre_inteligente = self.prever_classificacao(user, cliente_nome, 'RECEIVABLE')
+                            
+                            # Define o que será usado (Inteligência tem preferência sobre o Padrão)
+                            categoria_final = cat_inteligente if cat_inteligente else categoria_padrao
+                            dre_final = dre_inteligente if dre_inteligente else 'BRUTA'
 
-                            # Lógica de get_or_create + update (continua igual)
+                            # Lógica de get_or_create com dados inteligentes
                             obj, created = ReceivableAccount.objects.get_or_create(
                                 user=user, external_id=conta.get('id'),
                                 defaults={
                                     'name': cliente_nome, 'description': conta.get('descricao', ''),
                                     'amount': valor, 'due_date': data_venc,
                                     'is_received': is_received_ca, 'payment_date': data_pagamento,
-                                    'category': categoria_padrao, 'payment_method': 'BOLETO',
-                                    'dre_area': 'BRUTA', 'occurrence': 'AVULSO',
+                                    'category': categoria_final, # Usa a inteligente se achou
+                                    'payment_method': 'BOLETO',
+                                    'dre_area': dre_final, # Usa a inteligente se achou
+                                    'occurrence': 'AVULSO',
                                 }
                             )
+                            
                             if not created:
+                                # Atualiza dados básicos vindos da Conta Azul (valor, data, status)
                                 obj.name = cliente_nome
                                 obj.description = conta.get('descricao', '')
                                 obj.amount = valor
                                 obj.due_date = data_venc
                                 obj.is_received = is_received_ca
                                 obj.payment_date = data_pagamento
+                                
+                                # A MÁGICA DO UPDATE:
+                                # Só atualiza a categoria SE achou uma regra inteligente E a conta ainda estiver como "Padrão".
+                                # Isso impede de sobrescrever algo que você editou manualmente para outra coisa específica.
+                                if cat_inteligente and obj.category.name == 'Receita V2 Padrão':
+                                    obj.category = cat_inteligente
+                                    obj.dre_area = dre_inteligente
+                                    self.stdout.write(self.style.SUCCESS(f"    -> [Update] Classificação inteligente aplicada: {cat_inteligente.name}"))
+                                
                                 obj.save()
-                            # --- ★★★ FIM DO BLOCO CORRIGIDO ★★★ ---
 
                             action = "criada" if created else "atualizada"
                             status_desc = "Recebida" if is_received_ca else "Pendente"
@@ -587,28 +618,47 @@ class Command(BaseCommand):
                             data_venc = datetime.strptime(data_venc_str, '%Y-%m-%d').date() if data_venc_str else None
                             if not data_venc: continue
                             
-                            categoria_padrao, _ = Category.objects.get_or_create(name='Despesa V2 Padrão')
+                            # 1. Define a categoria padrão
+                            # ADICIONEI user=user aqui também
+                            categoria_padrao, _ = Category.objects.get_or_create(name='Despesa V2 Padrão', category_type='PAYABLE', user=user)
 
-                            # Lógica de get_or_create + update (continua igual)
+                            # 2. Tenta prever a classificação inteligente
+                            cat_inteligente, dre_inteligente = self.prever_classificacao(user, fornecedor_nome, 'PAYABLE')
+
+                            # Define o que será usado (Inteligência > Padrão)
+                            categoria_final = cat_inteligente if cat_inteligente else categoria_padrao
+                            dre_final = dre_inteligente if dre_inteligente else 'OPERACIONAL'
+
+                            # Lógica de get_or_create com dados inteligentes
                             obj, created = PayableAccount.objects.get_or_create(
                                 user=user, external_id=conta.get('id'),
                                 defaults={
                                     'name': fornecedor_nome, 'description': conta.get('descricao', ''),
                                     'amount': valor, 'due_date': data_venc,
                                     'is_paid': is_paid_ca, 'payment_date': data_pagamento,
-                                    'category': categoria_padrao, 'payment_method': 'BOLETO',
-                                    'dre_area': 'OPERACIONAL', 'occurrence': 'AVULSO', 'cost_type': 'FIXO',
+                                    'category': categoria_final, # Usa a inteligente
+                                    'payment_method': 'BOLETO',
+                                    'dre_area': dre_final, # Usa a inteligente
+                                    'occurrence': 'AVULSO', 'cost_type': 'FIXO',
                                 }
                             )
                             if not created:
+                                # Atualiza dados básicos
                                 obj.name = fornecedor_nome
                                 obj.description = conta.get('descricao', '')
                                 obj.amount = valor
                                 obj.due_date = data_venc
                                 obj.is_paid = is_paid_ca
                                 obj.payment_date = data_pagamento
+                                
+                                # A MÁGICA DO UPDATE:
+                                # Verifica se pode aplicar a inteligência em contas existentes
+                                if cat_inteligente and obj.category.name == 'Despesa V2 Padrão':
+                                    obj.category = cat_inteligente
+                                    obj.dre_area = dre_inteligente
+                                    self.stdout.write(self.style.SUCCESS(f"    -> [Update] Classificação inteligente aplicada: {cat_inteligente.name}"))
+
                                 obj.save()
-                            # --- ★★★ FIM DO BLOCO CORRIGIDO ★★★ ---
 
                             action = "criada" if created else "atualizada"
                             status_desc = "Recebida/Paga" if is_paid_ca else "Pendente"
