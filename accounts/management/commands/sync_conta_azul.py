@@ -519,38 +519,32 @@ class Command(BaseCommand):
                             categoria_final = cat_inteligente if cat_inteligente else categoria_padrao
                             dre_final = dre_inteligente if dre_inteligente else 'BRUTA'
 
-                            # Lógica de get_or_create com dados inteligentes
-                            obj, created = ReceivableAccount.objects.get_or_create(
-                                user=user, external_id=conta.get('id'),
+                            # Lógica CORRIGIDA: Busca apenas pelo external_id
+                            obj, created = ReceivableAccount.objects.update_or_create(
+                                external_id=conta.get('id'),  # <--- CHAVE ÚNICA DE BUSCA
                                 defaults={
-                                    'name': cliente_nome, 'description': conta.get('descricao', ''),
-                                    'amount': valor, 'due_date': data_venc,
-                                    'is_received': is_received_ca, 'payment_date': data_pagamento,
-                                    'category': categoria_final, # Usa a inteligente se achou
+                                    'user': user,  # <--- Movemos o user para cá (atualiza o dono se mudar)
+                                    'name': cliente_nome,
+                                    'description': conta.get('descricao', ''),
+                                    'amount': valor,
+                                    'due_date': data_venc,
+                                    'is_received': is_received_ca,
+                                    'payment_date': data_pagamento,
+                                    'category': categoria_final,
                                     'payment_method': 'BOLETO',
-                                    'dre_area': dre_final, # Usa a inteligente se achou
+                                    'dre_area': dre_final,
                                     'occurrence': 'AVULSO',
                                 }
                             )
                             
-                            if not created:
-                                # Atualiza dados básicos vindos da Conta Azul (valor, data, status)
-                                obj.name = cliente_nome
-                                obj.description = conta.get('descricao', '')
-                                obj.amount = valor
-                                obj.due_date = data_venc
-                                obj.is_received = is_received_ca
-                                obj.payment_date = data_pagamento
-                                
-                                # A MÁGICA DO UPDATE:
-                                # Só atualiza a categoria SE achou uma regra inteligente E a conta ainda estiver como "Padrão".
-                                # Isso impede de sobrescrever algo que você editou manualmente para outra coisa específica.
-                                if cat_inteligente and obj.category.name == 'Receita V2 Padrão':
-                                    obj.category = cat_inteligente
-                                    obj.dre_area = dre_inteligente
-                                    self.stdout.write(self.style.SUCCESS(f"    -> [Update] Classificação inteligente aplicada: {cat_inteligente.name}"))
-                                
-                                obj.save()
+                            # Removemos o bloco "if not created", pois o update_or_create já faz tudo!
+                            
+                            # Apenas o log de inteligência (opcional, se quiser manter)
+                            if not created and cat_inteligente and obj.category.name == 'Receita V2 Padrão':
+                                 obj.category = cat_inteligente
+                                 obj.dre_area = dre_inteligente
+                                 obj.save()
+                                 self.stdout.write(self.style.SUCCESS(f"    -> [Update] Classificação inteligente aplicada: {cat_inteligente.name}"))
 
                             action = "criada" if created else "atualizada"
                             status_desc = "Recebida" if is_received_ca else "Pendente"
@@ -629,36 +623,33 @@ class Command(BaseCommand):
                             categoria_final = cat_inteligente if cat_inteligente else categoria_padrao
                             dre_final = dre_inteligente if dre_inteligente else 'OPERACIONAL'
 
-                            # Lógica de get_or_create com dados inteligentes
-                            obj, created = PayableAccount.objects.get_or_create(
-                                user=user, external_id=conta.get('id'),
+                            # Lógica CORRIGIDA: Busca apenas pelo external_id
+                            obj, created = PayableAccount.objects.update_or_create(
+                                external_id=conta.get('id'), # <--- CHAVE ÚNICA DE BUSCA
                                 defaults={
-                                    'name': fornecedor_nome, 'description': conta.get('descricao', ''),
-                                    'amount': valor, 'due_date': data_venc,
-                                    'is_paid': is_paid_ca, 'payment_date': data_pagamento,
-                                    'category': categoria_final, # Usa a inteligente
+                                    'user': user, # <--- Movemos o user para cá
+                                    'name': fornecedor_nome,
+                                    'description': conta.get('descricao', ''),
+                                    'amount': valor,
+                                    'due_date': data_venc,
+                                    'is_paid': is_paid_ca,
+                                    'payment_date': data_pagamento,
+                                    'category': categoria_final,
                                     'payment_method': 'BOLETO',
-                                    'dre_area': dre_final, # Usa a inteligente
-                                    'occurrence': 'AVULSO', 'cost_type': 'FIXO',
+                                    'dre_area': dre_final,
+                                    'occurrence': 'AVULSO',
+                                    'cost_type': 'FIXO',
                                 }
                             )
-                            if not created:
-                                # Atualiza dados básicos
-                                obj.name = fornecedor_nome
-                                obj.description = conta.get('descricao', '')
-                                obj.amount = valor
-                                obj.due_date = data_venc
-                                obj.is_paid = is_paid_ca
-                                obj.payment_date = data_pagamento
-                                
-                                # A MÁGICA DO UPDATE:
-                                # Verifica se pode aplicar a inteligência em contas existentes
-                                if cat_inteligente and obj.category.name == 'Despesa V2 Padrão':
-                                    obj.category = cat_inteligente
-                                    obj.dre_area = dre_inteligente
-                                    self.stdout.write(self.style.SUCCESS(f"    -> [Update] Classificação inteligente aplicada: {cat_inteligente.name}"))
 
+                            # Removemos o bloco "if not created" manual.
+                            
+                            # Mantemos apenas a inteligência se for update
+                            if not created and cat_inteligente and obj.category.name == 'Despesa V2 Padrão':
+                                obj.category = cat_inteligente
+                                obj.dre_area = dre_inteligente
                                 obj.save()
+                                self.stdout.write(self.style.SUCCESS(f"    -> [Update] Classificação inteligente aplicada: {cat_inteligente.name}"))
 
                             action = "criada" if created else "atualizada"
                             status_desc = "Recebida/Paga" if is_paid_ca else "Pendente"
