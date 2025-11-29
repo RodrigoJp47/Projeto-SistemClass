@@ -5964,9 +5964,19 @@ TOKEN_URL = 'https://auth.contaazul.com/oauth2/token'         # <-- MUDADO AQUI
 @login_required
 def contaazul_auth_redirect(request):
     """Redireciona para o Conta Azul para autorização."""
-    scope = "openid profile aws.cognito.signin.user.admin"
+    # Escopo corrigido (com espaços)
+    scope = "openid profile aws.cognito.signin.user.admin" 
+    
     oauth = OAuth2Session(CLIENT_ID, redirect_uri=REDIRECT_URI, scope=scope)
-    authorization_url, state = oauth.authorization_url(AUTHORIZATION_URL)
+    
+    # --- ALTERAÇÃO AQUI ---
+    # Adicionamos kwargs={'prompt': 'login consent'} para forçar o login e a escolha
+    authorization_url, state = oauth.authorization_url(
+        AUTHORIZATION_URL,
+        prompt='login consent' 
+    )
+    # ----------------------
+    
     request.session['oauth_state'] = state
     return redirect(authorization_url)
 
