@@ -1,6 +1,7 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,8 +13,9 @@
     <link rel="stylesheet" href="{% static 'css/importar_ofx.css' %}">
     <link rel="stylesheet" href="{% static 'css/layout-responsive.css' %}">
 </head>
+
 <body class="importar-ofx-page">
-   {% include 'accounts/_sidebar.html' %}
+    {% include 'accounts/_sidebar.html' %}
 
     <div class="main-content">
         <button id="menu-toggle">&#9776;</button>
@@ -23,11 +25,11 @@
         </div>
 
         {% if messages %}
-            <div class="messages">
-                {% for message in messages %}
-                    <p class="{% if message.tags %}{{ message.tags }}{% endif %}">{{ message }}</p>
-                {% endfor %}
-            </div>
+        <div class="messages">
+            {% for message in messages %}
+            <p class="{% if message.tags %}{{ message.tags }}{% endif %}">{{ message }}</p>
+            {% endfor %}
+        </div>
         {% endif %}
 
         <div class="form-container">
@@ -39,45 +41,60 @@
             </p>
             <form method="post" enctype="multipart/form-data">
                 {% csrf_token %}
-                
+
                 <div class="form-group">
                     <label for="{{ ofx_form.bank_account.id_for_label }}">Conta Bancária de Destino:</label>
                     {{ ofx_form.bank_account }}
                     {% if ofx_form.bank_account.errors %}
-                        <div class="form-error">{{ ofx_form.bank_account.errors|first }}</div>
+                    <div class="form-error">{{ ofx_form.bank_account.errors|first }}</div>
                     {% endif %}
                 </div>
 
                 <div class="form-group">
                     <label for="{{ ofx_form.file.id_for_label }}">Arquivo OFX:</label>
                     {{ ofx_form.file }}
-                     {% if ofx_form.file.errors %}
-                        <div class="form-error">{{ ofx_form.file.errors|first }}</div>
+                    {% if ofx_form.file.errors %}
+                    <div class="form-error">{{ ofx_form.file.errors|first }}</div>
                     {% endif %}
                 </div>
-                
+
                 <button type="submit" name="import_ofx">Importar Arquivo</button>
             </form>
         </div>
         {% comment %} --- NOVA SECÇÃO CONTA AZUL --- {% endcomment %}
-        <div class="form-container conta-azul-integration mt-4"> {# Reutiliza form-container e adiciona classe específica + margem top #}
+        <div class="form-container conta-azul-integration mt-4"> {# Reutiliza form-container e adiciona classe
+            específica + margem top #}
             <h3>Integração Conta Azul</h3>
             <p class="description">
                 Conecte sua conta do Conta Azul para sincronizar automaticamente suas contas a pagar e receber.
             </p>
 
             {% if user.contaazul_creds %}
-                <div class="integration-status success"> {# Classe CSS para status conectado #}
-                    <i class="fas fa-check-circle"></i> {# Ícone FontAwesome #}
-                    <span>Sua conta Conta Azul está conectada!</span>
-                    {# <a href="#" class="disconnect-link">Desconectar</a> #} {# Link para desconectar (implementação futura) #}
-                </div>
+            <div class="integration-status success"> {# Classe CSS para status conectado #}
+                <i class="fas fa-check-circle"></i> {# Ícone FontAwesome #}
+                <span>Sua conta Conta Azul está conectada!</span>
+                {# <a href="#" class="disconnect-link">Desconectar</a> #} {# Link para desconectar (implementação
+                futura) #}
+            </div>
             {% else %}
-                <a href="{% url 'contaazul_auth' %}" class="btn-conta-azul">
-                    <i class="fas fa-link"></i> {# Ícone FontAwesome #}
-                    Conectar com Conta Azul
-                </a>
-                <p class="mt-2"><small>Você será redirecionado para o Conta Azul para autorizar a conexão.</small></p>
+            <div
+                style="margin-bottom: 15px; background-color: #fff3cd; color: #856404; padding: 10px; border: 1px solid #ffeeba; border-radius: 4px;">
+                <p style="margin: 0; font-size: 14px;">
+                    <strong>Passo 1 (Obrigatório):</strong> O navegador pode estar "preso" na conta errada.
+                    <br>
+                    <a href="https://app.contaazul.com/logout" target="_blank"
+                        style="color: #dc3545; text-decoration: underline; font-weight: bold;">
+                        CLIQUE AQUI PRIMEIRO para sair do Conta Azul
+                    </a>
+                    (Isso vai abrir uma tela de login ou a home do Conta Azul. Pode fechar essa aba depois e voltar
+                    aqui).
+                </p>
+            </div>
+            <a href="{% url 'contaazul_auth' %}" class="btn-conta-azul">
+                <i class="fas fa-link"></i> {# Ícone FontAwesome #}
+                Conectar com Conta Azul
+            </a>
+            <p class="mt-2"><small>Você será redirecionado para o Conta Azul para autorizar a conexão.</small></p>
             {% endif %}
         </div>
         {% comment %} --- FIM DA NOVA SECÇÃO --- {% endcomment %}
@@ -85,13 +102,13 @@
 
     <script src="{% static 'js/theme.js' %}"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             // Script para o menu hambúrguer (mobile)
             const menuToggleButton = document.getElementById('menu-toggle');
             const sidebar = document.querySelector('.sidebar');
 
             if (menuToggleButton && sidebar) {
-                menuToggleButton.addEventListener('click', function() {
+                menuToggleButton.addEventListener('click', function () {
                     sidebar.classList.toggle('mobile-open');
                 });
             }
@@ -101,7 +118,7 @@
                 const toggleButton = document.getElementById(toggleId);
                 const submenu = document.getElementById(submenuId);
                 if (toggleButton && submenu) {
-                    toggleButton.addEventListener('click', function(event) {
+                    toggleButton.addEventListener('click', function (event) {
                         event.preventDefault();
                         submenu.style.display = submenu.style.display === 'block' ? 'none' : 'block';
                     });
@@ -112,7 +129,7 @@
             setupSubmenuToggle('financeiro-toggle', 'financeiro-submenu');
             setupSubmenuToggle('comercial-toggle', 'comercial-submenu');
             setupSubmenuToggle('configuracoes-toggle', 'configuracoes-submenu');
-            
+
 
             // Expande o submenu que contém o link ativo na página atual
             const activeLink = document.querySelector('.sidebar .submenu a.active');
@@ -125,4 +142,5 @@
         });    
     </script>
 </body>
+
 </html>
