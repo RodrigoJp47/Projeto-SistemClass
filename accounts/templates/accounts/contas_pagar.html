@@ -181,16 +181,13 @@
                                     <div class="menu-icon">...</div>
                                     <div class="dropdown">
 
-                                        <form method="post" style="margin: 0;">
-                                            {% csrf_token %}
-                                            {% if not account.is_paid %}
-                                            <button type="submit" name="action_pay" value="{{ account.id|unlocalize }}"
-                                                title="Baixar">&#10004;</button>
-                                            {% else %}
-                                            <button type="submit" name="action_undo" value="{{ account.id|unlocalize }}"
-                                                class="undo-btn" title="Desfazer">&#8634;</button>
-                                            {% endif %}
-                                        </form>
+                                        {% if not account.is_paid %}
+                                        <button type="submit" name="action_pay" value="{{ account.id|unlocalize }}"
+                                            title="Baixar">&#10004;</button>
+                                        {% else %}
+                                        <button type="submit" name="action_undo" value="{{ account.id|unlocalize }}"
+                                            class="undo-btn" title="Desfazer">&#8634;</button>
+                                        {% endif %}
 
                                         <a href="?edit={{ account.id }}&status={{ filter_status }}&bank={{ bank_filter }}&search_query={{ search_query|default:'' }}&page={{ accounts.number }}&start_date={{ start_date|default:'' }}&end_date={{ end_date|default:'' }}"
                                             title="Editar">&#9998;</a>
@@ -198,25 +195,19 @@
                                         <button type="button" onclick="triggerFileUpload('{{ account.id|unlocalize }}')"
                                             title="Anexar arquivo">&#128206;</button>
 
-                                        <form method="post" style="margin: 0;">
-                                            {% csrf_token %}
-                                            <button type="submit" name="action_delete"
-                                                value="{{ account.id|unlocalize }}" class="delete-btn"
-                                                onclick="return confirm('Tem certeza que deseja excluir esta conta?');"
-                                                title="Excluir">&#128465;</button>
-                                        </form>
+                                        <button type="submit" name="action_delete"
+                                            value="{{ account.id|unlocalize }}" class="delete-btn"
+                                            onclick="return confirm('Tem certeza que deseja excluir esta conta?');"
+                                            title="Excluir">&#128465;</button>
 
                                         {% if account.file %}
-                                        <form method="post" style="margin: 0;">
-                                            {% csrf_token %}
                                             <button type="submit" name="action_delete_file"
                                                 value="{{ account.id|unlocalize }}"
                                                 style="color: #ff9800; font-weight: bold;"
                                                 onclick="return confirm('Deseja remover apenas o anexo PDF desta conta?');"
                                                 title="Remover Anexo (PDF)">&#10060;</button>
-                                        </form>
 
-                                        <a href="{{ account.file.url }}" target="_blank" title="Ver PDF">&#128065;</a>
+                                            <a href="{{ account.file.url }}" target="_blank" title="Ver PDF">&#128065;</a>
                                         {% endif %}
                                     </div>
                                 </div>

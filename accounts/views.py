@@ -71,12 +71,12 @@ from .models import (
     CompanyProfile, CompanyDocument, Venda, ItemVenda, ProdutoServico,
     Vendedor, PagamentoVenda, PAYMENT_METHODS, Cidade,
     ContaAzulCredentials, Precificacao, Orcamento, OrcamentoVenda,
-    ItemOrcamento
+    ItemOrcamento, ClassificacaoAutomatica
 )
 
-from .models import CompanyUserLink
 
-from .models import ClassificacaoAutomatica
+
+
 
 MESES_ABREVIADOS = {
     1: 'Jan', 2: 'Fev', 3: 'Mar', 4: 'Abr', 5: 'Mai', 6: 'Jun',
@@ -85,25 +85,28 @@ MESES_ABREVIADOS = {
 
 
 
-def aprender_classificacao(user, nome, categoria, dre_area, tipo):
+# Em accounts/views.py (Logo no início, após os imports)
+
+# Substitua a função antiga por esta:
+def aprender_classificacao(user, nome, categoria, dre_area, tipo, bank_account=None): # <--- Adicionei o argumento aqui
     """
     Salva ou atualiza a regra de classificação baseada no nome da conta.
     """
+    # Importante: O import deve estar aqui ou no topo do arquivo
+    from .models import ClassificacaoAutomatica 
+
     if nome and categoria and dre_area:
-        # Usamos update_or_create para garantir que se o usuário mudar de ideia,
-        # a regra seja atualizada.
         ClassificacaoAutomatica.objects.update_or_create(
             user=user,
-            termo__iexact=nome.strip(), # Busca case-insensitive
+            termo__iexact=nome.strip(),
             tipo=tipo,
             defaults={
-                'termo': nome.strip(), # Garante a formatação correta
+                'termo': nome.strip(),
                 'categoria': categoria,
                 'dre_area': dre_area,
-                'bank_account': bank_account
+                'bank_account': bank_account # <--- E adicionei o salvamento aqui
             }
         )
-
 def prever_classificacao(user, descricao, tipo):
     """
     Tenta encontrar uma categoria e DRE baseada na descrição.
