@@ -29,16 +29,20 @@ OCCURRENCE_TYPES = (
     
 DRE_AREAS = (
     ('NAO_CONSTAR', 'Não constar DRE'),
-    ('DEDUCAO', 'Dedução da Receita Bruta'),
-    ('CUSTOS', 'Custos CSP/CMV'),
-    ('OPERACIONAL', 'Despesas Operacionais'),
-    ('DEPRECIACAO', 'Depreciação e Amortização'),
-    ('NAO_OPERACIONAL', 'Não Operacional'),
-    ('TRIBUTACAO', 'IRPJ e CSLL (Tributação)'),
-    ('DISTRIBUICAO', 'Distribuição de Lucro Sócios'),
-    ('BRUTA', 'Receitas Brutas'),
-)
+    ('BRUTA', 'Receitas Brutas (+)'), # Adicionado (+)
+    ('DEDUCAO', 'Dedução da Receita Bruta (-)'),
+    ('CUSTOS', 'Custos CSP/CMV (-)'),
+    ('OPERACIONAL', 'Despesas Operacionais (-)'),
+    ('DEPRECIACAO', 'Depreciação e Amortização (-)'),
+    
+    # --- ALTERAÇÃO AQUI ---
+    ('NAO_OPERACIONAL', 'Despesas Não Operacionais (-)'), 
+    ('OUTRAS_RECEITAS', 'Outras Receitas - Aporte/Financeiro (+)'), # Nova Opção
+    # ----------------------
 
+    ('TRIBUTACAO', 'IRPJ e CSLL (Tributação) (-)'),
+    ('DISTRIBUICAO', 'Distribuição de Lucro Sócios (-)'),
+)
 COST_TYPES = (
     ('FIXO', 'Fixo'),
     ('VARIAVEL', 'Variável'),
@@ -756,6 +760,7 @@ class ClassificacaoAutomatica(models.Model):
     categoria = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True)
     dre_area = models.CharField(max_length=50, choices=DRE_AREAS)
     tipo = models.CharField(max_length=20, choices=TIPO_CHOICES)
+    bank_account = models.ForeignKey('BankAccount', on_delete=models.SET_NULL, null=True, blank=True)
 
     class Meta:
         # Garante que não haja regras duplicadas para o mesmo termo e tipo

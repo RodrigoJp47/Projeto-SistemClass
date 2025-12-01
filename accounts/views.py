@@ -99,7 +99,8 @@ def aprender_classificacao(user, nome, categoria, dre_area, tipo):
             defaults={
                 'termo': nome.strip(), # Garante a formatação correta
                 'categoria': categoria,
-                'dre_area': dre_area
+                'dre_area': dre_area,
+                'bank_account': bank_account
             }
         )
 
@@ -615,14 +616,22 @@ def dre_view(request):
     monthly_details = {key: [[] for _ in range(len(month_labels))] for key in dre_structure.keys()}
     
     # PERÍODO ATUAL
-    receivables_query = ReceivableAccount.objects.filter(user=request.user, dre_area='BRUTA', due_date__range=[start_date, end_date])
+    receivables_query = ReceivableAccount.objects.filter(
+        user=request.user, 
+        dre_area__in=['BRUTA', 'OUTRAS_RECEITAS'], # <--- Agora aceita os dois
+        due_date__range=[start_date, end_date]
+    )
     payables_query = PayableAccount.objects.filter(user=request.user, due_date__range=[start_date, end_date]).exclude(dre_area='NAO_CONSTAR')
     if regime == 'caixa':
         receivables_query = receivables_query.filter(is_received=True)
         payables_query = payables_query.filter(is_paid=True)
 
     # PERÍODO ANTERIOR
-    receivables_anterior_query = ReceivableAccount.objects.filter(user=request.user, dre_area='BRUTA', due_date__range=[start_date_anterior, end_date_anterior])
+    receivables_anterior_query = ReceivableAccount.objects.filter(
+        user=request.user, 
+        dre_area__in=['BRUTA', 'OUTRAS_RECEITAS'], # <--- Agora busca vendas e aportes
+        due_date__range=[start_date_anterior, end_date_anterior]
+    )
     payables_anterior_query = PayableAccount.objects.filter(user=request.user, due_date__range=[start_date_anterior, end_date_anterior]).exclude(dre_area='NAO_CONSTAR')
     if regime == 'caixa':
         receivables_anterior_query = receivables_anterior_query.filter(is_received=True)
@@ -655,14 +664,46 @@ def dre_view(request):
     # ... (O restante da função, com os loops e cálculos, permanece o mesmo da versão que já te passei) ...
     # ... Para garantir, aqui está a continuação completa e correta ...
     
-    receivables_details = receivables_query.annotate(month=TruncMonth('due_date')).values('month', 'category__name').annotate(total=Sum('amount'))
+    # ADICIONEI 'dre_area' DENTRO DO values(...)
+    receivables_details = receivables_query.annotate(month=TruncMonth('due_date')).values('month', 'category__name', 'dre_area').annotate(total=Sum('amount'))
+    # ... logo após a linha: receivables_details = receivables_query.annotate(...) ...
+
     for entry in receivables_details:
         try:
-            month_str = entry['month'].strftime('%b/%Y'); idx = month_labels.index(month_str)
-            category_name = entry['category__name'] or "Sem Categoria"; amount = Decimal(str(entry['total'])) if entry['total'] else Decimal('0')
-            monthly_totals['RECEITAS_BRUTAS'][idx] += amount
-            monthly_details['RECEITAS_BRUTAS'][idx].append({'category': category_name, 'amount': amount})
-        except (ValueError, IndexError, TypeError): continue
+            month_str = entry['month'].strftime('%b/%Y')
+            idx = month_labels.index(month_str)
+            
+            # Pega o nome da categoria ou define padrão
+            category_name = entry['category__name'] or "Sem Categoria"
+            
+            # Garante que o valor é decimal
+            amount = Decimal(str(entry['total'])) if entry['total'] else Decimal('0')
+
+            # --- AQUI ESTÁ A LÓGICA INTELIGENTE ---
+            
+            # CASO 1: Se for Venda Normal (Receita Bruta)
+            if entry['dre_area'] == 'BRUTA':
+                monthly_totals['RECEITAS_BRUTAS'][idx] += amount
+                monthly_details['RECEITAS_BRUTAS'][idx].append({
+                    'category': category_name, 
+                    'amount': amount
+                })
+
+            # CASO 2: Se for Aporte/Investimento (Outras Receitas)
+            elif entry['dre_area'] == 'OUTRAS_RECEITAS':
+                # IMPORTANTE: A linha 'NAO_OPERACIONAIS' geralmente soma despesas.
+                # Para entrar como receita (crédito), nós SUBTRAÍMOS o valor.
+                # Matemática: Lucro - (Despesa - ReceitaExtra) = Lucro - Despesa + ReceitaExtra
+                monthly_totals['NAO_OPERACIONAIS'][idx] -= amount
+                
+                # Adicionamos na lista de detalhes dessa linha para você ver o que é
+                monthly_details['NAO_OPERACIONAIS'][idx].append({
+                    'category': f"(+) {category_name}", # Coloquei um (+) visual para facilitar
+                    'amount': amount
+                })
+
+        except (ValueError, IndexError, TypeError): 
+            continue
 
     payables_details = payables_query.annotate(month=TruncMonth('due_date')).values('month', 'dre_area', 'category__name').annotate(total=Sum('amount'))
     dre_area_mapping = {'DEDUCAO': 'DEDUCAO_RECEITA_BRUTA', 'CUSTOS': 'CUSTOS_CSP_CMV', 'OPERACIONAL': 'DESPESAS_OPERACIONAIS', 'NAO_OPERACIONAL': 'NAO_OPERACIONAIS', 'DISTRIBUICAO': 'DISTRIBUICAO_LUCRO_SOCIOS'}
@@ -1301,6 +1342,22 @@ def cadastrar_bancos_view(request):
             messages.success(request, 'Conta bancária atualizada com sucesso.')
             return redirect('cadastrar_bancos')
 
+        # ▼▼▼ ADICIONE ESTE BLOCO NOVO AQUI ▼▼▼
+        elif 'delete_bank_account' in request.POST:
+            account_id = request.POST.get('account_id')
+            # Busca o banco garantindo que pertence ao usuário logado
+            bank_account = get_object_or_404(BankAccount, id=account_id, user=request.user)
+            
+            # Opcional: Impedir exclusão se tiver lançamentos vinculados
+            # if bank_account.payableaccount_set.exists() or bank_account.receivableaccount_set.exists():
+            #     messages.error(request, 'Não é possível excluir este banco pois existem contas vinculadas a ele.')
+            # else:
+            
+            bank_account.delete()
+            messages.success(request, 'Conta bancária excluída com sucesso.')
+            return redirect('cadastrar_bancos')
+        # ▲▲▲ FIM DO BLOCO NOVO ▲▲▲    
+
     context = {
         'bank_accounts': bank_accounts,
         'edit_account': edit_account,
@@ -1462,7 +1519,10 @@ def importar_ofx_view(request):
                                 dre_area=dre_final,       # <--- USA A PREVISÃO
                                 payment_method='PIX', 
                                 occurrence='AVULSO', 
-                                is_paid=False, 
+                                
+                                is_paid=True,       # Antes era False
+                                payment_date=date,  # Adicionado: Data da baixa = Data do extrato
+                                
                                 cost_type='VARIAVEL', 
                                 bank_account=bank_account,
                                 ofx_import=ofx_import, 
@@ -1485,7 +1545,8 @@ def importar_ofx_view(request):
                                 dre_area=dre_final,       # <--- USA A PREVISÃO
                                 payment_method='PIX', 
                                 occurrence='AVULSO', 
-                                is_received=False, 
+                                is_received=True, 
+                                payment_date=date,  # Adicionado: Data da baixa = Data do extrato
                                 bank_account=bank_account,
                                 ofx_import=ofx_import, 
                                 fitid=fitid
@@ -1685,15 +1746,17 @@ def contas_pagar(request):
 
 
     if request.method == 'POST':
-        # Adicione esse bloco (A nova forma "inteligente" que lê os filtros da URL)
         # --- LÓGICA DE REDIRECIONAMENTO INTELIGENTE ---
-        # Constrói a query string dos filtros atuais para voltar para a mesma visão
         query_params = request.GET.copy()
-        query_params.pop('page', None) # Remove 'page' para voltar sempre à primeira página
-        query_params.pop('edit', None) # Remove 'edit' para sair do modo de edição
+        
+        # COMENTE OU REMOVA A LINHA ABAIXO PARA MANTER A PÁGINA ATUAL
+        # query_params.pop('page', None) 
+        
+        query_params.pop('edit', None) # Remove 'edit' para sair do modo de edição (isso deve ficar)
 
-        # recria a query string (ex: "?status=all&start_date=...")
+        # Isso garante que status, data, banco, busca e PÁGINA sejam mantidos
         redirect_query_string = query_params.urlencode()
+        redirect_url = f"{request.path}?{redirect_query_string}"
 
         # Cria a URL de redirecionamento com os filtros
         redirect_url = f"{request.path}?{redirect_query_string}"
@@ -1948,7 +2011,8 @@ def contas_pagar(request):
                     nome=account.name,
                     categoria=account.category,
                     dre_area=account.dre_area,
-                    tipo='PAYABLE'
+                    tipo='PAYABLE',
+                    bank_account=account.bank_account
                 )
                 # ▲▲▲ FIM DO BLOCO ▲▲▲
                 
@@ -2235,7 +2299,7 @@ def contas_receber(request):
         # Adicione esse bloco (A nova forma "inteligente" que lê os filtros da URL)
         # --- LÓGICA DE REDIRECIONAMENTO INTELIGENTE ---
         query_params = request.GET.copy()
-        query_params.pop('page', None) 
+        
         query_params.pop('edit', None) 
 
         redirect_query_string = query_params.urlencode()
@@ -2468,7 +2532,8 @@ def contas_receber(request):
                     nome=account.name,
                     categoria=account.category,
                     dre_area=account.dre_area,
-                    tipo='RECEIVABLE'
+                    tipo='RECEIVABLE',
+                    bank_account=account.bank_account
                 )
                 # ▲▲▲ FIM DO BLOCO ▲▲▲
 

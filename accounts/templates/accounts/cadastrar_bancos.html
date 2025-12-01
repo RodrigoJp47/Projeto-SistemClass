@@ -90,7 +90,20 @@
                             <td data-label="Data Abertura">{{ account.opening_date|date:'d/m/Y' }}</td>
                             <td data-label="Saldo Atual">R$ {{ account.current_balance|floatformat:2|intcomma }}</td>
                             <td data-label="Ações">
-                                <a href="{% url 'cadastrar_bancos' %}?edit={{ account.id }}" class="action-btn edit-btn">Editar</a>
+                                <div style="display: flex; gap: 15px; align-items: center; justify-content: center;">
+                                    
+                                    <a href="{% url 'cadastrar_bancos' %}?edit={{ account.id }}" class="action-btn edit-btn">Editar</a>
+
+                                    <form method="post" style="margin: 0;">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="account_id" value="{{ account.id }}">
+                                        <button type="submit" name="delete_bank_account" 
+                                                onclick="return confirm('Tem certeza que deseja excluir esta conta bancária?');"
+                                                style="background-color: #dc3545; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 13px; line-height: normal;">
+                                            Excluir
+                                        </button>
+                                    </form>
+                                </div>
                             </td>
                         </tr>
                         {% empty %}

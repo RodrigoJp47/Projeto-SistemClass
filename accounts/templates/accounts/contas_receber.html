@@ -53,6 +53,7 @@
                 {{ form.dre_area.label_tag }}
                 <select name="dre_area" id="id_dre_area" required>
                     <option value="BRUTA" {% if form.dre_area.value == "BRUTA" %}selected{% endif %}>Receitas Brutas</option>
+                    <option value="OUTRAS_RECEITAS" {% if form.dre_area.value == "OUTRAS_RECEITAS" %}selected{% endif %}>Outras Receitas</option>
                     <option value="NAO_CONSTAR" {% if form.dre_area.value == "NAO_CONSTAR" %}selected{% endif %}>Não constar DRE</option>
                 </select>
                 {{ form.payment_method.label_tag }} {{ form.payment_method }}
@@ -186,7 +187,7 @@
                                             {% endif %}
                                         </form>
 
-                                        <a href="?edit={{ account.id|unlocalize }}&status={{ filter_status }}&start_date={{ start_date|default:'' }}&end_date={{ end_date|default:'' }}" title="Editar">&#9998;</a>
+                                        <a href="?edit={{ account.id|unlocalize }}&status={{ filter_status }}&bank={{ bank_filter }}&search_query={{ search_query|default:'' }}&page={{ accounts.number }}&start_date={{ start_date|default:'' }}&end_date={{ end_date|default:'' }}" title="Editar">&#9998;</a>
                                         <button type="button" onclick="triggerFileUpload('{{ account.id|unlocalize }}')" title="Anexar arquivo">&#128206;</button>
 
                                         {% if account.file %}
