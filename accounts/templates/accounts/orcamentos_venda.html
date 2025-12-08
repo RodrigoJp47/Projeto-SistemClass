@@ -99,15 +99,37 @@
         <div class="orcamento-table-container">
             <h3>Histórico de Orçamentos</h3>
             <form method="get" class="filter-form">
-                <div class="form-group"><label>Status</label>
-                    <select name="status" onchange="this.form.submit()">
+                <div class="form-group">
+                    <label>Status</label>
+                    <select name="status">
                         <option value="">Todos</option>
-                        {% for key, value in status_choices %}<option value="{{ key }}" {% if key == status_filter %}selected{% endif %}>{{ value }}</option>{% endfor %}
+                        {% for key, value in status_choices %}
+                            <option value="{{ key }}" {% if key == status_filter %}selected{% endif %}>{{ value }}</option>
+                        {% endfor %}
                     </select>
                 </div>
-                <div class="form-group"><label>Data Inicial</label><input type="date" name="start_date" value="{{ start_date|default:'' }}"></div>
-                <div class="form-group"><label>Data Final</label><input type="date" name="end_date" value="{{ end_date|default:'' }}"></div>
-                <button type="submit">Filtrar</button>
+                <div class="form-group">
+                    <label>Data Inicial</label>
+                    <input type="date" name="start_date" value="{{ start_date|default:'' }}">
+                </div>
+                <div class="form-group">
+                    <label>Data Final</label>
+                    <input type="date" name="end_date" value="{{ end_date|default:'' }}">
+                </div>
+                
+                <div class="filter-actions" style="display: flex; gap: 10px; align-items: flex-end;">
+                    <button type="submit" class="btn-filter" style="height: 38px;">Filtrar</button>
+                    
+                    <a href="?export_pdf=1&status={{ status_filter|default:'' }}&start_date={{ start_date|default:'' }}&end_date={{ end_date|default:'' }}" 
+                       class="btn-export pdf" target="_blank" title="Exportar PDF">
+                        <i class="fas fa-file-pdf"></i>
+                    </a>
+                    
+                    <a href="?export_excel=1&status={{ status_filter|default:'' }}&start_date={{ start_date|default:'' }}&end_date={{ end_date|default:'' }}" 
+                       class="btn-export excel" title="Exportar Excel">
+                        <i class="fas fa-file-excel"></i>
+                    </a>
+                </div>
             </form>
 
             <form method="POST">

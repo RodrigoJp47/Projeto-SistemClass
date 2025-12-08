@@ -54,6 +54,7 @@
                 <select name="dre_area" id="id_dre_area" required>
                     <option value="BRUTA" {% if form.dre_area.value == "BRUTA" %}selected{% endif %}>Receitas Brutas</option>
                     <option value="OUTRAS_RECEITAS" {% if form.dre_area.value == "OUTRAS_RECEITAS" %}selected{% endif %}>Outras Receitas</option>
+                    <option value="APORTE_SOCIOS" {% if form.dre_area.value == "APORTE_SOCIOS" %}selected{% endif %}>Aporte Financeiro (+)</option>
                     <option value="NAO_CONSTAR" {% if form.dre_area.value == "NAO_CONSTAR" %}selected{% endif %}>Não constar DRE</option>
                 </select>
                 {{ form.payment_method.label_tag }} {{ form.payment_method }}
@@ -107,7 +108,7 @@
             
             <div class="actions-header">
                 <div class="export-buttons">
-                    <a href="?export_pdf=1&status={{ filter_status }}&start_date={{ start_date|default_if_none:'' }}&end_date={{ end_date|default_if_none:'' }}" class="btn btn-primary">Exportar para PDF</a>
+                    <a href="?export_pdf=1&status={{ filter_status }}&start_date={{ start_date|default_if_none:'' }}&end_date={{ end_date|default_if_none:'' }}" class="btn btn-primary" target="_blank">Exportar para PDF</a>
                     <a href="?export_excel=1&status={{ filter_status }}&start_date={{ start_date|default_if_none:'' }}&end_date={{ end_date|default_if_none:'' }}" class="btn btn-primary">Exportar para Excel</a>
                     <div class="import-container">
                         <button type="button" id="import-excel-btn" class="btn btn-primary">Importar Planilha</button>
@@ -222,13 +223,13 @@
                 <div class="pagination">
                     {% if accounts.has_other_pages %}
                         {% if accounts.has_previous %}
-                            <a href="?page=1&status={{ filter_status }}&start_date={{ start_date|default:'' }}&end_date={{ end_date|default:'' }}&search_query={{ search_query|default:'' }}">&laquo; Primeira</a>
-                            <a href="?page={{ accounts.previous_page_number }}&status={{ filter_status }}&start_date={{ start_date|default:'' }}&end_date={{ end_date|default:'' }}&search_query={{ search_query|default:'' }}">Anterior</a>
+                            <a href="?page=1&status={{ filter_status }}&bank={{ bank_filter }}&start_date={{ start_date|default:'' }}&end_date={{ end_date|default:'' }}&search_query={{ search_query|default:'' }}">&laquo; Primeira</a>
+                            <a href="?page={{ accounts.previous_page_number }}&status={{ filter_status }}&bank={{ bank_filter }}&start_date={{ start_date|default:'' }}&end_date={{ end_date|default:'' }}&search_query={{ search_query|default:'' }}">Anterior</a>
                         {% endif %}
                         <span class="current">Página {{ accounts.number }} de {{ accounts.paginator.num_pages }}.</span>
                         {% if accounts.has_next %}
-                            <a href="?page={{ accounts.next_page_number }}&status={{ filter_status }}&start_date={{ start_date|default:'' }}&end_date={{ end_date|default:'' }}&search_query={{ search_query|default:'' }}">Próxima</a>
-                            <a href="?page={{ accounts.paginator.num_pages }}&status={{ filter_status }}&start_date={{ start_date|default:'' }}&end_date={{ end_date|default:'' }}&search_query={{ search_query|default:'' }}">Última &raquo;</a>
+                            <a href="?page={{ accounts.next_page_number }}&status={{ filter_status }}&bank={{ bank_filter }}&start_date={{ start_date|default:'' }}&end_date={{ end_date|default:'' }}&search_query={{ search_query|default:'' }}">Próxima</a>
+                            <a href="?page={{ accounts.paginator.num_pages }}&status={{ filter_status }}&bank={{ bank_filter }}&start_date={{ start_date|default:'' }}&end_date={{ end_date|default:'' }}&search_query={{ search_query|default:'' }}">Última &raquo;</a>
                         {% endif %}
                     {% endif %}
                 </div>

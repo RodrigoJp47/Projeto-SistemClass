@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Recibo #{{ venda.id }}</title>
+    <style>
+        /* CONFIGURAÇÃO PARA IMPRESSORA TÉRMICA */
+        @page {
+            margin: 0;
+            size: auto; /* Tenta ajustar ao papel */
+        }
+        body {
+            font-family: 'Courier New', Courier, monospace; /* Fonte monoespaçada alinha melhor */
+            font-size: 12px;
+            width: 58mm; /* Largura padrão de impressora térmica pequena */
+            margin: 0 auto;
+            padding: 5px;
+            color: #000;
+            background: #fff;
+        }
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+        .bold { font-weight: bold; }
+        .line { border-bottom: 1px dashed #000; margin: 5px 0; }
+        
+        /* Tabela de Itens */
+        table { width: 100%; border-collapse: collapse; }
+        td, th { vertical-align: top; }
+        .col-qtd { width: 15%; }
+        .col-item { width: 60%; }
+        .col-val { width: 25%; text-align: right; }
+
+        /* Esconde botão na impressão */
+        @media print {
+            .no-print { display: none; }
+        }
+    </style>
+</head>
+<body onload="window.print()"> <div class="text-center">
+        {% if empresa %}
+            <strong style="font-size: 14px">{{ empresa.razao_social|default:"SUA EMPRESA" }}</strong><br>
+            {{ empresa.cnpj|default:"" }}<br>
+        {% else %}
+            <strong style="font-size: 14px">RECIBO DE VENDA</strong><br>
+        {% endif %}
+        <small>{{ data_hora|date:"d/m/Y H:i" }}</small>
+    </div>
+
+    <div class="line"></div>
+
+    <table>
+        <thead>
+            <tr style="border-bottom: 1px solid #000;">
+                <th class="col-item text-left">Item</th>
+                <th class="col-qtd text-center">Qtd</th>
+                <th class="col-val">Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in venda.itens.all %}
+            <tr>
+                <td class="col-item">
+                    {{ item.produto.nome|truncatechars:20 }}
+                    <br><small>{{ item.preco_unitario }}</small>
+                </td>
+                <td class="col-qtd text-center">{{ item.quantidade|floatformat:0 }}</td>
+                <td class="col-val">{{ item.subtotal_item }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="line"></div>
+
+    <div class="text-right">
+        TOTAL BRUTO: R$ {{ venda.valor_total_bruto }}<br>
+        DESCONTO: R$ {{ venda.desconto_geral }}<br>
+        <strong style="font-size: 14px">TOTAL A PAGAR: R$ {{ venda.valor_total_liquido }}</strong>
+    </div>
+
+    <div class="line"></div>
+
+    <div class="text-center">
+        Forma de Pagamento:<br>
+        <strong>
+            {% for pg in venda.pagamentos.all %}
+                {{ pg.forma_pagamento }} (R$ {{ pg.valor }})
+            {% endfor %}
+        </strong>
+    </div>
+
+    <br>
+    <div class="text-center">
+        <small>*** NÃO É DOCUMENTO FISCAL ***</small><br>
+        <small>Obrigado pela preferência!</small>
+    </div>
+
+    <button class="no-print" onclick="window.print()" style="width: 100%; margin-top: 20px; padding: 10px; cursor: pointer;">
+        🖨️ IMPRIMIR NOVAMENTE
+    </button>
+
+</body>
+</html>

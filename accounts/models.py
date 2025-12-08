@@ -37,11 +37,14 @@ DRE_AREAS = (
     
     # --- ALTERAÇÃO AQUI ---
     ('NAO_OPERACIONAL', 'Despesas Não Operacionais (-)'), 
+    ('RETIRADA_SOCIOS', 'Retirada de Sócios (-)'),      
+    ('APORTE_SOCIOS', 'Aporte Financeiro (+)'),
     ('OUTRAS_RECEITAS', 'Outras Receitas - Aporte/Financeiro (+)'), # Nova Opção
     # ----------------------
 
     ('TRIBUTACAO', 'IRPJ e CSLL (Tributação) (-)'),
     ('DISTRIBUICAO', 'Distribuição de Lucro Sócios (-)'),
+    
 )
 COST_TYPES = (
     ('FIXO', 'Fixo'),
@@ -255,7 +258,7 @@ class Venda(models.Model):
         ('SUBSTITUIDA', 'Substituída'),
     )
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    cliente = models.ForeignKey(Cliente, on_delete=models.PROTECT)
+    cliente = models.ForeignKey(Cliente, on_delete=models.PROTECT, null=True, blank=True)
     vendedor = models.ForeignKey(Vendedor, on_delete=models.SET_NULL, null=True, blank=True)
     data_venda = models.DateTimeField(auto_now_add=True)
     valor_total_bruto = models.DecimalField(max_digits=12, decimal_places=2, default=0)
@@ -698,6 +701,7 @@ class CompanyUserLink(models.Model):
     can_access_clientes_financeiro = models.BooleanField(default=False, verbose_name="Acesso a Clientes (Financeiro)")
     
     # --- Permissões Módulo Comercial ---
+    can_access_pdv = models.BooleanField(default=False, verbose_name="Acesso ao PDV (Frente de Caixa)")
     can_access_painel_vendas = models.BooleanField(default=False, verbose_name="Acesso a Painel de Vendas")
     can_access_notas_fiscais = models.BooleanField(default=False, verbose_name="Acesso a Notas Fiscais")
     can_access_orcamentos_venda = models.BooleanField(default=False, verbose_name="Acesso a Orçamentos")
@@ -770,4 +774,48 @@ class ClassificacaoAutomatica(models.Model):
 
     def __str__(self):
         return f"{self.termo} -> {self.categoria.name if self.categoria else 'Sem Categoria'}"
+
+
+
+# accounts/models.py
+
+class FechamentoCaixa(models.Model):
+    STATUS_CHOICES = (
+        ('ABERTO', 'Aberto'),
+        ('FECHADO', 'Fechado'),
+    )
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    data_abertura = models.DateTimeField(auto_now_add=True)
+    data_fechamento = models.DateTimeField(null=True, blank=True)
+    
+    saldo_inicial = models.DecimalField(max_digits=12, decimal_places=2, verbose_name="Saldo Inicial (Fundo de Troco)")
+    
+    # Valores apurados pelo sistema (O que o sistema diz que tem)
+    total_vendas_dinheiro = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    total_vendas_pix = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    total_vendas_cartao = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    total_saidas_sangrias = models.DecimalField(max_digits=12, decimal_places=2, default=0, help_text="Contas pagas em dinheiro do caixa")
+    
+    saldo_final_esperado = models.DecimalField(max_digits=12, decimal_places=2, default=0, verbose_name="Saldo Esperado na Gaveta")
+    
+    # O que o usuário contou fisicamente
+    saldo_final_informado = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, verbose_name="Saldo Contado na Gaveta")
+    
+    diferenca = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, verbose_name="Diferença (Quebra de Caixa)")
+    
+    observacoes = models.TextField(blank=True, null=True)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='ABERTO')
+
+    class Meta:
+        verbose_name = "Fechamento de Caixa"
+        verbose_name_plural = "Fechamentos de Caixa"
+        ordering = ['-data_abertura']
+
+    def __str__(self):
+        return f"Caixa de {self.data_abertura.strftime('%d/%m/%Y')} - {self.get_status_display()}"
+
+
+
+
 

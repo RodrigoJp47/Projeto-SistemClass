@@ -128,7 +128,13 @@ class PayableAccountForm(forms.ModelForm):
         self.fields['file'].required = False
         self.fields['bank_account'].required = True
 
-        opcoes_dre_filtradas = [opcao for opcao in self.fields['dre_area'].choices if opcao[0] != 'BRUTA']
+        # Lista do que NÃO deve aparecer no Contas a Pagar
+        excluir_opcoes = ['BRUTA', 'OUTRAS_RECEITAS'] 
+        
+        opcoes_dre_filtradas = [
+            opcao for opcao in self.fields['dre_area'].choices 
+            if opcao[0] not in excluir_opcoes
+        ]
         self.fields['dre_area'].choices = opcoes_dre_filtradas
 
     def clean_file(self):
@@ -479,6 +485,7 @@ class EmployeeCreationForm(forms.ModelForm):
     can_access_vendas = forms.BooleanField(label="Vendas", required=False)
     can_access_metas_comerciais = forms.BooleanField(label="Gestão de Metas", required=False)
     can_access_precificacao = forms.BooleanField(label="Precificação", required=False)
+    can_access_pdv = forms.BooleanField(label="Acesso ao PDV (Frente de Caixa)", required=False)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'mathfilters',
     'notas_fiscais',
     'storages',
+    'pdv',
 ]
 
 MIDDLEWARE = [

@@ -46,7 +46,25 @@
                 <input type="text" name="amount" id="id_amount" {% if form.instance.amount %}value="{{ form.instance.amount|floatformat:2|intcomma }}"{% endif %} required>
                 {{ form.category.label_tag }} {{ form.category }}
                 {{ form.new_category.label_tag }} {{ form.new_category }}
-                {{ form.dre_area.label_tag }} {{ form.dre_area }}
+                {{ form.dre_area.label_tag }} <label for="id_dre_area">Área-DRE:</label>
+                    <select name="dre_area" id="id_dre_area" required>
+                        <option value="" selected disabled>Selecione...</option>
+                        
+                        <option value="DEDUCAO" {% if form.dre_area.value == "DEDUCAO" %}selected{% endif %}>Dedução da Receita Bruta (-)</option>
+
+                        <option value="CUSTOS" {% if form.dre_area.value == "CUSTOS" %}selected{% endif %}>Custos CSP/CMV (-)</option>
+
+                        <option value="OPERACIONAL" {% if form.dre_area.value == "OPERACIONAL" %}selected{% endif %}>Despesas Operacionais (-)</option>
+                        <option value="DEPRECIACAO" {% if form.dre_area.value == "DEPRECIACAO" %}selected{% endif %}>Depreciação e Amortização (-)</option>
+
+                        <option value="NAO_OPERACIONAL" {% if form.dre_area.value == "NAO_OPERACIONAL" %}selected{% endif %}>Despesas Não Operacionais (-)</option>
+                        <option value="TRIBUTACAO" {% if form.dre_area.value == "TRIBUTACAO" %}selected{% endif %}>IRPJ e CSLL (Tributação) (-)</option>
+                        
+                        <option value="DISTRIBUICAO" {% if form.dre_area.value == "DISTRIBUICAO" %}selected{% endif %}>Distribuição de Lucro Sócios (-)</option>
+                        <option value="RETIRADA_SOCIOS" {% if form.dre_area.value == "RETIRADA_SOCIOS" %}selected{% endif %}>Retirada de Sócios (-)</option>
+                        
+                        <option value="NAO_CONSTAR" {% if form.dre_area.value == "NAO_CONSTAR" %}selected{% endif %}>Não constar DRE</option>
+                    </select>
                 {{ form.payment_method.label_tag }} {{ form.payment_method }}
                 {{ form.occurrence.label_tag }} {{ form.occurrence }}
                 {{ form.recurrence_count.label_tag }} {{ form.recurrence_count }}
@@ -101,7 +119,7 @@
             <div class="actions-header">
                 <div class="export-buttons">
                     <a href="?export_pdf=1&status={{ filter_status }}&start_date={{ start_date|default_if_none:'' }}&end_date={{ end_date|default_if_none:'' }}"
-                        class="btn btn-primary">Exportar para PDF</a>
+                        class="btn btn-primary" target="_blank">Exportar para PDF</a>
                     <a href="?export_excel=1&status={{ filter_status }}&start_date={{ start_date|default_if_none:'' }}&end_date={{ end_date|default_if_none:'' }}"
                         class="btn btn-primary">Exportar para Excel</a>
                     <button type="button" id="import-excel-btn" class="btn btn-primary">Importar Planilha</button>
@@ -189,8 +207,7 @@
                                             class="undo-btn" title="Desfazer">&#8634;</button>
                                         {% endif %}
 
-                                        <a href="?edit={{ account.id }}&status={{ filter_status }}&bank={{ bank_filter }}&search_query={{ search_query|default:'' }}&page={{ accounts.number }}&start_date={{ start_date|default:'' }}&end_date={{ end_date|default:'' }}"
-                                            title="Editar">&#9998;</a>
+                                        <a href="?edit={{ account.id|unlocalize }}&status={{ filter_status }}&bank={{ bank_filter }}&search_query={{ search_query|default:'' }}&page={{ accounts.number }}&start_date={{ start_date|default:'' }}&end_date={{ end_date|default:'' }}" title="Editar">&#9998;</a>
 
                                         <button type="button" onclick="triggerFileUpload('{{ account.id|unlocalize }}')"
                                             title="Anexar arquivo">&#128206;</button>
@@ -228,23 +245,17 @@
 
                 <div class="pagination">
                     {% if accounts.has_other_pages %}
-                    {% if accounts.has_previous %}
-                    <a
-                        href="?page=1&status={{ filter_status }}&start_date={{ start_date|default:'' }}&end_date={{ end_date|default:'' }}&search_query={{ search_query|default:'' }}">&laquo;
-                        Primeira</a>
-                    <a
-                        href="?page={{ accounts.previous_page_number }}&status={{ filter_status }}&start_date={{ start_date|default:'' }}&end_date={{ end_date|default:'' }}&search_query={{ search_query|default:'' }}">Anterior</a>
-                    {% endif %}
-                    <span class="current">
-                        Página {{ accounts.number }} de {{ accounts.paginator.num_pages }}.
-                    </span>
-                    {% if accounts.has_next %}
-                    <a
-                        href="?page={{ accounts.next_page_number }}&status={{ filter_status }}&start_date={{ start_date|default:'' }}&end_date={{ end_date|default:'' }}&search_query={{ search_query|default:'' }}">Próxima</a>
-                    <a
-                        href="?page={{ accounts.paginator.num_pages }}&status={{ filter_status }}&start_date={{ start_date|default:'' }}&end_date={{ end_date|default:'' }}&search_query={{ search_query|default:'' }}">Última
-                        &raquo;</a>
-                    {% endif %}
+                        {% if accounts.has_previous %}
+                            <a href="?page=1&status={{ filter_status }}&bank={{ bank_filter }}&start_date={{ start_date|default:'' }}&end_date={{ end_date|default:'' }}&search_query={{ search_query|default:'' }}">&laquo; Primeira</a>
+                            <a href="?page={{ accounts.previous_page_number }}&status={{ filter_status }}&bank={{ bank_filter }}&start_date={{ start_date|default:'' }}&end_date={{ end_date|default:'' }}&search_query={{ search_query|default:'' }}">Anterior</a>
+                        {% endif %}
+                        <span class="current">
+                            Página {{ accounts.number }} de {{ accounts.paginator.num_pages }}.
+                        </span>
+                        {% if accounts.has_next %}
+                            <a href="?page={{ accounts.next_page_number }}&status={{ filter_status }}&bank={{ bank_filter }}&start_date={{ start_date|default:'' }}&end_date={{ end_date|default:'' }}&search_query={{ search_query|default:'' }}">Próxima</a>
+                            <a href="?page={{ accounts.paginator.num_pages }}&status={{ filter_status }}&bank={{ bank_filter }}&start_date={{ start_date|default:'' }}&end_date={{ end_date|default:'' }}&search_query={{ search_query|default:'' }}">Última &raquo;</a>
+                        {% endif %}
                     {% endif %}
                 </div>
             </div>

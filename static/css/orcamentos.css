@@ -424,6 +424,37 @@
     /* border: 1px solid transparent; */
 }
 /* === FIM: ESTILOS DA PAGINAÇÃO (DARK MODE) === */
+.btn-export {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 38px;
+            height: 38px;
+            border-radius: 4px;
+            text-decoration: none;
+            color: white;
+            font-size: 16px;
+            transition: opacity 0.3s;
+            border: none;
+            cursor: pointer;
+        }
+        .btn-export:hover {
+            opacity: 0.85;
+            color: white;
+        }
+        .btn-export.pdf {
+            background-color: #dc3545; /* Vermelho */
+        }
+        .btn-export.excel {
+            background-color: #28a745; /* Verde */
+        }
+        /* Ajuste para o formulário ficar alinhado */
+        .filter-form {
+            display: flex;
+            align-items: flex-end; /* Alinha tudo pela base */
+            gap: 15px;
+            flex-wrap: wrap;
+        }
 
 /* ==========================================================================
    REGRAS DE RESPONSIVIDADE

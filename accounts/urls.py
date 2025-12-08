@@ -1,4 +1,3 @@
-
 from django.urls import path
 from django.contrib.auth import views as auth_views
 from .views import (
@@ -48,8 +47,7 @@ from .views import (
     company_profile_view,
     smart_redirect_view,
     editar_cliente_view,
-
-    
+    relatorios_view,
 )
 
 urlpatterns = [
@@ -70,10 +68,7 @@ urlpatterns = [
     path('configuracoes/importar-ofx/', importar_ofx_view, name='importar_ofx'),
     path('configuracoes/perfil-empresa/', company_profile_view, name='company_profile'),
     
-    
-    # OBS: A rota 'relatorios' está apontando para a view 'home'.
-    # Se precisar de uma página específica para relatórios, o ideal é criar uma nova view para ela.
-    path('relatorios/', home, name='relatorios'),
+    path('configuracoes/relatorios/', relatorios_view, name='relatorios_central'),
 
     # --- Dashboards ---
     path('dashboards/', dashboards, name='dashboards'),

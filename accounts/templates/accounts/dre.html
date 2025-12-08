@@ -65,7 +65,7 @@
                 <tbody>
                     {% for item in dre_data %}
                         <tr {% if item.is_total %}class="total-row"{% endif %}>
-                            <td {% if not item.is_total %}class="expandable-label" data-target="#details-{{ item.key }}"{% endif %}>
+                            <td {% if not item.is_total or item.key == 'NAO_OPERACIONAIS' %}class="expandable-label" data-target="#details-{{ item.key }}"{% endif %}>
                                 {{ item.label }}
                             </td>
                             <td style="text-align: right;">

@@ -73,6 +73,7 @@ from .models import (
     ContaAzulCredentials, Precificacao, Orcamento, OrcamentoVenda,
     ItemOrcamento, ClassificacaoAutomatica
 )
+from .utils_exports import gerar_pdf_generic, gerar_excel_generic
 
 
 
@@ -85,18 +86,18 @@ MESES_ABREVIADOS = {
 
 
 
-# Em accounts/views.py (Logo no início, após os imports)
+# Em accounts/views.py
 
-# Substitua a função antiga por esta:
-def aprender_classificacao(user, nome, categoria, dre_area, tipo, bank_account=None): # <--- Adicionei o argumento aqui
+def aprender_classificacao(user, nome, categoria, dre_area, tipo, bank_account=None):
     """
-    Salva ou atualiza a regra de classificação baseada no nome da conta.
+    Salva a regra de classificação APENAS SE ELA AINDA NÃO EXISTIR.
+    Isso protege o histórico contra edições pontuais (exceções).
     """
-    # Importante: O import deve estar aqui ou no topo do arquivo
     from .models import ClassificacaoAutomatica 
 
     if nome and categoria and dre_area:
-        ClassificacaoAutomatica.objects.update_or_create(
+        # AQUI ESTÁ A MUDANÇA: de update_or_create para get_or_create
+        ClassificacaoAutomatica.objects.get_or_create(
             user=user,
             termo__iexact=nome.strip(),
             tipo=tipo,
@@ -104,27 +105,27 @@ def aprender_classificacao(user, nome, categoria, dre_area, tipo, bank_account=N
                 'termo': nome.strip(),
                 'categoria': categoria,
                 'dre_area': dre_area,
-                'bank_account': bank_account # <--- E adicionei o salvamento aqui
+                'bank_account': bank_account
             }
         )
+
 def prever_classificacao(user, descricao, tipo):
     """
-    Tenta encontrar uma categoria e DRE baseada na descrição.
-    Retorna uma tupla (categoria, dre_area) ou (None, None).
+    Tenta encontrar uma categoria, DRE e Banco baseada na descrição.
+    Retorna uma tupla (categoria, dre_area, bank_account) ou (None, None, None).
     """
-    # Busca todas as regras desse usuário para o tipo (Pagar/Receber)
+    # Importação dentro da função para evitar erro circular, se necessário
+    from .models import ClassificacaoAutomatica 
+
     regras = ClassificacaoAutomatica.objects.filter(user=user, tipo=tipo)
-    
     descricao_lower = descricao.lower()
     
-    # Verifica se algum termo conhecido está contido na descrição que veio do banco/OFX
-    # Ex: Se a regra é "Uber" e a descrição é "UBER *VIAGEM", vai dar match.
     for regra in regras:
         if regra.termo.lower() in descricao_lower:
-            return regra.categoria, regra.dre_area
+            # RETORNA 3 VALORES AGORA
+            return regra.categoria, regra.dre_area, regra.bank_account
             
-    return None, None
-# Em accounts/views.py
+    return None, None, None # Retorna 3 Nones
 
 @login_required
 @subscription_required
@@ -606,11 +607,12 @@ def dre_view(request):
         ('EBITDA', {'label': '(=) Lucro Liquido Operacional (EBITDA)', 'is_total': True}),
         ('DEPRECIACAO', {'label': '(-) DEPRECIAÇÃO E AMORTIZAÇÃO', 'is_total': False}), # <-- NOVA LINHA
         ('EBIT', {'label': '(=) EBIT (Lucro Antes dos Juros e Impostos)', 'is_total': True}), # <-- NOVA LINHA
-        ('NAO_OPERACIONAIS', {'label': '(-) NÃO OPERACIONAIS', 'is_total': False}),
+        ('NAO_OPERACIONAIS', {'label': '(+/-) RESULTADO NÃO OPERACIONAL', 'is_total': True}),
         ('LUCRO_ANTES_IR', {'label': '(=) LUCRO ANTES DO IMPOSTO DE RENDA (LAIR)', 'is_total': True}), # <-- NOVA LINHA
         ('TRIBUTACAO', {'label': '(-) IRPJ E CSLL (TRIBUTAÇÃO)', 'is_total': False}), # <-- NOVA LINHA
         ('LUCRO_LIQUIDO_FINAL', {'label': '(=) LUCRO LÍQUIDO DO EXERCÍCIO', 'is_total': True}),
         ('DISTRIBUICAO_LUCRO_SOCIOS', {'label': '(-) DISTRIBUIÇÃO DE LUCRO SÓCIOS', 'is_total': False}),
+        ('APORTES_RETIRADAS', {'label': '(+/-) Aportes / Retiradas dos Sócios', 'is_total': False}),
         ('RESULTADO_FINAL', {'label': '(=) RESULTADO FINAL', 'is_total': True}),
     ])
 
@@ -621,7 +623,7 @@ def dre_view(request):
     # PERÍODO ATUAL
     receivables_query = ReceivableAccount.objects.filter(
         user=request.user, 
-        dre_area__in=['BRUTA', 'OUTRAS_RECEITAS'], # <--- Agora aceita os dois
+        dre_area__in=['BRUTA', 'OUTRAS_RECEITAS', 'APORTE_SOCIOS'], # <--- Agora aceita os dois
         due_date__range=[start_date, end_date]
     )
     payables_query = PayableAccount.objects.filter(user=request.user, due_date__range=[start_date, end_date]).exclude(dre_area='NAO_CONSTAR')
@@ -632,7 +634,7 @@ def dre_view(request):
     # PERÍODO ANTERIOR
     receivables_anterior_query = ReceivableAccount.objects.filter(
         user=request.user, 
-        dre_area__in=['BRUTA', 'OUTRAS_RECEITAS'], # <--- Agora busca vendas e aportes
+        dre_area__in=['BRUTA', 'OUTRAS_RECEITAS', 'APORTE_SOCIOS'], # <--- Agora busca vendas e aportes
         due_date__range=[start_date_anterior, end_date_anterior]
     )
     payables_anterior_query = PayableAccount.objects.filter(user=request.user, due_date__range=[start_date_anterior, end_date_anterior]).exclude(dre_area='NAO_CONSTAR')
@@ -642,25 +644,50 @@ def dre_view(request):
 
     # Em dre_view, cole este novo bloco de código
 
-    # --- NOVO: Busca detalhes por nome para expansão na tabela ---
+    # --- NOVO: Busca detalhes por nome para expansão na tabela (CORRIGIDO) ---
     details_by_name = {key: [] for key in dre_structure.keys()}
 
-    # Detalhes de Contas a Receber (agrupados por nome)
-    receivables_details_by_name = receivables_query.values('name').annotate(
+    # 1. Detalhes de Contas a Receber (Separando Bruta, Aporte e Outras)
+    # Adicionamos 'dre_area' no values para poder filtrar
+    receivables_details_by_name = receivables_query.values('dre_area', 'name').annotate(
         total=Sum('amount')
     ).order_by('-total')
-    details_by_name['RECEITAS_BRUTAS'] = list(receivables_details_by_name)
 
-    # Detalhes de Contas a Pagar (agrupados por nome e área da DRE)
+    for item in receivables_details_by_name:
+        if item['dre_area'] == 'BRUTA':
+            details_by_name['RECEITAS_BRUTAS'].append({'name': item['name'], 'total': item['total']})
+        
+        elif item['dre_area'] == 'APORTE_SOCIOS':
+            # Joga para a linha correta de Aportes
+            details_by_name['APORTES_RETIRADAS'].append({'name': f"(+) {item['name']}", 'total': item['total']})
+            
+        elif item['dre_area'] == 'OUTRAS_RECEITAS':
+            # Outras receitas abatem as despesas não operacionais
+            details_by_name['NAO_OPERACIONAIS'].append({'name': f"(+) {item['name']}", 'total': item['total']})
+
+    # 2. Detalhes de Contas a Pagar (Incluindo Retirada de Sócios)
     payables_details_by_name = payables_query.values('dre_area', 'name').annotate(
         total=Sum('amount')
     ).order_by('dre_area', '-total')
 
-    dre_area_mapping = {'DEDUCAO': 'DEDUCAO_RECEITA_BRUTA', 'CUSTOS': 'CUSTOS_CSP_CMV', 'OPERACIONAL': 'DESPESAS_OPERACIONAIS', 'NAO_OPERACIONAL': 'NAO_OPERACIONAIS', 'DISTRIBUICAO': 'DISTRIBUICAO_LUCRO_SOCIOS', 'DEPRECIACAO': 'DEPRECIACAO', 'TRIBUTACAO': 'TRIBUTACAO'}
+    dre_area_mapping = {
+        'DEDUCAO': 'DEDUCAO_RECEITA_BRUTA', 
+        'CUSTOS': 'CUSTOS_CSP_CMV', 
+        'OPERACIONAL': 'DESPESAS_OPERACIONAIS', 
+        'NAO_OPERACIONAL': 'NAO_OPERACIONAIS', 
+        'DISTRIBUICAO': 'DISTRIBUICAO_LUCRO_SOCIOS', 
+        'DEPRECIACAO': 'DEPRECIACAO', 
+        'TRIBUTACAO': 'TRIBUTACAO',
+        # ADICIONADO: Mapeamento para Retirada de Sócios aparecer na lista
+        'RETIRADA_SOCIOS': 'APORTES_RETIRADAS' 
+    }
+    
     for item in payables_details_by_name:
         dre_key = dre_area_mapping.get(item['dre_area'])
         if dre_key:
-            details_by_name[dre_key].append({'name': item['name'], 'total': item['total']})
+            # Se for retirada, mostramos visualmente com (-)
+            prefix = "(-) " if item['dre_area'] == 'RETIRADA_SOCIOS' else ""
+            details_by_name[dre_key].append({'name': f"{prefix}{item['name']}", 'total': item['total']})
     # --- FIM DO NOVO BLOCO ---    
 
     # --- Cálculos e Processamento (sem alterações na lógica interna) ---
@@ -694,30 +721,53 @@ def dre_view(request):
 
             # CASO 2: Se for Aporte/Investimento (Outras Receitas)
             elif entry['dre_area'] == 'OUTRAS_RECEITAS':
-                # IMPORTANTE: A linha 'NAO_OPERACIONAIS' geralmente soma despesas.
-                # Para entrar como receita (crédito), nós SUBTRAÍMOS o valor.
-                # Matemática: Lucro - (Despesa - ReceitaExtra) = Lucro - Despesa + ReceitaExtra
-                monthly_totals['NAO_OPERACIONAIS'][idx] -= amount
+                # Agora tratamos como Resultado: Receita aumenta o saldo
+                monthly_totals['NAO_OPERACIONAIS'][idx] += amount
                 
-                # Adicionamos na lista de detalhes dessa linha para você ver o que é
                 monthly_details['NAO_OPERACIONAIS'][idx].append({
-                    'category': f"(+) {category_name}", # Coloquei um (+) visual para facilitar
+                    'category': f"(+) {category_name}", 
                     'amount': amount
                 })
+
+            elif entry['dre_area'] == 'APORTE_SOCIOS':
+                # Soma como positivo na nova linha
+                monthly_totals['APORTES_RETIRADAS'][idx] += amount
+                monthly_details['APORTES_RETIRADAS'][idx].append({
+                    'category': f"(+) {category_name}", # Sinal de + visual
+                    'amount': amount
+                })    
 
         except (ValueError, IndexError, TypeError): 
             continue
 
     payables_details = payables_query.annotate(month=TruncMonth('due_date')).values('month', 'dre_area', 'category__name').annotate(total=Sum('amount'))
-    dre_area_mapping = {'DEDUCAO': 'DEDUCAO_RECEITA_BRUTA', 'CUSTOS': 'CUSTOS_CSP_CMV', 'OPERACIONAL': 'DESPESAS_OPERACIONAIS', 'NAO_OPERACIONAL': 'NAO_OPERACIONAIS', 'DISTRIBUICAO': 'DISTRIBUICAO_LUCRO_SOCIOS'}
+    dre_area_mapping = {'DEDUCAO': 'DEDUCAO_RECEITA_BRUTA', 'CUSTOS': 'CUSTOS_CSP_CMV', 'OPERACIONAL': 'DESPESAS_OPERACIONAIS', 'NAO_OPERACIONAL': 'NAO_OPERACIONAIS', 'RETIRADA_SOCIOS': 'APORTES_RETIRADAS', 'DISTRIBUICAO': 'DISTRIBUICAO_LUCRO_SOCIOS'}
     for entry in payables_details:
         dre_area_key = dre_area_mapping.get(entry['dre_area'], entry['dre_area'])
         if dre_area_key in monthly_totals:
             try:
                 month_str = entry['month'].strftime('%b/%Y'); idx = month_labels.index(month_str)
                 category_name = entry['category__name'] or "Sem Categoria"; amount = Decimal(str(entry['total'])) if entry['total'] else Decimal('0')
-                monthly_totals[dre_area_key][idx] += amount
-                monthly_details[dre_area_key][idx].append({'category': category_name, 'amount': amount})
+                
+                # --- LÓGICA CORRIGIDA AQUI ---
+                if dre_area_key == 'APORTES_RETIRADAS':
+                    # Se for retirada (Pagamento), SUBTRAI do saldo de Aportes/Retiradas
+                    monthly_totals[dre_area_key][idx] -= amount
+                    monthly_details[dre_area_key][idx].append({'category': f"(-) {category_name}", 'amount': -amount})
+                
+                # --- NOVO BLOCO: Trata Despesa Não Operacional como redução do saldo ---
+                elif dre_area_key == 'NAO_OPERACIONAIS':
+                    monthly_totals[dre_area_key][idx] -= amount
+                    # Adiciona o prefixo (-) no nome e inverte o valor para aparecer negativo no detalhe
+                    monthly_details[dre_area_key][idx].append({'category': f"(-) {category_name}", 'amount': -amount})
+                # -----------------------------------------------------------------------
+
+                else:
+                    # Demais despesas continuam somando no acumulador da despesa (ex: Custos, Despesas Op)
+                    monthly_totals[dre_area_key][idx] += amount
+                    monthly_details[dre_area_key][idx].append({'category': category_name, 'amount': amount})
+                # -----------------------------
+
             except (ValueError, IndexError, TypeError): continue
 
     # Em views.py, na função dre_view
@@ -730,21 +780,36 @@ def dre_view(request):
         monthly_totals['EBITDA'][i] = monthly_totals['LUCRO_BRUTO_MC'][i] - monthly_totals['DESPESAS_OPERACIONAIS'][i]
         
         monthly_totals['EBIT'][i] = monthly_totals['EBITDA'][i] - monthly_totals['DEPRECIACAO'][i]
-        # LAIR = EBIT - Resultado Financeiro (Não Operacionais)
-        monthly_totals['LUCRO_ANTES_IR'][i] = monthly_totals['EBIT'][i] - monthly_totals['NAO_OPERACIONAIS'][i]
+        # LAIR = EBIT + Resultado Não Operacional (pois agora calculamos o saldo líquido)
+        monthly_totals['LUCRO_ANTES_IR'][i] = monthly_totals['EBIT'][i] + monthly_totals['NAO_OPERACIONAIS'][i]
         # Lucro Líquido = LAIR - Impostos sobre o Lucro
         monthly_totals['LUCRO_LIQUIDO_FINAL'][i] = monthly_totals['LUCRO_ANTES_IR'][i] - monthly_totals['TRIBUTACAO'][i]
         # Resultado Final = Lucro Líquido - Distribuição
-        monthly_totals['RESULTADO_FINAL'][i] = monthly_totals['LUCRO_LIQUIDO_FINAL'][i] - monthly_totals['DISTRIBUICAO_LUCRO_SOCIOS'][i]
+        monthly_totals['RESULTADO_FINAL'][i] = monthly_totals['LUCRO_LIQUIDO_FINAL'][i] - monthly_totals['DISTRIBUICAO_LUCRO_SOCIOS'][i] + monthly_totals['APORTES_RETIRADAS'][i]
 
     monthly_totals_anterior = {key: Decimal('0.0') for key in dre_structure.keys()}
-    receivables_anterior = receivables_anterior_query.aggregate(total=Sum('amount'))['total'] or Decimal('0')
-    monthly_totals_anterior['RECEITAS_BRUTAS'] = receivables_anterior
+    
+    # --- CORREÇÃO: Separa Receita Bruta de Aportes no Período Anterior ---
+    rec_ant_bruta = receivables_anterior_query.filter(dre_area='BRUTA').aggregate(total=Sum('amount'))['total'] or Decimal('0')
+    rec_ant_aporte = receivables_anterior_query.filter(dre_area='APORTE_SOCIOS').aggregate(total=Sum('amount'))['total'] or Decimal('0')
+    rec_ant_outras = receivables_anterior_query.filter(dre_area='OUTRAS_RECEITAS').aggregate(total=Sum('amount'))['total'] or Decimal('0')
+
+    monthly_totals_anterior['RECEITAS_BRUTAS'] = rec_ant_bruta
+    monthly_totals_anterior['APORTES_RETIRADAS'] += rec_ant_aporte
+    monthly_totals_anterior['NAO_OPERACIONAIS'] += rec_ant_outras # Receita SOMA no resultado não operacional
+    # ---------------------------------------------------------------------
+
     payables_anterior = payables_anterior_query.values('dre_area').annotate(total=Sum('amount'))
     for entry in payables_anterior:
         dre_area_key = dre_area_mapping.get(entry['dre_area'], entry['dre_area'])
         if dre_area_key in monthly_totals_anterior and entry['total'] is not None:
-            monthly_totals_anterior[dre_area_key] += entry['total']
+            # CORREÇÃO: Se for retirada, subtrai. Se for despesa, soma.
+            if dre_area_key == 'APORTES_RETIRADAS':
+                monthly_totals_anterior[dre_area_key] -= entry['total']
+            elif dre_area_key == 'NAO_OPERACIONAIS':
+                monthly_totals_anterior[dre_area_key] -= entry['total'] # Despesa SUBTRAI do resultado
+            else:
+                monthly_totals_anterior[dre_area_key] += entry['total']
             
     monthly_totals_anterior['RECEITAS_LIQUIDAS'] = monthly_totals_anterior['RECEITAS_BRUTAS'] - monthly_totals_anterior['DEDUCAO_RECEITA_BRUTA']
     monthly_totals_anterior['LUCRO_BRUTO_MC'] = monthly_totals_anterior['RECEITAS_LIQUIDAS'] - monthly_totals_anterior['CUSTOS_CSP_CMV']
@@ -754,9 +819,9 @@ def dre_view(request):
     # ▼▼▼ NOVOS CÁLCULOS PARA A DRE COMPLETA ▼▼▼
     # ALTERE AQUI TAMBÉM
     monthly_totals_anterior['EBIT'] = monthly_totals_anterior['EBITDA'] - monthly_totals_anterior['DEPRECIACAO']
-    monthly_totals_anterior['LUCRO_ANTES_IR'] = monthly_totals_anterior['EBIT'] - monthly_totals_anterior['NAO_OPERACIONAIS']
+    monthly_totals_anterior['LUCRO_ANTES_IR'] = monthly_totals_anterior['EBIT'] + monthly_totals_anterior['NAO_OPERACIONAIS']
     monthly_totals_anterior['LUCRO_LIQUIDO_FINAL'] = monthly_totals_anterior['LUCRO_ANTES_IR'] - monthly_totals_anterior['TRIBUTACAO']
-    monthly_totals_anterior['RESULTADO_FINAL'] = monthly_totals_anterior['LUCRO_LIQUIDO_FINAL'] - monthly_totals_anterior['DISTRIBUICAO_LUCRO_SOCIOS']
+    monthly_totals_anterior['RESULTADO_FINAL'] = monthly_totals_anterior['LUCRO_LIQUIDO_FINAL'] - monthly_totals_anterior['DISTRIBUICAO_LUCRO_SOCIOS'] + monthly_totals_anterior['APORTES_RETIRADAS']
 
     dre_data_anterior_for_template = []
     for k, v in dre_structure.items():
@@ -1506,7 +1571,7 @@ def importar_ofx_view(request):
                         if amount < 0:
                             # --- LÓGICA INTELIGENTE PARA PAGAR ---
                             # 1. Tenta prever com base no dicionário
-                            cat_prevista, dre_prevista = prever_classificacao(request.user, name, 'PAYABLE')
+                            cat_prevista, dre_prevista, _ = prever_classificacao(request.user, name, 'PAYABLE')
                             
                             # 2. Define os valores finais (usa o previsto ou o padrão)
                             categoria_final = cat_prevista if cat_prevista else payable_category
@@ -1533,7 +1598,7 @@ def importar_ofx_view(request):
                             )
                         else:
                             # --- LÓGICA INTELIGENTE PARA RECEBER ---
-                            cat_prevista, dre_prevista = prever_classificacao(request.user, name, 'RECEIVABLE')
+                            cat_prevista, dre_prevista, _ = prever_classificacao(request.user, name, 'RECEIVABLE')
                             
                             categoria_final = cat_prevista if cat_prevista else receivable_category
                             dre_final = dre_prevista if dre_prevista else 'BRUTA'
@@ -1604,7 +1669,7 @@ def contas_pagar(request):
             messages.error(request, "O ID da conta para edição é inválido.")
             instance = None
 
-    # Lógica de exportação (sem alterações)
+    # Lógica de exportação refatorada
     if request.GET.get('export_pdf') or request.GET.get('export_excel'):
         filter_status = request.GET.get('status', 'all')
         start_date = request.GET.get('start_date')
@@ -1615,137 +1680,10 @@ def contas_pagar(request):
         if start_date: accounts = accounts.filter(due_date__gte=parse_date(start_date))
         if end_date: accounts = accounts.filter(due_date__lte=parse_date(end_date))
 
-        # No topo do seu arquivo views.py, garanta que 'landscape' seja importado
-        from reportlab.lib.pagesizes import A4, landscape
-        # ... outras importações como io, HttpResponse, Table, etc.
-
-       
-
-    # Este bloco de filtro é executado se for PDF OU Excel
-    if request.GET.get('export_pdf') or request.GET.get('export_excel'):
-        filter_status = request.GET.get('status', 'all')
-        start_date = request.GET.get('start_date')
-        end_date = request.GET.get('end_date')
-        accounts = PayableAccount.objects.filter(user=request.user).order_by('due_date')
-        if filter_status == 'open': accounts = accounts.filter(is_paid=False)
-        elif filter_status == 'paid': accounts = accounts.filter(is_paid=True)
-        if start_date: accounts = accounts.filter(due_date__gte=parse_date(start_date))
-        if end_date: accounts = accounts.filter(due_date__lte=parse_date(end_date))
-
-        # Bloco de código para exportar para PDF
         if request.GET.get('export_pdf'):
-            from reportlab.platypus import Spacer, Paragraph
-            from reportlab.lib.colors import HexColor
-            from reportlab.lib.units import cm
-            
-            response = HttpResponse(content_type='application/pdf')
-            response['Content-Disposition'] = 'attachment; filename="contas_pagar.pdf"'
-            buffer = io.BytesIO()
-            doc = SimpleDocTemplate(buffer, pagesize=landscape(A4), leftMargin=0.5*cm, rightMargin=0.5*cm, topMargin=1*cm, bottomMargin=1*cm, title="Relatório de Contas a Pagar")
-            
-            elements = []
-            styles = getSampleStyleSheet()
-            styles['Heading1'].fontSize = 14
-            title = Paragraph("Relatório de Contas a Pagar", styles['Heading1'])
-            elements.append(title)
-            elements.append(Spacer(1, 20))
-
-            styleN = styles['Normal']
-            styleN.fontSize = 11
-
-            total_amount_pdf = Decimal('0')
-            data = [['Nome', 'Descrição', 'Vencimento', 'Valor', 'Categoria', 'Conta Bancária', 'Forma Pag.', 'Status']]
-            for account in accounts:
-                total_amount_pdf += account.amount
-                formatted_amount = f"R$ {account.amount:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-                data.append([
-                    Paragraph(account.name, styleN),
-                    Paragraph(account.description, styleN),
-                    account.due_date.strftime('%d/%m/%Y'),
-                    formatted_amount,
-                    Paragraph(account.category.name if account.category else 'Sem Categoria', styleN),
-                    Paragraph(account.bank_account.bank_name if account.bank_account else '-', styleN),
-                    account.get_payment_method_display(),
-                    'Pago' if account.is_paid else 'Aberto'
-                ])
-
-            formatted_total = f"R$ {total_amount_pdf:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-            data.append([f"Valor Total: {formatted_total}", '', '', '', '', '', '', ''])
-            
-            col_widths = [4*cm, 5*cm, 3*cm, 3*cm, 3*cm, 4*cm, 3*cm, 2*cm]
-            table = Table(data, colWidths=col_widths)
-            
-            table.setStyle(TableStyle([
-                ('BACKGROUND', (0, 0), (-1, 0), HexColor('#2E86C1')), ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'), ('FONTSIZE', (0, 0), (-1, 0), 12), ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
-                ('BACKGROUND', (0, -1), (-1, -1), colors.lightgrey), ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
-                ('FONTSIZE', (0, -1), (-1, -1), 11), ('SPAN', (0, -1), (-1, -1)), ('ALIGN', (0, -1), (-1, -1), 'RIGHT'),
-                ('ALIGN', (0, 0), (-1, -2), 'CENTER'), ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-                ('GRID', (0, 0), (-1, -1), 1, colors.black), ('LINEBEFORE', (1, -1), (-1, -1), 1, colors.lightgrey),
-            ]))
-
-            elements.append(table)
-            doc.build(elements)
-            response.write(buffer.getvalue())
-            buffer.close()
-            return response
-
-        # Bloco de código para exportar para Excel (AGORA NO LUGAR CORRETO)
-        if request.GET.get('export_excel'):
-            response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-            response['Content-Disposition'] = 'attachment; filename="contas_pagar.xlsx"'
-            
-            wb = openpyxl.Workbook()
-            ws = wb.active
-            ws.title = 'Contas a Pagar'
-            headers = ['Nome', 'Descrição', 'Vencimento', 'Valor', 'Categoria', 'Conta Bancária', 'Forma Pag.', 'Custo', 'Ocorrência', 'Status']
-            ws.append(headers)
-
-            for cell in ws[1]:
-                cell.font = openpyxl.styles.Font(bold=True)
-
-            total_amount = Decimal('0')
-            for account in accounts:
-                ws.append([
-                    account.name, account.description, account.due_date, account.amount,
-                    account.category.name if account.category else 'Sem Categoria',
-                    account.bank_account.bank_name if account.bank_account else '-',
-                    account.get_payment_method_display(), account.get_cost_type_display(),
-                    account.get_occurrence_display(), 'Pago' if account.is_paid else 'Aberto'
-                ])
-                total_amount += account.amount
-
-            ws.append([])
-            total_row_idx = ws.max_row + 1
-            ws.cell(row=total_row_idx, column=3, value="VALOR TOTAL:").font = openpyxl.styles.Font(bold=True)
-            total_cell = ws.cell(row=total_row_idx, column=4, value=total_amount)
-            total_cell.font = openpyxl.styles.Font(bold=True)
-            total_cell.number_format = 'R$ #,##0.00'
-
-            for col in ws.columns:
-                max_length = 0
-                column = col[0].column_letter
-                for cell in col:
-                    try:
-                        if len(str(cell.value)) > max_length:
-                            max_length = len(str(cell.value))
-                    except: pass
-                adjusted_width = (max_length + 2)
-                ws.column_dimensions[column].width = adjusted_width
-
-            # --- INÍCIO DA CORREÇÃO ---
-            # Define uma largura máxima para a coluna 'Nome' (Coluna A)
-            ws.column_dimensions['A'].width = 15
-            # --- FIM DA CORREÇÃO ---    
-            
-            ws.column_dimensions['C'].width = 12
-            for cell in ws['C']: cell.number_format = 'DD/MM/YYYY'
-            for cell in ws['D']: cell.number_format = 'R$ #,##0.00'
-                
-            wb.save(response)
-            return response
-            
-    # --- FIM DA LÓGICA DE EXPORTAÇÃO CORRIGIDA ---
+            return gerar_pdf_generic(accounts, 'pagar')
+        elif request.GET.get('export_excel'):
+            return gerar_excel_generic(accounts, 'pagar')
 
 
     if request.method == 'POST':
@@ -1826,26 +1764,11 @@ def contas_pagar(request):
                     for index, row in df.iterrows():
                         excel_row_number = index + 2
                         try:
-                            # ... (o resto da lógica de importação linha por linha continua exatamente igual) ...
-                            category_name = row.get('category', 'N/A')
-                            # --- BLOCO ADICIONADO ---
-                            category_name = row.get('category', 'N/A')
-                            category, _ = Category.objects.get_or_create(
-                                name=str(category_name).strip(),
-                                category_type='PAYABLE', # Especifica o tipo
-                                user=request.user        # Especifica o usuário
-                            )
-                            # --- FIM DO BLOCO ---
-
-                            bank_name = row.get('bank_account')
-                            bank_account = None
-                            if pd.notna(bank_name):
-                                bank_account = BankAccount.objects.filter(user=request.user, bank_name__icontains=str(bank_name).strip()).first()
-
-                            cost_type_value = str(row.get('cost_type', 'FIXO')).strip().upper()
-                            if cost_type_value not in ['FIXO', 'VARIAVEL']:
-                                cost_type_value = 'FIXO'
-
+                            # 1. Tratamento Básico de Dados (Nome, Descrição, Valor, Data)
+                            # -----------------------------------------------------------
+                            name = str(row['name']).strip()
+                            description = str(row.get('description', 'Importado via Excel'))
+                            
                             due_date = pd.to_datetime(row['due_date'], errors='coerce', dayfirst=True).date()
                             if pd.isnull(due_date):
                                 raise ValueError("Formato de data inválido.")
@@ -1853,11 +1776,59 @@ def contas_pagar(request):
                             amount_str = str(row['amount']).replace(',', '.')
                             amount = float(amount_str)
 
+                            payment_method = str(row.get('payment_method', 'BOLETO')).strip().upper()
+                            cost_type_value = str(row.get('cost_type', 'FIXO')).strip().upper()
+                            if cost_type_value not in ['FIXO', 'VARIAVEL']:
+                                cost_type_value = 'FIXO'
+
+                            # 2. Lógica Inteligente de Classificação (Categoria, DRE, Banco)
+                            # -----------------------------------------------------------
+                            
+                            # A. Tenta prever com base no histórico (Dicionário)
+                            cat_smart, dre_smart, bank_smart = prever_classificacao(request.user, name, 'PAYABLE')
+
+                            # B. Define a Categoria Final
+                            # Prioridade: Excel > Inteligência > Padrão (Criar nova)
+                            category = None
+                            if pd.notna(row.get('category')):
+                                cat_name_excel = str(row.get('category')).strip()
+                                category, _ = Category.objects.get_or_create(name=cat_name_excel, category_type='PAYABLE', user=request.user)
+                            elif cat_smart:
+                                category = cat_smart
+                            else:
+                                # Se não tem no Excel e nem no Smart, cria/usa uma padrão
+                                category, _ = Category.objects.get_or_create(name='Despesas Gerais', category_type='PAYABLE', user=request.user)
+
+                            # C. Define a Área DRE Final
+                            # Prioridade: Inteligência > Padrão ('OPERACIONAL')
+                            # (Nota: Dificilmente vem DRE no Excel, então confiamos no Smart)
+                            dre_final = dre_smart if dre_smart else 'OPERACIONAL'
+
+                            # D. Define o Banco Final
+                            # Prioridade: Excel (Nome do Banco) > Inteligência > None
+                            bank_account = None
+                            if pd.notna(row.get('bank_account')):
+                                bank_name_excel = str(row.get('bank_account')).strip()
+                                bank_account = BankAccount.objects.filter(user=request.user, bank_name__icontains=bank_name_excel).first()
+                            
+                            if not bank_account and bank_smart:
+                                bank_account = bank_smart
+
+                            # 3. Criação do Objeto
+                            # -----------------------------------------------------------
                             PayableAccount.objects.create(
-                                user=request.user, name=str(row['name']), description=str(row.get('description', 'N/A')),
-                                due_date=due_date, amount=amount, category=category, bank_account=bank_account,
-                                payment_method=str(row.get('payment_method', 'PIX')).strip().upper(),
-                                cost_type=cost_type_value, occurrence='AVULSO', is_paid=False, dre_area='OPERACIONAL'
+                                user=request.user, 
+                                name=name, 
+                                description=description,
+                                due_date=due_date, 
+                                amount=amount, 
+                                category=category, 
+                                bank_account=bank_account, # Banco Inteligente ou do Excel
+                                dre_area=dre_final,        # DRE Inteligente ou Padrão
+                                payment_method=payment_method,
+                                cost_type=cost_type_value, 
+                                occurrence='AVULSO', 
+                                is_paid=False
                             )
                             successful_imports += 1
 
@@ -2151,149 +2122,10 @@ def contas_receber(request):
     # Em accounts/views.py, dentro da função contas_receber
 
     if 'export_pdf' in request.GET:
-        # Importações necessárias do ReportLab (garanta que estejam no topo do seu views.py)
-        from reportlab.platypus import Spacer, Paragraph
-        from reportlab.lib.colors import HexColor
-        from reportlab.lib.styles import getSampleStyleSheet
-        from reportlab.lib.units import cm
-
-        response = HttpResponse(content_type='application/pdf')
-        response['Content-Disposition'] = 'attachment; filename="contas_receber.pdf"'
-        buffer = io.BytesIO()
-        doc = SimpleDocTemplate(buffer, pagesize=landscape(A4), leftMargin=0.5*cm, rightMargin=0.5*cm, topMargin=1*cm, bottomMargin=1*cm, title="Relatório de Contas a Receber")
-        
-        elements = []
-        styles = getSampleStyleSheet()
-
-        styles['Heading1'].fontSize = 14
-        title = Paragraph("Relatório de Contas a Receber", styles['Heading1'])
-        elements.append(title)
-        
-        elements.append(Spacer(1, 20))
-
-        # --- INÍCIO DA CORREÇÃO ---
-        # 1. Pegamos um estilo 'Normal' para os parágrafos do corpo da tabela
-        styleN = styles['Normal']
-        # Ajustamos o tamanho da fonte diretamente no estilo que será usado nos Parágrafos
-        styleN.fontSize = 11
-
-        total_amount_pdf = Decimal('0')
-        data = [['Nome', 'Descrição', 'Vencimento', 'Valor', 'Categoria', 'Conta Bancária', 'Forma Pag.', 'Status']]
-        
-        for account in accounts_for_export:
-            total_amount_pdf += account.amount
-            formatted_amount = f"R$ {account.amount:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-            
-            data.append([
-                Paragraph(account.name, styleN),
-                Paragraph(account.description, styleN),
-                account.due_date.strftime('%d/%m/%Y'),
-                formatted_amount,
-                Paragraph(account.category.name if account.category else '-', styleN),
-                Paragraph(account.bank_account.bank_name if account.bank_account else '-', styleN),
-                account.get_payment_method_display(),
-                'Recebido' if account.is_received else 'Aberto'
-            ])
-            
-        formatted_total = f"R$ {total_amount_pdf:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-        data.append([f"Valor Total: {formatted_total}", '', '', '', '', '', '', ''])
-        
-        # 3. Ajustamos a largura das colunas para dar mais espaço ao Nome e Descrição
-        col_widths = [4*cm, 5*cm, 3*cm, 3*cm, 3*cm, 4*cm, 3*cm, 2*cm]
-        
-        table = Table(data, colWidths=col_widths)
-        # --- FIM DA CORREÇÃO ---
-        
-        table.setStyle(TableStyle([
-            # Estilos do Cabeçalho
-            ('BACKGROUND', (0, 0), (-1, 0), HexColor('#2E86C1')),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, 0), 12),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
-
-            # Estilos da Linha de Total (última linha)
-            ('BACKGROUND', (0, -1), (-1, -1), colors.lightgrey),
-            ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, -1), (-1, -1), 11),
-            ('SPAN', (0, -1), (-1, -1)),                # CORREÇÃO 1: Mescla TODAS as colunas da última linha
-            ('ALIGN', (0, -1), (-1, -1), 'RIGHT'),      # CORREÇÃO 2: Alinha o conteúdo dessa célula gigante à direita
-            
-            # Estilos Gerais
-            ('ALIGN', (0, 0), (-1, -2), 'CENTER'),      # Alinha tudo ao centro, EXCETO a última linha
-            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-            ('GRID', (0, 0), (-1, -1), 1, colors.black),
-            
-            # CORREÇÃO 3 (O "Truque"): Pinta as linhas internas da célula mesclada com a cor do fundo
-            ('LINEBEFORE', (1, -1), (-1, -1), 1, colors.lightgrey),
-        ]))
-
-        elements.append(table)
-        doc.build(elements)
-        response.write(buffer.getvalue())
-        buffer.close()
-        return response
-
-    # Em accounts/views.py, dentro da função contas_receber
+        return gerar_pdf_generic(accounts_for_export, 'receber')
 
     if 'export_excel' in request.GET:
-        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-        response['Content-Disposition'] = 'attachment; filename="contas_receber.xlsx"'
-        
-        wb = openpyxl.Workbook()
-        ws = wb.active
-        ws.title = "Contas a Receber"
-
-        # Cabeçalhos completos
-        headers = ['Nome', 'Descrição', 'Vencimento', 'Valor', 'Categoria', 'Conta Bancária', 'Área-DRE', 'Forma de Pagamento', 'Ocorrência', 'Status']
-        ws.append(headers)
-
-        for cell in ws[1]:
-            cell.font = openpyxl.styles.Font(bold=True)
-
-        # Loop para adicionar dados e calcular o total
-        total_amount = Decimal('0')
-        for account in accounts_for_export:
-            ws.append([
-                account.name, account.description, account.due_date, account.amount,
-                account.category.name if account.category else '-',
-                account.bank_account.bank_name if account.bank_account else '-',
-                account.get_dre_area_display(),
-                account.get_payment_method_display(), account.get_occurrence_display(),
-                'Recebido' if account.is_received else 'Aberto'
-            ])
-            total_amount += account.amount
-
-        # Adiciona a linha de total
-        ws.append([])
-        total_row_idx = ws.max_row + 1
-        ws.cell(row=total_row_idx, column=3, value="VALOR TOTAL:").font = openpyxl.styles.Font(bold=True)
-        total_cell = ws.cell(row=total_row_idx, column=4, value=total_amount)
-        total_cell.font = openpyxl.styles.Font(bold=True)
-        total_cell.number_format = 'R$ #,##0.00'
-
-        # Ajusta a largura das colunas
-        for col in ws.columns:
-            max_length = 0
-            column = col[0].column_letter
-            for cell in col:
-                try:
-                    if len(str(cell.value)) > max_length:
-                        max_length = len(str(cell.value))
-                except: pass
-                adjusted_width = (max_length + 2)
-                ws.column_dimensions[column].width = adjusted_width
-
-        # Define uma largura máxima para a coluna 'Nome'
-        ws.column_dimensions['A'].width = 35
-
-        # Formata as colunas de Data e Valor
-        ws.column_dimensions['C'].width = 12
-        for cell in ws['C']: cell.number_format = 'DD/MM/YYYY'
-        for cell in ws['D']: cell.number_format = 'R$ #,##0.00'
-        
-        wb.save(response)
-        return response
+        return gerar_excel_generic(accounts_for_export, 'receber')
 
     # --- 3. LÓGICA DE AÇÕES (POST) ---
     if request.method == 'POST':
@@ -2354,36 +2186,60 @@ def contas_receber(request):
                     for index, row in df.iterrows():
                         excel_row_number = index + 2
                         try:
-                            # ... (a lógica de processar cada linha continua a mesma) ...
-                            category_name = row.get('category', 'N/A')
-                            # --- BLOCO ADICIONADO ---
-                            category_name = row.get('category', 'N/A')
-                            category, _ = Category.objects.get_or_create(
-                                name=str(category_name).strip(),
-                                category_type='RECEIVABLE', # Especifica o tipo
-                                user=request.user         # Especifica o usuário
-                            )
-                            # --- FIM DO BLOCO ---
-
-                            bank_name = row.get('bank_account')
-                            bank_account = None
-                            if pd.notna(bank_name):
-                                bank_account = BankAccount.objects.filter(user=request.user, bank_name__icontains=str(bank_name).strip()).first()
-
+                            # 1. Tratamento Básico
+                            name = str(row['name']).strip()
+                            description = str(row.get('description', 'Importado via Excel'))
+                            
                             due_date = pd.to_datetime(row['due_date'], errors='coerce', dayfirst=True).date()
                             if pd.isnull(due_date):
                                 raise ValueError("Formato de data inválido.")
 
                             amount_str = str(row['amount']).replace(',', '.')
                             amount = float(amount_str)
+                            
+                            payment_method = str(row.get('payment_method', 'BOLETO')).strip().upper()
 
+                            # 2. Lógica Inteligente (Categoria, DRE, Banco)
+                            # -----------------------------------------------------------
+                            
+                            # A. Previsão
+                            cat_smart, dre_smart, bank_smart = prever_classificacao(request.user, name, 'RECEIVABLE')
+
+                            # B. Categoria
+                            category = None
+                            if pd.notna(row.get('category')):
+                                cat_name_excel = str(row.get('category')).strip()
+                                category, _ = Category.objects.get_or_create(name=cat_name_excel, category_type='RECEIVABLE', user=request.user)
+                            elif cat_smart:
+                                category = cat_smart
+                            else:
+                                category, _ = Category.objects.get_or_create(name='Receitas Gerais', category_type='RECEIVABLE', user=request.user)
+
+                            # C. DRE
+                            dre_final = dre_smart if dre_smart else 'BRUTA'
+
+                            # D. Banco
+                            bank_account = None
+                            if pd.notna(row.get('bank_account')):
+                                bank_name_excel = str(row.get('bank_account')).strip()
+                                bank_account = BankAccount.objects.filter(user=request.user, bank_name__icontains=bank_name_excel).first()
+                            
+                            if not bank_account and bank_smart:
+                                bank_account = bank_smart
+
+                            # 3. Criação
                             ReceivableAccount.objects.create(
-                                user=request.user, name=str(row['name']), description=str(row.get('description', 'N/A')),
-                                due_date=due_date, amount=amount, category=category, bank_account=bank_account,
-                                payment_method=str(row.get('payment_method', 'PIX')).strip().upper(),
+                                user=request.user, 
+                                name=name, 
+                                description=description,
+                                due_date=due_date, 
+                                amount=amount, 
+                                category=category, 
+                                bank_account=bank_account, # Banco Inteligente
+                                dre_area=dre_final,        # DRE Inteligente
+                                payment_method=payment_method,
                                 occurrence='AVULSO',
-                                is_received=False,
-                                dre_area='BRUTA'
+                                is_received=False
                             )
                             successful_imports += 1
 
@@ -5794,7 +5650,109 @@ def orcamentos_venda_view(request):
     if start_date:
         orcamentos_list = orcamentos_list.filter(data_criacao__date__gte=start_date)
     if end_date:
-        orcamentos_list = orcamentos_list.filter(data_criacao__date__lte=end_date)
+        orcamentos_list = orcamentos_list.filter(data_criacao__date__lte=parse_date(end_date))
+
+    # ▼▼▼ INÍCIO DA LÓGICA DE EXPORTAÇÃO (ORÇAMENTOS) ▼▼▼
+    
+    # 1. Exportação Excel
+    if 'export_excel' in request.GET:
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = f'attachment; filename="orcamentos_{datetime.now().strftime("%Y%m%d")}.xlsx"'
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Orçamentos"
+
+        # Cabeçalhos
+        headers = ['ID', 'Cliente', 'Vendedor', 'Data Criação', 'Validade', 'Itens', 'Observações', 'Valor Total', 'Status']
+        ws.append(headers)
+
+        # Estilo do cabeçalho
+        for cell in ws[1]:
+            cell.font = Font(bold=True)
+
+        # Dados
+        for orc in orcamentos_list:
+            # Formata a lista de itens em uma string única
+            itens_str = " | ".join([f"{item.quantidade}x {item.produto.nome}" for item in orc.itens.all()])
+            
+            # Formata datas
+            data_criacao = orc.data_criacao.strftime('%d/%m/%Y') if orc.data_criacao else '-'
+            data_validade = orc.data_validade.strftime('%d/%m/%Y') if orc.data_validade else '-'
+
+            ws.append([
+                orc.id,
+                orc.cliente.nome,
+                orc.vendedor.nome if orc.vendedor else '-',
+                data_criacao,
+                data_validade,
+                itens_str,
+                orc.observacoes or '',
+                orc.valor_total,
+                orc.get_status_display()
+            ])
+
+        # Formatação de Moeda na coluna "Valor Total" (Coluna H -> índice 8)
+        currency_format = '"R$ "#,##0.00'
+        for row in range(2, ws.max_row + 1):
+            ws[f'H{row}'].number_format = currency_format
+
+        # Ajuste de largura das colunas
+        ws.column_dimensions['B'].width = 30 # Cliente
+        ws.column_dimensions['F'].width = 50 # Itens
+        ws.column_dimensions['G'].width = 30 # Observações
+        
+        wb.save(response)
+        return response
+
+    # 2. Exportação PDF
+    if 'export_pdf' in request.GET:
+        buffer = io.BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=landscape(A4), rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=18)
+        elements = []
+        styles = getSampleStyleSheet()
+
+        # Título
+        elements.append(Paragraph(f"Relatório de Orçamentos", styles['Title']))
+        elements.append(Spacer(1, 12))
+
+        # Cabeçalho da Tabela
+        data = [['ID', 'Cliente', 'Data', 'Validade', 'Valor Total', 'Status']]
+
+        # Dados da Tabela
+        for orc in orcamentos_list:
+            data_criacao = orc.data_criacao.strftime('%d/%m/%Y') if orc.data_criacao else '-'
+            data_validade = orc.data_validade.strftime('%d/%m/%Y') if orc.data_validade else '-'
+            valor_fmt = f"R$ {orc.valor_total:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+            
+            data.append([
+                str(orc.id),
+                orc.cliente.nome[:25], 
+                data_criacao,
+                data_validade,
+                valor_fmt,
+                orc.get_status_display()
+            ])
+
+        # Estilo da Tabela
+        table = Table(data, colWidths=[1.5*cm, 8*cm, 3*cm, 3*cm, 4*cm, 4*cm])
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 10),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+        ]))
+        
+        elements.append(table)
+        doc.build(elements)
+        
+        buffer.seek(0)
+        return HttpResponse(buffer, content_type='application/pdf')
+    # ▲▲▲ FIM DA LÓGICA DE EXPORTAÇÃO ▲▲▲
         
     paginator = Paginator(orcamentos_list, 10)
     page_number = request.GET.get('page')
@@ -6168,7 +6126,8 @@ def manage_users_view(request):
                         can_access_cadastros_comercial = employee_form.cleaned_data.get('can_access_cadastros_comercial', False),
                         can_access_vendas = employee_form.cleaned_data.get('can_access_vendas', False),
                         can_access_metas_comerciais = employee_form.cleaned_data.get('can_access_metas_comerciais', False),
-                        can_access_precificacao = employee_form.cleaned_data.get('can_access_precificacao', False)
+                        can_access_precificacao = employee_form.cleaned_data.get('can_access_precificacao', False),
+                        can_access_pdv = employee_form.cleaned_data.get('can_access_pdv', False)
                     )
                     messages.success(request, f"Funcionário '{new_employee.first_name}' adicionado com sucesso!")
                     # ▲▲▲ FIM DA SUBSTITUIÇÃO ▲▲▲
@@ -6286,5 +6245,175 @@ def editar_cliente_view(request, pk):
     # Vamos reutilizar o template genérico de edição
     return render(request, 'accounts/editar_item.html', context)
 
+# MANTENHA AS IMPORTAÇÕES EXISTENTES E ADICIONE AS NOVAS NO TOPO:
+from .utils_exports import (
+    gerar_pdf_generic, gerar_excel_generic, 
+    gerar_excel_orcamento, gerar_pdf_orcamento,
+    gerar_excel_dre, gerar_pdf_dre,                 # <--- Novo
+    gerar_excel_fluxo_caixa, gerar_pdf_fluxo_caixa  # <--- Novo
+)
+from collections import defaultdict, OrderedDict
+from django.db.models.functions import TruncMonth
+
+@login_required
+@subscription_required
+def relatorios_view(request):
+    if request.method == 'POST' or request.GET.get('gerar'):
+        tipo = request.GET.get('tipo') or request.POST.get('tipo')
+        formato = request.GET.get('formato') or request.POST.get('formato')
+        start_date_str = request.GET.get('start_date') or request.POST.get('start_date')
+        end_date_str = request.GET.get('end_date') or request.POST.get('end_date')
+        
+        # Define datas padrão se não vierem
+        if not start_date_str or not end_date_str:
+            hj = datetime.now().date()
+            start_date = hj.replace(day=1)
+            end_date = hj
+        else:
+            start_date = parse_date(start_date_str)
+            end_date = parse_date(end_date_str)
+
+        periodo_label = f"{start_date.strftime('%d/%m/%Y')} a {end_date.strftime('%d/%m/%Y')}"
+
+        # --- DRE GERENCIAL ---
+        if tipo == 'dre':
+            # Copia a lógica de cálculo da DRE (Regime de Caixa do Dashboard)
+            receita_bruta = ReceivableAccount.objects.filter(user=request.user, is_received=True, dre_area='BRUTA', due_date__range=[start_date, end_date]).aggregate(Sum('amount'))['amount__sum'] or Decimal('0')
+            impostos = PayableAccount.objects.filter(user=request.user, is_paid=True, dre_area='DEDUCAO', due_date__range=[start_date, end_date]).aggregate(Sum('amount'))['amount__sum'] or Decimal('0')
+            custos = PayableAccount.objects.filter(user=request.user, is_paid=True, dre_area='CUSTOS', due_date__range=[start_date, end_date]).aggregate(Sum('amount'))['amount__sum'] or Decimal('0')
+            despesas_operacionais = PayableAccount.objects.filter(user=request.user, is_paid=True, dre_area='OPERACIONAL', due_date__range=[start_date, end_date]).aggregate(Sum('amount'))['amount__sum'] or Decimal('0')
+            depreciacao = PayableAccount.objects.filter(user=request.user, is_paid=True, dre_area='DEPRECIACAO', due_date__range=[start_date, end_date]).aggregate(Sum('amount'))['amount__sum'] or Decimal('0')
+            nao_operacionais = PayableAccount.objects.filter(user=request.user, is_paid=True, dre_area='NAO_OPERACIONAL', due_date__range=[start_date, end_date]).aggregate(Sum('amount'))['amount__sum'] or Decimal('0')
+            tributacao = PayableAccount.objects.filter(user=request.user, is_paid=True, dre_area='TRIBUTACAO', due_date__range=[start_date, end_date]).aggregate(Sum('amount'))['amount__sum'] or Decimal('0')
+            distribuicao_lucro = PayableAccount.objects.filter(user=request.user, is_paid=True, dre_area='DISTRIBUICAO', due_date__range=[start_date, end_date]).aggregate(Sum('amount'))['amount__sum'] or Decimal('0')
+
+            # Cálculos derivados
+            receita_liquida = receita_bruta - impostos
+            lucro_bruto = receita_liquida - custos
+            ebitda = lucro_bruto - despesas_operacionais
+            ebit = ebitda - depreciacao
+            lair = ebit - nao_operacionais
+            lucro_liquido = lair - tributacao
+            resultado_final = lucro_liquido - distribuicao_lucro
+
+            dados_dre = {
+                'receita_bruta': receita_bruta, 'impostos': impostos, 'receita_liquida': receita_liquida,
+                'custos': custos, 'lucro_bruto': lucro_bruto, 'despesas_operacionais': despesas_operacionais,
+                'ebitda': ebitda, 'depreciacao': depreciacao, 'ebit': ebit, 'nao_operacionais': nao_operacionais,
+                'lair': lair, 'tributacao': tributacao, 'lucro_liquido': lucro_liquido,
+                'distribuicao_lucro': distribuicao_lucro, 'resultado_final': resultado_final
+            }
+
+            if formato == 'pdf': return gerar_pdf_dre(dados_dre, periodo_label)
+            elif formato == 'excel': return gerar_excel_dre(dados_dre, periodo_label)
+
+        # --- FLUXO DE CAIXA ---
+        elif tipo == 'fluxo_caixa':
+            # Agrupa por mês dentro do período selecionado
+            entradas_qs = ReceivableAccount.objects.filter(
+                user=request.user, is_received=True, due_date__range=[start_date, end_date]
+            ).exclude(dre_area='NAO_CONSTAR').annotate(month=TruncMonth('due_date')).values('month').annotate(total=Sum('amount')).order_by('month')
+
+            saidas_qs = PayableAccount.objects.filter(
+                user=request.user, is_paid=True, due_date__range=[start_date, end_date]
+            ).exclude(dre_area='NAO_CONSTAR').annotate(month=TruncMonth('due_date')).values('month').annotate(total=Sum('amount')).order_by('month')
+
+            # Organiza os dados em dicionários por mês
+            entradas_dict = {e['month'].strftime('%b/%Y'): float(e['total']) for e in entradas_qs}
+            saidas_dict = {s['month'].strftime('%b/%Y'): float(s['total']) for s in saidas_qs}
+
+            # Cria lista unificada de todos os meses que têm dados
+            todos_meses = sorted(list(set(list(entradas_dict.keys()) + list(saidas_dict.keys()))), 
+                                 key=lambda x: datetime.strptime(x, '%b/%Y'))
+
+            labels = []
+            lista_entradas = []
+            lista_saidas = []
+            lista_saldos = []
+
+            # Se não houver dados, cria pelo menos uma entrada vazia
+            if not todos_meses:
+                labels = ["Sem dados"]
+                lista_entradas = [0]
+                lista_saidas = [0]
+                lista_saldos = [0]
+            else:
+                for mes in todos_meses:
+                    ent = entradas_dict.get(mes, 0)
+                    sai = saidas_dict.get(mes, 0)
+                    labels.append(mes)
+                    lista_entradas.append(ent)
+                    lista_saidas.append(sai)
+                    lista_saldos.append(ent - sai)
+
+            dados_fc = {
+                'labels': labels,
+                'entradas': lista_entradas,
+                'saidas': lista_saidas,
+                'geracao_caixa': lista_saldos
+            }
+
+            if formato == 'pdf': return gerar_pdf_fluxo_caixa(dados_fc, periodo_label)
+            elif formato == 'excel': return gerar_excel_fluxo_caixa(dados_fc, periodo_label)
+
+        # --- ORÇAMENTO ANUAL ---
+        elif tipo == 'orcamento':
+            # (Mantém a lógica que já criamos para Orçamento...)
+            try:
+                ano = start_date.year
+            except:
+                ano = datetime.now().year
+            
+            # ... (Copie/Mantenha a lógica de coleta de dados do orçamento aqui) ...
+            # Para economizar espaço na resposta, estou assumindo que o código anterior 
+            # do orçamento permanece aqui.
+            
+            # 1. Busca dados do Banco
+            orcamentos = Orcamento.objects.filter(user=request.user, mes_ano__year=ano)
+            realizado_pagar = PayableAccount.objects.filter(user=request.user, is_paid=True, due_date__year=ano).annotate(month=TruncMonth('due_date')).values('category__name', 'month').annotate(total=Sum('amount'))
+            realizado_receber = ReceivableAccount.objects.filter(user=request.user, is_received=True, due_date__year=ano).annotate(month=TruncMonth('due_date')).values('category__name', 'month').annotate(total=Sum('amount'))
+
+            revenue_data = defaultdict(lambda: {'orcado_mensal': [Decimal(0)]*12, 'realizado_mensal': [Decimal(0)]*12})
+            for o in orcamentos:
+                if o.category and o.category.category_type == 'RECEIVABLE': revenue_data[o.category.name]['orcado_mensal'][o.mes_ano.month - 1] += o.valor_orcado
+            for r in realizado_receber:
+                if r['category__name']: revenue_data[r['category__name']]['realizado_mensal'][r['month'].month - 1] += r['total']
+
+            expense_data = defaultdict(lambda: {'orcado_mensal': [Decimal(0)]*12, 'realizado_mensal': [Decimal(0)]*12})
+            for o in orcamentos:
+                if o.category and o.category.category_type == 'PAYABLE': expense_data[o.category.name]['orcado_mensal'][o.mes_ano.month - 1] += o.valor_orcado
+            for p in realizado_pagar:
+                if p['category__name']: expense_data[p['category__name']]['realizado_mensal'][p['month'].month - 1] += p['total']
+
+            for d in revenue_data.values(): d['total_orcado_ano'] = sum(d['orcado_mensal']); d['total_realizado_ano'] = sum(d['realizado_mensal'])
+            for d in expense_data.values(): d['total_orcado_ano'] = sum(d['orcado_mensal']); d['total_realizado_ano'] = sum(d['realizado_mensal'])
+
+            dados_consolidados = {'receitas': dict(revenue_data), 'despesas': dict(expense_data)}
+
+            if formato == 'pdf': return gerar_pdf_orcamento(dados_consolidados, ano)
+            elif formato == 'excel': return gerar_excel_orcamento(dados_consolidados, ano)
 
 
+        # --- LÓGICA PADRÃO (Contas a Pagar/Receber) ---
+        status = request.GET.get('status') or request.POST.get('status')
+        bank_id = request.GET.get('bank') or request.POST.get('bank')
+
+        queryset = None
+        if tipo == 'pagar':
+            queryset = PayableAccount.objects.filter(user=request.user).order_by('due_date')
+            if status == 'aberto': queryset = queryset.filter(is_paid=False)
+            elif status == 'pago': queryset = queryset.filter(is_paid=True)
+        else: # receber
+            queryset = ReceivableAccount.objects.filter(user=request.user).order_by('due_date')
+            if status == 'aberto': queryset = queryset.filter(is_received=False)
+            elif status == 'recebido': queryset = queryset.filter(is_received=True)
+
+        if start_date: queryset = queryset.filter(due_date__gte=start_date)
+        if end_date: queryset = queryset.filter(due_date__lte=end_date)
+        if bank_id: queryset = queryset.filter(bank_account_id=bank_id)
+
+        if formato == 'pdf': return gerar_pdf_generic(queryset, tipo)
+        elif formato == 'excel': return gerar_excel_generic(queryset, tipo)
+
+    user_banks = BankAccount.objects.filter(user=request.user)
+    return render(request, 'accounts/relatorios.html', {'user_banks': user_banks})
