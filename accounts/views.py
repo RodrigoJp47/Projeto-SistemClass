@@ -76,7 +76,9 @@ from .models import (
 from .utils_exports import gerar_pdf_generic, gerar_excel_generic
 
 
-
+from .utils_inter import buscar_extrato_inter
+from .forms import InterCredentialsForm
+from .models import InterCredentials
 
 
 MESES_ABREVIADOS = {
@@ -1440,6 +1442,120 @@ def cadastrar_bancos_view(request):
 @module_access_required('financial')
 def importar_ofx_view(request):
     if request.method == 'POST':
+        # --- [INÍCIO] COLAR O CÓDIGO AQUI ---
+        if 'sync_inter' in request.POST:
+            # 1. Define o período (últimos 7 dias)
+            end_date = datetime.now().date()
+            start_date = end_date - timedelta(days=7)
+            
+            # 2. Chama a API
+            resultado = buscar_extrato_inter(request.user, start_date, end_date)
+            
+            if 'erro' in resultado:
+                messages.error(request, f"Erro na integração Inter: {resultado['erro']}")
+            else:
+                transacoes = resultado.get('transacoes', [])
+                if transacoes:
+                    print(f"EXEMPLO DE TRANSAÇÃO INTER: {transacoes[0]}")
+                count_importados = 0
+                
+                # Tenta localizar a conta bancária 'Inter' no seu sistema para vincular
+                banco_inter = BankAccount.objects.filter(user=request.user, bank_name__icontains='Inter').first()
+
+                # Contadores
+                count_importados = 0
+                count_duplicados = 0
+
+                # ESTE É O LOOP DA API INTER (Note que usa 'transacao' e chaves como 'tipoOperacao')
+                for transacao in transacoes:
+                    data_str = transacao.get('dataEntrada') or transacao.get('dataLancamento')
+                    valor = Decimal(str(transacao.get('valor', 0)))
+                    descricao = transacao.get('descricao') or transacao.get('historico') or "Transação API Inter"
+                    tipo_operacao = transacao.get('tipoOperacao') 
+                    
+                    try:
+                        data_movimento = datetime.strptime(data_str, '%Y-%m-%d').date()
+                    except:
+                        data_movimento = end_date
+
+                    descricao_final = f"Importado via API Inter - {descricao}"
+
+                    # --- INICIO DA LÓGICA DE NÃO DUPLICAR ---
+                    if tipo_operacao == 'D':
+                        # Verifica se já existe (PAGAR)
+                        existe = PayableAccount.objects.filter(
+                            user=request.user,
+                            amount=valor,
+                            payment_date=data_movimento,
+                            description=descricao_final
+                        ).exists()
+
+                        if not existe:
+                            cat_prevista, dre_prevista, _ = prever_classificacao(request.user, descricao, 'PAYABLE')
+                            # ... (resto da criação do objeto)
+                            PayableAccount.objects.create(
+                                user=request.user,
+                                name=descricao[:100],
+                                description=descricao_final,
+                                due_date=data_movimento,
+                                amount=valor,
+                                category=cat_prevista, # Ajustado para variável curta
+                                dre_area=dre_prevista or 'OPERACIONAL', # Ajustado
+                                payment_method='DEBITO_CONTA',
+                                cost_type='VARIAVEL',
+                                occurrence='AVULSO',
+                                is_paid=True,
+                                payment_date=data_movimento,
+                                bank_account=banco_inter
+                            )
+                            count_importados += 1
+                        else:
+                            count_duplicados += 1
+
+                    else:
+                        # Verifica se já existe (RECEBER)
+                        existe = ReceivableAccount.objects.filter(
+                            user=request.user,
+                            amount=valor,
+                            payment_date=data_movimento,
+                            description=descricao_final
+                        ).exists()
+
+                        if not existe:
+                            cat_prevista, dre_prevista, _ = prever_classificacao(request.user, descricao, 'RECEIVABLE')
+                            # ... (resto da criação do objeto)
+                            ReceivableAccount.objects.create(
+                                user=request.user,
+                                name=descricao[:100],
+                                description=descricao_final,
+                                due_date=data_movimento,
+                                amount=valor,
+                                category=cat_prevista,
+                                dre_area=dre_prevista or 'BRUTA',
+                                payment_method='DEBITO_CONTA',
+                                occurrence='AVULSO',
+                                is_received=True,
+                                payment_date=data_movimento,
+                                bank_account=banco_inter
+                            )
+                            count_importados += 1
+                        else:
+                            count_duplicados += 1
+                
+                # Feedback ao usuário
+                if count_importados > 0:
+                    messages.success(request, f"Sincronização concluída! {count_importados} novos lançamentos importados.")
+                
+                if count_duplicados > 0:
+                    messages.info(request, f"{count_duplicados} lançamentos já existiam e foram ignorados.")
+                
+                if count_importados == 0 and count_duplicados == 0:
+                    messages.warning(request, "Nenhuma transação encontrada no período.")
+                else:
+                    messages.info(request, "Conexão realizada, mas nenhuma transação nova encontrada no período.")
+            
+            return redirect('importar_ofx')
+        # --- [FIM] COLAR O CÓDIGO AQUI ---
         form = OFXImportForm(request.POST, request.FILES, user=request.user)
         if form.is_valid():
             ofx_import = form.save(commit=False)
@@ -6383,3 +6499,37 @@ def relatorios_view(request):
 
     user_banks = BankAccount.objects.filter(user=request.user)
     return render(request, 'accounts/relatorios.html', {'user_banks': user_banks})
+
+
+
+@login_required
+@subscription_required
+def configurar_inter_view(request):
+    # Tenta pegar a instância existente ou cria uma nova
+    try:
+        instance = request.user.inter_creds
+    except InterCredentials.DoesNotExist:
+        instance = None
+
+    if request.method == 'POST':
+        form = InterCredentialsForm(request.POST, request.FILES, instance=instance)
+        if form.is_valid():
+            creds = form.save(commit=False)
+            creds.user = request.user
+            creds.save()
+            messages.success(request, 'Credenciais do Banco Inter salvas com sucesso!')
+            return redirect('importar_ofx')
+        else:
+            messages.error(request, 'Erro ao salvar. Verifique os arquivos.')
+    else:
+        form = InterCredentialsForm(instance=instance)
+
+    return render(request, 'accounts/configurar_inter.html', {'form': form})
+
+
+
+
+
+
+
+

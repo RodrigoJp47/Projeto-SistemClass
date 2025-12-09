@@ -98,6 +98,36 @@
             {% endif %}
         </div>
         {% comment %} --- FIM DA NOVA SECÇÃO --- {% endcomment %}
+
+        {% comment %} --- NOVA SECÇÃO BANCO INTER --- {% endcomment %}
+        <div class="form-container banco-inter-integration mt-4" style="border-left: 5px solid #FF7A00;"> 
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/f/fa/Banco_Inter_logo.svg" alt="Inter" style="width: 30px; height: 30px;">
+                <h3>Integração Banco Inter</h3>
+            </div>
+            
+            <p class="description">
+                Sincronize automaticamente o extrato bancário direto da API do Banco Inter (Últimos 7 dias).
+            </p>
+
+            {% if user.inter_creds %}
+                <form method="post">
+                    {% csrf_token %}
+                    <button type="submit" name="sync_inter" class="btn-conta-azul" style="background-color: #FF7A00; border-color: #FF7A00; color: white;">
+                        <i class="fas fa-sync"></i> Sincronizar Agora
+                    </button>
+                </form>
+                <div style="margin-top: 10px;">
+                    <a href="{% url 'configurar_inter' %}" style="color: #666; text-decoration: underline;">Alterar configurações do Inter</a>
+                </div>
+            {% else %}
+            <a href="{% url 'configurar_inter' %}" class="btn-conta-azul" style="background-color: #FF7A00; border-color: #FF7A00; color: white;">
+                    <i class="fas fa-cog"></i> Configurar Banco Inter
+                </a>
+            {% endif %}
+            <p class="mt-2" style="color: #666;"><small>O sistema buscará as transações dos últimos 7 dias.</small></p>
+        </div>
+        {% comment %} --- FIM DA SECÇÃO --- {% endcomment %}
     </div>
 
     <script src="{% static 'js/theme.js' %}"></script>

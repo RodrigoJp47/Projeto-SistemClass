@@ -592,5 +592,20 @@ class CompanyDocumentForm(forms.ModelForm):
 
 
 
+# Adicione ao final ou onde estão os outros forms
+from .models import InterCredentials
+
+class InterCredentialsForm(forms.ModelForm):
+    class Meta:
+        model = InterCredentials
+        fields = ['client_id', 'client_secret', 'certificado_crt', 'chave_key']
+        widgets = {
+            'client_id': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Cole o Client ID'}),
+            'client_secret': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Cole o Client Secret'}),
+        }        
+
+
+
+
 
 

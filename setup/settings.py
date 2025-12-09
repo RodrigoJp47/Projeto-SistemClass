@@ -254,7 +254,13 @@ else:
     FOCUS_API_URL = os.environ.get('FOCUS_API_URL', 'https://api.focusnfe.com.br')
 
 
+# Configurações Banco Inter
+INTER_CLIENT_ID = os.environ.get('INTER_CLIENT_ID')
+INTER_CLIENT_SECRET = os.environ.get('INTER_CLIENT_SECRET')
 
+# MUDANÇA AQUI: Adicionamos 'certs' dentro do join para o Python usar a barra correta (\ ou /)
+INTER_CERT_CRT = os.path.join(BASE_DIR, 'certs', os.environ.get('INTER_CERT_CRT', 'inter.crt'))
+INTER_CERT_KEY = os.path.join(BASE_DIR, 'certs', os.environ.get('INTER_CERT_KEY', 'inter.key'))
 
 
 

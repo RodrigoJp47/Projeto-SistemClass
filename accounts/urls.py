@@ -48,6 +48,7 @@ from .views import (
     smart_redirect_view,
     editar_cliente_view,
     relatorios_view,
+    configurar_inter_view,
 )
 
 urlpatterns = [
@@ -72,6 +73,8 @@ urlpatterns = [
 
     # --- Dashboards ---
     path('dashboards/', dashboards, name='dashboards'),
+
+    path('configuracoes/inter/', configurar_inter_view, name='configurar_inter'),
    
     # --- Módulo Comercial ---
     path('faturamento/', faturamento_dashboard_view, name='faturamento_dashboard'),
