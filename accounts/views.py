@@ -2851,41 +2851,62 @@ def dashboards(request):
         fc_daily_receivable.append(receivable_map_daily.get(current_date_loop, 0))
         current_date_loop += timedelta(days=1)
 
-    # 2. Geração de dados MENSAIS (FIXO: 12 meses do ano corrente)
-    current_year = today.year
+    # 2. Geração de dados MENSAIS (COM FILTROS DE ANO E VISÃO)
     
-    # Gera rótulos para todos os 12 meses do ano corrente (Ex: Jan/2025, Fev/2025, etc.)
-    fc_monthly_labels = [datetime(current_year, i, 1).strftime('%b/%Y') for i in range(1, 13)]
+    # --- Captura os filtros da URL (HTML) ---
+    fc_year_str = request.GET.get('fc_year')
+    fc_view = request.GET.get('fc_view', 'realizado') # Padrão: realizado
 
-    # ALTERE A LINHA ACIMA PARA ESTA VERSÃO CORRIGIDA:
-    payable_by_month_q_fc = PayableAccount.objects.filter(
-        user=request.user, is_paid=True, due_date__year=current_year
-    ).exclude(dre_area='NAO_CONSTAR').annotate(month=TruncMonth('due_date')).values('month').annotate(total=Sum('amount'))
+    # Define o ano (se não vier na URL, usa o ano atual)
+    try:
+        fc_year = int(fc_year_str) if fc_year_str else today.year
+    except ValueError:
+        fc_year = today.year
 
-    # Busca as contas a receber do ano inteiro, agrupadas por mês
-    receivable_by_month_q_fc = ReceivableAccount.objects.filter(
-        user=request.user, is_received=True, due_date__year=current_year
-    ).exclude(dre_area='NAO_CONSTAR').annotate(month=TruncMonth('due_date')).values('month').annotate(total=Sum('amount'))
+    # Gera rótulos para todos os 12 meses do ano SELECIONADO
+    fc_monthly_labels = [datetime(fc_year, i, 1).strftime('%b/%Y') for i in range(1, 13)]
 
-# Esta substituição é multilinha, substitua o bloco todo
+    # --- Configura os filtros base (Pagar e Receber) ---
+    receivables_qs = ReceivableAccount.objects.filter(
+        user=request.user, 
+        due_date__year=fc_year
+    ).exclude(dre_area='NAO_CONSTAR')
+
+    payables_qs = PayableAccount.objects.filter(
+        user=request.user, 
+        due_date__year=fc_year
+    ).exclude(dre_area='NAO_CONSTAR')
+
+    # --- Aplica a lógica do botão Realizado vs Previsto ---
+    if fc_view == 'realizado':
+        # Se for realizado, filtra apenas o que foi pago/recebido
+        receivables_qs = receivables_qs.filter(is_received=True)
+        payables_qs = payables_qs.filter(is_paid=True)
+    else:
+        # Se for 'previsto', NÃO filtra por status (mostra tudo que vence no ano)
+        pass 
+
+    # --- Executa as buscas no banco de dados ---
+    receivable_by_month_q_fc = receivables_qs.annotate(month=TruncMonth('due_date')).values('month').annotate(total=Sum('amount'))
+    payable_by_month_q_fc = payables_qs.annotate(month=TruncMonth('due_date')).values('month').annotate(total=Sum('amount'))
 
     # Mapeia os resultados para facilitar a busca
-    payable_map_monthly = {item['month'].strftime('%b/%Y'): float(item['total']) for item in payable_by_month_q_fc}
     receivable_map_monthly = {item['month'].strftime('%b/%Y'): float(item['total']) for item in receivable_by_month_q_fc}
+    payable_map_monthly = {item['month'].strftime('%b/%Y'): float(item['total']) for item in payable_by_month_q_fc}
     
-    # Preenche as listas de dados, garantindo que meses sem transações tenham o valor 0
-    fc_monthly_payable = [payable_map_monthly.get(label, 0) for label in fc_monthly_labels]
+    # Preenche as listas de dados (coloca 0 se o mês não tiver valor)
     fc_monthly_receivable = [receivable_map_monthly.get(label, 0) for label in fc_monthly_labels]
+    fc_monthly_payable = [payable_map_monthly.get(label, 0) for label in fc_monthly_labels]
     
-
-    # 1. Combina os dados mensais em uma única estrutura
+    # 1. Calcula o Saldo (Entrada - Saída) mês a mês
     saldos_mensais_tabela = [r - p for r, p in zip(fc_monthly_receivable, fc_monthly_payable)]
 
-    # 2. Calcula os totais do ano
+    # 2. Calcula os totais do ano (coluna Total)
     total_entradas_ano = sum(fc_monthly_receivable)
     total_saidas_ano = sum(fc_monthly_payable)
     total_geracao_caixa_ano = total_entradas_ano - total_saidas_ano
 
+    # Monta o dicionário final para o template
     fluxo_caixa_tabela_data = {
         'labels': fc_monthly_labels,
         'entradas': fc_monthly_receivable,
@@ -2897,7 +2918,6 @@ def dashboards(request):
             'geracao_caixa': total_geracao_caixa_ano,
         }
     }
-    # --- FIM DA NOVA LÓGICA ---
     
     # --- 4. CÁLCULOS DO DASHBOARD KPIS (existente, COM ALTERAÇÕES) ---
     insights_data_dre, monthly_data_dre = {}, {}

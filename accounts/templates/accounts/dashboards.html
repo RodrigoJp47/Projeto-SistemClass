@@ -438,7 +438,35 @@
         </div>
 
         <div class="fluxo-caixa-tabela-container">
-            <h3 class="fluxo-caixa-tabela-title">Fluxo de Caixa por Tabela</h3>
+            <div class="fluxo-caixa-header">
+                <h3 class="fluxo-caixa-tabela-title">Fluxo de Caixa por Tabela</h3>
+                
+                <form method="get" class="fluxo-caixa-controls">
+                    <input type="hidden" name="period" value="{{ request.GET.period }}">
+                    <input type="hidden" name="start_date" value="{{ request.GET.start_date }}">
+                    <input type="hidden" name="end_date" value="{{ request.GET.end_date }}">
+                    <input type="hidden" name="regime" value="{{ request.GET.regime }}">
+
+                    <select name="fc_year" onchange="this.form.submit()" class="fc-select">
+                        <option value="2024" {% if request.GET.fc_year == '2024' %}selected{% endif %}>2024</option>
+                        <option value="2025" {% if request.GET.fc_year == '2025' or not request.GET.fc_year %}selected{% endif %}>2025</option>
+                        <option value="2026" {% if request.GET.fc_year == '2026' %}selected{% endif %}>2026</option>
+                    </select>
+
+                    <div class="fc-toggle-container">
+                        <button type="submit" name="fc_view" value="realizado" 
+                            class="fc-toggle-btn {% if request.GET.fc_view != 'previsto' %}active{% endif %}">
+                            Realizado
+                        </button>
+                        
+                        <button type="submit" name="fc_view" value="previsto" 
+                            class="fc-toggle-btn {% if request.GET.fc_view == 'previsto' %}active{% endif %}">
+                            Previsto
+                        </button>
+                    </div>
+                </form>
+            </div>
+
             <div class="table-scroll-wrapper">
                 <table class="fluxo-caixa-tabela">
                     <thead>
@@ -458,6 +486,7 @@
                             {% endfor %}
                             <td class="positivo">R$ {{ fluxo_caixa_tabela_data.totais.entradas|floatformat:2|intcomma }}</td>
                         </tr>
+                        
                         <tr>
                             <td>Saídas =></td>
                             {% for valor in fluxo_caixa_tabela_data.saidas %}
@@ -465,6 +494,7 @@
                             {% endfor %}
                             <td class="negativo">-R$ {{ fluxo_caixa_tabela_data.totais.saidas|floatformat:2|intcomma }}</td>
                         </tr>
+                        
                         <tr class="total-row">
                             <td>Saldo  =></td>
                             {% for valor in fluxo_caixa_tabela_data.geracao_caixa %}
@@ -1059,16 +1089,16 @@
                             {
                                 label: 'Entradas',
                                 data: JSON.parse('{{ cashflow_receivable|safe }}'),
-                                borderColor: 'rgba(22, 199, 49, 1)',      /* Verde sólido para a linha */
-                                backgroundColor: 'rgba(22, 199, 49, 0.4)', /* Verde com 40% de opacidade para a área */
+                                borderColor: 'rgba(59, 179, 19, 1)',      /* Verde sólido para a linha */
+                                backgroundColor: 'rgba(65, 241, 91, 1)', /* Verde com 40% de opacidade para a área */
                                 fill: true,
                                 tension: 0.4,
                                 pointRadius: 0
                             }, {
                                 label: 'Saídas',
                                 data: JSON.parse('{{ cashflow_payable|safe }}'),
-                                borderColor: 'rgba(255, 0, 0, 1)',       /* Vermelho sólido para a linha */
-                                backgroundColor: 'rgba(255, 0, 0, 0.4)',  /* Vermelho com 40% de opacidade para a área */
+                                borderColor: 'rgba(192, 10, 10, 1)',       /* Vermelho sólido para a linha */
+                                backgroundColor: 'rgba(177, 14, 14, 1)',  /* Vermelho com 40% de opacidade para a área */
                                 fill: true,
                                 tension: 0.4,
                                 pointRadius: 0

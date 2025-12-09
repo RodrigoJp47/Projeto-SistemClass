@@ -1920,17 +1920,7 @@ body {
     margin-bottom: 25px;  /* Aumenta o espaço abaixo dele */
 }
 
-/* Em static/css/dashbord.css */
 
-/* ==========================================================================
-   AJUSTE DE FONTES PARA A SEÇÃO "ANÁLISE DE CONTAS"
-   ========================================================================== */
-
-/* 1. Altera a fonte dos títulos dos 5 CARDS DE INDICADORES */
-/* (Valor a Vencer, Atrasados, etc.) */
-.insight-card .title {
-    font-size: 13px; /* O valor original era 11px. Ajuste como desejar. */
-}
 
 /* 2. Altera a fonte dos títulos dos 3 GRÁFICOS */
 /* (Valor em aberto por cliente, etc.) */
@@ -1968,6 +1958,94 @@ body {
 
     padding-bottom: 5px;
 }
+
+
+/* ==========================================================================
+   AJUSTE DE FONTES PARA A SEÇÃO "ANÁLISE DE CONTAS" (CARDS VERDES)
+   ========================================================================== */
+
+/* 1. Título (Ex: Valor a Vencer) */
+.insight-card .title {
+    font-size: 15px; /* Aumentei de 13px para 15px */
+    font-weight: bold;
+}
+
+/* 2. Valor (Ex: R$ 140.479,80) */
+.insight-card .value {
+    font-size: 14px; /* Aumentei de 12px para 20px */
+    font-weight: 800; /* Deixa o número bem "gordo" */
+    margin-top: 5px;
+}
+
+/* ==========================================================================
+   ESTILOS PARA FILTROS DO FLUXO DE CAIXA POR TABELA
+   ========================================================================== */
+
+/* Container do cabeçalho que alinha Título e Filtros */
+.fluxo-caixa-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    flex-wrap: wrap; /* Permite quebrar linha no mobile */
+    gap: 10px;
+}
+
+.fluxo-caixa-tabela-title {
+    margin-bottom: 0 !important; /* Remove margem inferior para alinhar */
+    text-align: left !important; /* Alinha à esquerda */
+}
+
+.fluxo-caixa-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Estilo do Select de Ano */
+.fc-select {
+    padding: 6px 12px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    background-color: #fff;
+    color: #333;
+    font-size: 13px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+/* Container dos botões Toggle */
+.fc-toggle-container {
+    display: flex;
+    background-color: #e0e0e0;
+    border-radius: 6px;
+    padding: 2px;
+}
+
+/* Botões Realizado / Previsto */
+.fc-toggle-btn {
+    padding: 6px 15px;
+    border: none;
+    background: transparent;
+    color: #555;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+}
+
+.fc-toggle-btn:hover {
+    color: #000;
+}
+
+/* Estado Ativo do Botão */
+.fc-toggle-btn.active {
+    background-color: #07501d; /* Verde do seu tema */
+    color: #fff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
 
 /* ==========================================================================
    7. RESPONSIVIDADE (MOBILE) - VERSÃO CORRIGIDA E COMPLETA
@@ -2057,5 +2135,15 @@ body {
     /* Ajuste para o modal do laudo não ficar tão largo no celular */
     .modal-content {
         width: 95%;
+    }
+    .fluxo-caixa-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .fluxo-caixa-tabela-title {
+        text-align: center !important;
+    }
+    .fluxo-caixa-controls {
+        justify-content: center;
     }
 }
