@@ -74,6 +74,7 @@ from .models import (
     ItemOrcamento, ClassificacaoAutomatica
 )
 from .utils_exports import gerar_pdf_generic, gerar_excel_generic
+from .utils_inter import buscar_extrato_inter, buscar_saldo_inter 
 
 
 from .utils_inter import buscar_extrato_inter
@@ -1762,7 +1763,27 @@ def importar_ofx_view(request):
     else:
         form = OFXImportForm(user=request.user)
 
-    return render(request, 'accounts/importar_ofx.html', {'ofx_form': form})
+    # --- NOVA LÓGICA DE SALDO ---
+    saldo_inter = None
+    # Verifica se o usuário tem credenciais configuradas antes de tentar buscar
+    if hasattr(request.user, 'inter_creds'):
+        try:
+            # Busca o saldo
+            resp_saldo = buscar_saldo_inter(request.user)
+            
+            # Se a API retornou o campo 'disponivel', salvamos na variável
+            if 'disponivel' in resp_saldo:
+                saldo_inter = resp_saldo['disponivel']
+        except Exception as e:
+            print(f"Não foi possível carregar o saldo: {e}")
+            # Não vamos travar a página se o saldo falhar, apenas segue sem ele
+
+    context = {
+        'ofx_form': form,
+        'saldo_inter': saldo_inter, # Passamos o saldo para o template
+    }
+
+    return render(request, 'accounts/importar_ofx.html', context)
 
 
 

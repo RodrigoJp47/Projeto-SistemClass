@@ -1,4 +1,5 @@
 {% load static %}
+{% load humanize %}
 <!DOCTYPE html>
 <html lang="pt-BR">
 
@@ -62,8 +63,7 @@
             </form>
         </div>
         {% comment %} --- NOVA SECÇÃO CONTA AZUL --- {% endcomment %}
-        <div class="form-container conta-azul-integration mt-4"> {# Reutiliza form-container e adiciona classe
-            específica + margem top #}
+        <div class="form-container conta-azul-integration mt-4"> 
             <h3>Integração Conta Azul</h3>
             <p class="description">
                 Conecte sua conta do Conta Azul para sincronizar automaticamente suas contas a pagar e receber.
@@ -77,19 +77,7 @@
                 futura) #}
             </div>
             {% else %}
-            <div
-                style="margin-bottom: 15px; background-color: #fff3cd; color: #856404; padding: 10px; border: 1px solid #ffeeba; border-radius: 4px;">
-                <p style="margin: 0; font-size: 14px;">
-                    <strong>Passo 1 (Obrigatório):</strong> O navegador pode estar "preso" na conta errada.
-                    <br>
-                    <a href="https://app.contaazul.com/logout" target="_blank"
-                        style="color: #dc3545; text-decoration: underline; font-weight: bold;">
-                        CLIQUE AQUI PRIMEIRO para sair do Conta Azul
-                    </a>
-                    (Isso vai abrir uma tela de login ou a home do Conta Azul. Pode fechar essa aba depois e voltar
-                    aqui).
-                </p>
-            </div>
+            
             <a href="{% url 'contaazul_auth' %}" class="btn-conta-azul">
                 <i class="fas fa-link"></i> {# Ícone FontAwesome #}
                 Conectar com Conta Azul
@@ -102,9 +90,22 @@
         {% comment %} --- NOVA SECÇÃO BANCO INTER --- {% endcomment %}
         <div class="form-container banco-inter-integration mt-4" style="border-left: 5px solid #FF7A00;"> 
             <div style="display: flex; align-items: center; gap: 10px;">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/f/fa/Banco_Inter_logo.svg" alt="Inter" style="width: 30px; height: 30px;">
+                
                 <h3>Integração Banco Inter</h3>
             </div>
+            {% if saldo_inter %}
+                <div style="background-color: #fff; border: 1px solid #ddd; border-left: 5px solid #28a745; padding: 10px 15px; margin-bottom: 15px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <span style="font-size: 12px; color: #666; text-transform: uppercase; font-weight: bold;">Saldo em Conta</span>
+                        <div style="font-size: 24px; font-weight: bold; color: #333;">
+                            R$ {{ saldo_inter|floatformat:2|intcomma }}
+                        </div>
+                    </div>
+                    <div style="color: #28a745; font-size: 24px;">
+                        <i class="fas fa-wallet"></i>
+                    </div>
+                </div>
+            {% endif %}
             
             <p class="description">
                 Sincronize automaticamente o extrato bancário direto da API do Banco Inter (Últimos 7 dias).
@@ -121,9 +122,10 @@
                     <a href="{% url 'configurar_inter' %}" style="color: #666; text-decoration: underline;">Alterar configurações do Inter</a>
                 </div>
             {% else %}
-            <a href="{% url 'configurar_inter' %}" class="btn-conta-azul" style="background-color: #FF7A00; border-color: #FF7A00; color: white;">
-                    <i class="fas fa-cog"></i> Configurar Banco Inter
-                </a>
+            <a href="{% url 'configurar_inter' %}" class="btn-inter">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/f/fa/Banco_Inter_logo.svg" alt="Inter">
+                Configurar Banco Inter
+            </a>
             {% endif %}
             <p class="mt-2" style="color: #666;"><small>O sistema buscará as transações dos últimos 7 dias.</small></p>
         </div>

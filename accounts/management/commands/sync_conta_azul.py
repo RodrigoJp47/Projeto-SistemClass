@@ -172,18 +172,31 @@ class Command(BaseCommand):
                             data_venc = datetime.strptime(data_venc_str, '%Y-%m-%d').date() if data_venc_str else None
                             if not data_venc: continue
                             
-                            # 1. Define a categoria padrão
-                            categoria_padrao, _ = Category.objects.get_or_create(name='Receita V2 Padrão', category_type='RECEIVABLE', user=user)
-                            
-                            # 2. Tenta prever a classificação inteligente (AGORA PEGANDO 3 VALORES)
-                            # CORREÇÃO AQUI: Adicionado ', banco_inteligente'
-                            cat_inteligente, dre_inteligente, banco_inteligente = self.prever_classificacao(user, cliente_nome, 'RECEIVABLE')
-                            
-                            # Define o que será usado (Inteligência tem preferência sobre o Padrão)
-                            categoria_final = cat_inteligente if cat_inteligente else categoria_padrao
-                            dre_final = dre_inteligente if dre_inteligente else 'BRUTA'
+                            # 1. Verifica se já existe para PRESERVAR classificações manuais
+                            try:
+                                obj_existente = ReceivableAccount.objects.get(external_id=conta.get('id'))
+                                existe = True
+                            except ReceivableAccount.DoesNotExist:
+                                obj_existente = None
+                                existe = False
 
-                            # Lógica CORRIGIDA: Busca apenas pelo external_id e atualiza dono
+                            # 2. Previsão Inteligente
+                            cat_inteligente, dre_inteligente, banco_inteligente = self.prever_classificacao(user, cliente_nome, 'RECEIVABLE')
+                            categoria_padrao, _ = Category.objects.get_or_create(name='Receita V2 Padrão', category_type='RECEIVABLE', user=user)
+
+                            # 3. Define Categoria/DRE/Banco (BLINDAGEM)
+                            if existe:
+                                # Se já existe, MANTÉM o que está no banco (não sobrescreve edição manual)
+                                cat_final = obj_existente.category
+                                dre_final = obj_existente.dre_area
+                                bank_final = obj_existente.bank_account
+                            else:
+                                # Se é novo, usa inteligência ou padrão
+                                cat_final = cat_inteligente if cat_inteligente else categoria_padrao
+                                dre_final = dre_inteligente if dre_inteligente else 'BRUTA'
+                                bank_final = banco_inteligente
+
+                            # 4. Atualiza ou Cria (Agora seguro)
                             obj, created = ReceivableAccount.objects.update_or_create(
                                 external_id=conta.get('id'),
                                 defaults={
@@ -194,27 +207,24 @@ class Command(BaseCommand):
                                     'due_date': data_venc,
                                     'is_received': is_received_ca,
                                     'payment_date': data_pagamento,
-                                    'category': categoria_final,
                                     'payment_method': 'BOLETO',
-                                    'dre_area': dre_final,
-                                    'bank_account': banco_inteligente, # Agora a variável existe!
                                     'occurrence': 'AVULSO',
+                                    # Usa as variáveis blindadas acima
+                                    'category': cat_final,
+                                    'dre_area': dre_final,
+                                    'bank_account': bank_final, 
                                 }
                             )
                             
-                            # Lógica de atualização inteligente para contas existentes
-                            if not created and cat_inteligente and obj.category.name == 'Receita V2 Padrão':
+                            # 5. Refinamento: Se existe mas ainda é "Padrão", permite inteligência atualizar
+                            if not created and obj.category.name == 'Receita V2 Padrão' and cat_inteligente:
                                  obj.category = cat_inteligente
-                                 obj.dre_area = dre_inteligente
-                                 
-                                 # ATUALIZA O BANCO SE TIVER PREVISÃO
-                                 if banco_inteligente:
-                                     obj.bank_account = banco_inteligente
-                                     
+                                 obj.dre_area = dre_inteligente if dre_inteligente else obj.dre_area
+                                 if banco_inteligente: obj.bank_account = banco_inteligente
                                  obj.save()
-                                 self.stdout.write(self.style.SUCCESS(f"    -> [Update] Classificação inteligente aplicada: {cat_inteligente.name}"))
+                                 self.stdout.write(self.style.SUCCESS(f"    -> [Smart Update] Categoria atualizada de Padrão para {cat_inteligente.name}"))
 
-                            action = "criada" if created else "atualizada"
+                            action = "criada" if created else "atualizada (Blindada)"
                             status_desc = "Recebida" if is_received_ca else "Pendente"
                             self.stdout.write(f"  -> C.Receber {obj.external_id} {action}. Status: {status_desc}")
 
@@ -280,18 +290,31 @@ class Command(BaseCommand):
                             data_venc = datetime.strptime(data_venc_str, '%Y-%m-%d').date() if data_venc_str else None
                             if not data_venc: continue
                             
-                            # 1. Define a categoria padrão
+                            # 1. Verifica se já existe para PRESERVAR classificações manuais
+                            try:
+                                obj_existente = PayableAccount.objects.get(external_id=conta.get('id'))
+                                existe = True
+                            except PayableAccount.DoesNotExist:
+                                obj_existente = None
+                                existe = False
+
+                            # 2. Previsão Inteligente
+                            cat_inteligente, dre_inteligente, banco_inteligente = self.prever_classificacao(user, fornecedor_nome, 'PAYABLE')
                             categoria_padrao, _ = Category.objects.get_or_create(name='Despesa V2 Padrão', category_type='PAYABLE', user=user)
 
-                            # 2. Tenta prever a classificação inteligente (AGORA PEGANDO 3 VALORES)
-                            # CORREÇÃO AQUI: Adicionado ', banco_inteligente'
-                            cat_inteligente, dre_inteligente, banco_inteligente = self.prever_classificacao(user, fornecedor_nome, 'PAYABLE')
+                            # 3. Define Categoria/DRE/Banco (BLINDAGEM)
+                            if existe:
+                                # Se já existe, MANTÉM o que está no banco
+                                cat_final = obj_existente.category
+                                dre_final = obj_existente.dre_area
+                                bank_final = obj_existente.bank_account
+                            else:
+                                # Se é novo, usa inteligência ou padrão
+                                cat_final = cat_inteligente if cat_inteligente else categoria_padrao
+                                dre_final = dre_inteligente if dre_inteligente else 'OPERACIONAL'
+                                bank_final = banco_inteligente
 
-                            # Define o que será usado
-                            categoria_final = cat_inteligente if cat_inteligente else categoria_padrao
-                            dre_final = dre_inteligente if dre_inteligente else 'OPERACIONAL'
-
-                            # Lógica CORRIGIDA: Busca apenas pelo external_id
+                            # 4. Atualiza ou Cria
                             obj, created = PayableAccount.objects.update_or_create(
                                 external_id=conta.get('id'),
                                 defaults={
@@ -302,28 +325,25 @@ class Command(BaseCommand):
                                     'due_date': data_venc,
                                     'is_paid': is_paid_ca,
                                     'payment_date': data_pagamento,
-                                    'category': categoria_final,
                                     'payment_method': 'BOLETO',
-                                    'dre_area': dre_final,
-                                    'bank_account': banco_inteligente, # Agora a variável existe!
                                     'occurrence': 'AVULSO',
                                     'cost_type': 'FIXO',
+                                    # Usa as variáveis blindadas acima
+                                    'category': cat_final,
+                                    'dre_area': dre_final,
+                                    'bank_account': bank_final,
                                 }
                             )
 
-                            # Lógica de atualização inteligente para contas existentes
-                            if not created and cat_inteligente and obj.category.name == 'Despesa V2 Padrão':
+                            # 5. Refinamento: Se existe mas ainda é "Padrão", permite inteligência atualizar
+                            if not created and obj.category.name == 'Despesa V2 Padrão' and cat_inteligente:
                                 obj.category = cat_inteligente
-                                obj.dre_area = dre_inteligente
-                                
-                                # ATUALIZA O BANCO SE TIVER PREVISÃO
-                                if banco_inteligente:
-                                    obj.bank_account = banco_inteligente
-
+                                obj.dre_area = dre_inteligente if dre_inteligente else obj.dre_area
+                                if banco_inteligente: obj.bank_account = banco_inteligente
                                 obj.save()
-                                self.stdout.write(self.style.SUCCESS(f"    -> [Update] Classificação inteligente aplicada: {cat_inteligente.name}"))
+                                self.stdout.write(self.style.SUCCESS(f"    -> [Smart Update] Categoria atualizada de Padrão para {cat_inteligente.name}"))
 
-                            action = "criada" if created else "atualizada"
+                            action = "criada" if created else "atualizada (Blindada)"
                             status_desc = "Recebida/Paga" if is_paid_ca else "Pendente"
                             self.stdout.write(f"  -> C.Pagar {obj.external_id} {action}. Status: {status_desc}")
 

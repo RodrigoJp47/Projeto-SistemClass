@@ -138,3 +138,49 @@ def buscar_extrato_inter(user, start_date, end_date):
             erro_msg += f" | Detalhe Inter: {response.text}"
         print(f"Erro ao buscar extrato: {erro_msg}")
         return {'erro': erro_msg}
+    
+
+
+
+def buscar_saldo_inter(user):
+    # 1. Pega o token (reutilizando a função existente)
+    token_response = get_inter_token(user)
+    
+    # Se der erro no token, retorna o erro
+    if isinstance(token_response, dict) and 'erro' in token_response:
+        return token_response
+        
+    token = token_response
+
+    # 2. Prepara a requisição
+    creds = user.inter_creds
+    url = f"{INTER_API_URL}/banking/v2/saldo"
+    headers = {'Authorization': f'Bearer {token}'}
+
+    try:
+        # Lê os arquivos do banco/S3 para memória
+        creds.certificado_crt.open('rb')
+        crt_content = creds.certificado_crt.read()
+        creds.certificado_crt.close()
+
+        creds.chave_key.open('rb')
+        key_content = creds.chave_key.read()
+        creds.chave_key.close()
+        
+        # Cria temporários e chama a API
+        with arquivos_temporarios(crt_content, key_content) as (crt_path, key_path):
+            response = requests.get(
+                url,
+                headers=headers,
+                cert=(crt_path, key_path)
+            )
+            response.raise_for_status()
+            return response.json() # Retorna o JSON com 'disponivel', 'limite', etc.
+            
+    except Exception as e:
+        erro_msg = f"Erro ao buscar saldo: {str(e)}"
+        return {'erro': erro_msg}
+
+
+
+

@@ -211,3 +211,43 @@
 .messages p {
     margin-bottom: 0.5rem; /* Adiciona espaço entre múltiplas mensagens */
 }
+
+/* Botão Banco Inter */
+.btn-inter {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    padding: 12px 20px;
+    background-color: #FF7A00; /* Laranja Inter */
+    color: #ffffff;
+    font-size: 16px;
+    font-weight: 600;
+    border-radius: 6px;
+    text-decoration: none;
+    transition: background-color 0.3s, transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 4px 6px rgba(255, 122, 0, 0.15);
+    border: none;
+    cursor: pointer;
+}
+
+.btn-inter:hover {
+    background-color: #e66e00; /* Laranja um pouco mais escuro */
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(255, 122, 0, 0.25);
+    color: #ffffff;
+    text-decoration: none;
+}
+
+.btn-inter:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(255, 122, 0, 0.15);
+}
+
+/* Ajuste para o ícone/imagem dentro do botão */
+.btn-inter img {
+    width: 20px; 
+    height: 20px; 
+    filter: brightness(0) invert(1); /* Torna o logo branco */
+}
