@@ -281,8 +281,8 @@ DOMAIN_URL = os.environ.get('DOMAIN_URL', 'http://127.0.0.1:8000')
 
 # SEUS PLANOS (Esses podem ficar aqui pois são fixos, a não ser que mude os preços)
 STRIPE_PRICE_IDS = {
-    'financeiro': 'price_1SdOSnEQf1cNUJ0TfDrvYmrb', # Plano Gestão Financeira
-    'completo':   'price_1SdOTzEQf1cNUJ0TRzHA1tKz', # Plano Gestão Total
+    'financeiro': 'price_1SdviECzwuU2PN4ZsmrpsTME', # Plano Gestão Financeira
+    'completo':   'price_1Sdvj1CzwuU2PN4ZTnbyeWBH', # Plano Gestão Total
 }
 
 
