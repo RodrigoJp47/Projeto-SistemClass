@@ -263,4 +263,26 @@ INTER_CERT_CRT = os.path.join(BASE_DIR, 'certs', os.environ.get('INTER_CERT_CRT'
 INTER_CERT_KEY = os.path.join(BASE_DIR, 'certs', os.environ.get('INTER_CERT_KEY', 'inter.key'))
 
 
+# ==================================================================
+#  CONFIGURAÇÃO STRIPE (PAGAMENTOS)
+# ==================================================================
+
+import os
+
+# Chaves de API (Lê do ambiente ou usa string vazia se não achar)
+STRIPE_PUBLIC_KEY = os.environ.get('STRIPE_PUBLIC_KEY', '')
+STRIPE_SECRET_KEY = os.environ.get('STRIPE_SECRET_KEY', '')
+
+# Webhook Secret (IMPORTANTE: Voltar para os.environ)
+STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET', '')
+
+# URL do domínio (Dinâmico)
+DOMAIN_URL = os.environ.get('DOMAIN_URL', 'http://127.0.0.1:8000')
+
+# SEUS PLANOS (Esses podem ficar aqui pois são fixos, a não ser que mude os preços)
+STRIPE_PRICE_IDS = {
+    'financeiro': 'price_1SdOSnEQf1cNUJ0TfDrvYmrb', # Plano Gestão Financeira
+    'completo':   'price_1SdOTzEQf1cNUJ0TRzHA1tKz', # Plano Gestão Total
+}
+
 

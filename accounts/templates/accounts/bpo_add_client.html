@@ -1,0 +1,160 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adicionar Cliente - BPO</title>
+    
+    <link rel="stylesheet" href="{% static 'css/sidebar.css' %}">
+    <link rel="stylesheet" href="{% static 'css/global.css' %}">
+    <link rel="stylesheet" href="{% static 'css/themes.css' %}">
+    <link rel="stylesheet" href="{% static 'css/home.css' %}">
+    <link rel="stylesheet" href="{% static 'css/layout-responsive.css' %}">
+
+    <style>
+        .form-card {
+            background-color: var(--card-bg-color, #ffffff);
+            border-radius: 10px;
+            padding: 40px;
+            max-width: 600px;
+            margin: 40px auto;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            color: var(--text-color, #333);
+        }
+
+        .limit-info {
+            text-align: center;
+            background: rgba(103, 114, 229, 0.1); /* Cor suave baseada no Stripe */
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(103, 114, 229, 0.2);
+        }
+
+        .limit-info h3 {
+            margin: 0 0 5px 0;
+            font-size: 1.2rem;
+            color: #6772e5;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 1rem;
+            box-sizing: border-box; /* Garante que o padding não estoure a largura */
+        }
+
+        .btn-bpo {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: opacity 0.3s;
+        }
+
+        .btn-save {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .btn-cancel {
+            background-color: #dc3545;
+            color: white;
+            text-align: center;
+            display: block;
+            text-decoration: none;
+        }
+
+        .btn-bpo:hover {
+            opacity: 0.9;
+        }
+
+        /* Ajuste simples para o erro do formulário */
+        .error-msg {
+            color: #dc3545;
+            font-size: 0.85rem;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body class="home-page"> {% include 'accounts/_sidebar.html' %}
+
+    <div class="main-content">
+        <button id="menu-toggle" style="display: none;">&#9776;</button>
+        
+        <div class="main-header">
+            <h1>Gestão de Clientes BPO</h1>
+        </div>
+
+        <div class="form-card">
+            <h2 style="text-align: center; margin-bottom: 20px;">Cadastrar Novo Cliente</h2>
+
+            <div class="limit-info">
+                <h3>Limite do Plano</h3>
+                <p>Você utilizou <strong>{{ current }}</strong> de <strong>{{ limit }}</strong> licenças disponíveis.</p>
+            </div>
+
+            <form method="post">
+                {% csrf_token %}
+                
+                {% for field in form %}
+                <div class="form-group">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.errors %}
+                        <div class="error-msg">{{ field.errors.0 }}</div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+
+                <button type="submit" class="btn-bpo btn-save">
+                    <i class="fas fa-check"></i> Criar Cliente
+                </button>
+                
+                <a href="{% url 'bpo_dashboard' %}" class="btn-bpo btn-cancel">
+                    Cancelar
+                </a>
+            </form>
+        </div>
+
+    </div>
+    
+    <script src="{% static 'js/theme.js' %}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Lógica do Menu Mobile (Igual à Home)
+            const menuToggleButton = document.getElementById('menu-toggle');
+            const sidebar = document.querySelector('.sidebar');
+            
+            // Verifica se o botão existe antes de adicionar evento (no CSS desktop ele pode estar oculto)
+            if (menuToggleButton && sidebar) {
+                // Mostra o botão via JS se necessário ou confia no CSS
+                if(window.innerWidth <= 768) {
+                    menuToggleButton.style.display = 'block';
+                }
+                
+                menuToggleButton.addEventListener('click', () => {
+                    sidebar.classList.toggle('mobile-open');
+                });
+            }
+        });
+    </script>
+</body>
+</html>

@@ -16,6 +16,11 @@ from urllib.parse import urlparse
 import requests
 import time
 
+import stripe
+
+from django.views.decorators.csrf import csrf_exempt # Vamos usar depois no webhook
+
+
 # --- 2. Bibliotecas de Terceiros (Pip) ---
 import openpyxl
 import pandas as pd
@@ -76,10 +81,18 @@ from .models import (
 from .utils_exports import gerar_pdf_generic, gerar_excel_generic
 from .utils_inter import buscar_extrato_inter, buscar_saldo_inter 
 
+from .forms import AsaasCredentialsForm 
+from .models import AsaasCredentials
+from .utils_asaas import buscar_extrato_asaas, buscar_saldo_asaas
+
 
 from .utils_inter import buscar_extrato_inter
 from .forms import InterCredentialsForm
 from .models import InterCredentials
+from .forms import MercadoPagoCredentialsForm # <--- Adicionar
+from .models import MercadoPagoCredentials    # <--- Adicionar
+# Adicione ao topo do accounts/views.py, junto com as outras importações locais
+from .utils_mercadopago import buscar_extrato_mercadopago, buscar_saldo_mercadopago
 
 
 MESES_ABREVIADOS = {
@@ -1557,6 +1570,218 @@ def importar_ofx_view(request):
             
             return redirect('importar_ofx')
         # --- [FIM] COLAR O CÓDIGO AQUI ---
+
+        # ▼▼▼ [INÍCIO] NOVO BLOCO MERCADO PAGO ▼▼▼
+        elif 'sync_mp' in request.POST:
+            # 1. Define o período (últimos 7 dias, igual ao Inter)
+            end_date = datetime.now().date()
+            start_date = end_date - timedelta(days=7)
+            
+            # 2. Chama a API
+            resultado = buscar_extrato_mercadopago(request.user, start_date, end_date)
+            
+            if 'erro' in resultado:
+                messages.error(request, f"Erro na integração Mercado Pago: {resultado['erro']}")
+            else:
+                transacoes = resultado.get('transacoes', [])
+                
+                # Tenta localizar ou criar uma conta bancária para o MP
+                banco_mp = BankAccount.objects.filter(user=request.user, bank_name__icontains='Mercado Pago').first()
+                if not banco_mp:
+                    # Cria um banco virtual se não existir, para vincular os lançamentos
+                    banco_mp = BankAccount.objects.create(
+                        user=request.user, 
+                        bank_name='Mercado Pago', 
+                        agency='0001', 
+                        account_number='DIGITAL', 
+                        initial_balance=0
+                    )
+
+                count_importados = 0
+                count_duplicados = 0
+
+                for transacao in transacoes:
+                    # Dados vindos do utils_mercadopago
+                    data_movimento_str = transacao['data']
+                    valor = Decimal(str(transacao['valor'])) # Valor Bruto
+                    descricao_origem = transacao['descricao']
+                    id_mp = transacao['id_mp']
+                    
+                    try:
+                        data_movimento = datetime.strptime(data_movimento_str, '%Y-%m-%d').date()
+                    except:
+                        data_movimento = end_date
+
+                    # Monta descrição única
+                    descricao_final = f"Venda MP - {descricao_origem} (ID: {id_mp})"
+
+                    # --- LÓGICA ANTI-DUPLICIDADE ---
+                    # Verifica se já existe um lançamento com mesmo valor, data e descrição
+                    existe = ReceivableAccount.objects.filter(
+                        user=request.user,
+                        amount=valor,
+                        payment_date=data_movimento,
+                        description=descricao_final
+                    ).exists()
+
+                    if not existe:
+                        # --- LÓGICA INTELIGENTE (IA) ---
+                        cat_prevista, dre_prevista, _ = prever_classificacao(request.user, descricao_origem, 'RECEIVABLE')
+                        
+                        # Categorias Padrão caso a IA não encontre
+                        categoria_padrao, _ = Category.objects.get_or_create(
+                            user=request.user, 
+                            name='Receitas de Vendas', 
+                            category_type='RECEIVABLE'
+                        )
+
+                        ReceivableAccount.objects.create(
+                            user=request.user,
+                            name=descricao_origem[:100],
+                            description=descricao_final,
+                            due_date=data_movimento,
+                            amount=valor,
+                            category=cat_prevista or categoria_padrao,
+                            dre_area=dre_prevista or 'BRUTA',
+                            payment_method='CREDITO', # Assume Crédito/Digital
+                            occurrence='AVULSO',
+                            is_received=True, # Já entra como Recebido (Aprovado)
+                            payment_date=data_movimento,
+                            bank_account=banco_mp,
+                            external_id=id_mp # Salva o ID do MP para referência futura
+                        )
+                        count_importados += 1
+                    else:
+                        count_duplicados += 1
+                
+                # Feedback
+                if count_importados > 0:
+                    messages.success(request, f"Mercado Pago: {count_importados} vendas importadas com sucesso!")
+                elif count_duplicados > 0:
+                    messages.info(request, "Mercado Pago: Nenhuma venda nova. Transações já importadas.")
+                else:
+                    messages.warning(request, "Mercado Pago: Nenhuma transação encontrada nos últimos 7 dias.")
+            
+            return redirect('importar_ofx')
+        # ▲▲▲ [FIM] NOVO BLOCO MERCADO PAGO ▲▲▲
+
+        # ▼▼▼ [INÍCIO] NOVO BLOCO ASAAS ▼▼▼
+        elif 'sync_asaas' in request.POST:
+            # 1. Define o período (Últimos 30 dias, pois Asaas tem taxas antigas que são importantes)
+            end_date = datetime.now().date()
+            start_date = end_date - timedelta(days=30)
+            
+            # 2. Chama a API
+            resultado = buscar_extrato_asaas(request.user, start_date, end_date)
+            
+            if 'erro' in resultado:
+                messages.error(request, f"Erro na integração Asaas: {resultado['erro']}")
+            else:
+                transacoes = resultado.get('transacoes', [])
+                
+                # Cria/Busca banco virtual Asaas
+                banco_asaas, _ = BankAccount.objects.get_or_create(
+                    user=request.user, 
+                    bank_name='Asaas IP S.A.',
+                    defaults={'agency': '0001', 'account_number': 'DIGITAL', 'initial_balance': 0}
+                )
+
+                count_importados = 0
+                count_duplicados = 0
+
+                for transacao in transacoes:
+                    data_movimento_str = transacao['data']
+                    valor = Decimal(str(transacao['valor']))
+                    descricao_origem = transacao['descricao']
+                    id_asaas = transacao['id_asaas']
+                    tipo_op = transacao['tipo'] # 'C' ou 'D'
+                    
+                    try:
+                        data_movimento = datetime.strptime(data_movimento_str, '%Y-%m-%d').date()
+                    except:
+                        data_movimento = end_date
+
+                    descricao_final = f"Asaas - {descricao_origem} (ID: {id_asaas})"
+
+                    # --- LÓGICA DE ENTRADA (RECEIVABLE) ---
+                    if tipo_op == 'C':
+                        existe = ReceivableAccount.objects.filter(
+                            user=request.user,
+                            external_id=id_asaas # Verifica pelo ID único do Asaas
+                        ).exists()
+
+                        if not existe:
+                            cat_prevista, dre_prevista, _ = prever_classificacao(request.user, descricao_origem, 'RECEIVABLE')
+                            
+                            categoria_padrao, _ = Category.objects.get_or_create(
+                                user=request.user, name='Receitas Asaas', category_type='RECEIVABLE'
+                            )
+
+                            ReceivableAccount.objects.create(
+                                user=request.user,
+                                name=descricao_origem[:100],
+                                description=descricao_final,
+                                due_date=data_movimento,
+                                amount=valor,
+                                category=cat_prevista or categoria_padrao,
+                                dre_area=dre_prevista or 'BRUTA',
+                                payment_method='BOLETO', # Padrão Asaas
+                                occurrence='AVULSO',
+                                is_received=True,
+                                payment_date=data_movimento,
+                                bank_account=banco_asaas,
+                                external_id=id_asaas
+                            )
+                            count_importados += 1
+                        else:
+                            count_duplicados += 1
+
+                    # --- LÓGICA DE SAÍDA (PAYABLE) ---
+                    # Ex: Taxas de boleto, Transferências, Saques
+                    elif tipo_op == 'D':
+                        existe = PayableAccount.objects.filter(
+                            user=request.user,
+                            external_id=id_asaas
+                        ).exists()
+
+                        if not existe:
+                            cat_prevista, dre_prevista, _ = prever_classificacao(request.user, descricao_origem, 'PAYABLE')
+                            
+                            categoria_padrao, _ = Category.objects.get_or_create(
+                                user=request.user, name='Taxas Bancárias', category_type='PAYABLE'
+                            )
+
+                            PayableAccount.objects.create(
+                                user=request.user,
+                                name=descricao_origem[:100],
+                                description=descricao_final,
+                                due_date=data_movimento,
+                                amount=valor,
+                                category=cat_prevista or categoria_padrao,
+                                dre_area=dre_prevista or 'DESPESAS_OPERACIONAIS',
+                                payment_method='DEBITO_CONTA',
+                                cost_type='VARIAVEL',
+                                occurrence='AVULSO',
+                                is_paid=True,
+                                payment_date=data_movimento,
+                                bank_account=banco_asaas,
+                                external_id=id_asaas
+                            )
+                            count_importados += 1
+                        else:
+                            count_duplicados += 1
+                
+                if count_importados > 0:
+                    messages.success(request, f"Asaas: {count_importados} movimentações importadas com sucesso!")
+                elif count_duplicados > 0:
+                    messages.info(request, "Asaas: Nenhuma movimentação nova.")
+                else:
+                    messages.warning(request, "Asaas: Nenhuma transação encontrada no período.")
+            
+            return redirect('importar_ofx')
+        # ▲▲▲ [FIM] NOVO BLOCO ASAAS ▲▲▲
+
+
         form = OFXImportForm(request.POST, request.FILES, user=request.user)
         if form.is_valid():
             ofx_import = form.save(commit=False)
@@ -1778,9 +2003,33 @@ def importar_ofx_view(request):
             print(f"Não foi possível carregar o saldo: {e}")
             # Não vamos travar a página se o saldo falhar, apenas segue sem ele
 
+    # ▼▼▼ NOVO: SALDO MERCADO PAGO ▼▼▼
+    saldo_mp = None
+    if hasattr(request.user, 'mercadopago_creds'):
+        try:
+            resp_saldo_mp = buscar_saldo_mercadopago(request.user)
+            if 'disponivel' in resp_saldo_mp:
+                saldo_mp = resp_saldo_mp['disponivel']
+        except Exception as e:
+            print(f"Erro saldo MP: {e}")
+    # ▲▲▲ FIM NOVO BLOCO ▲▲▲   
+
+    # ▼▼▼ NOVO: SALDO ASAAS ▼▼▼
+    saldo_asaas = None
+    if hasattr(request.user, 'asaas_creds'):
+        try:
+            resp_saldo_asaas = buscar_saldo_asaas(request.user)
+            if 'disponivel' in resp_saldo_asaas:
+                saldo_asaas = resp_saldo_asaas['disponivel']
+        except Exception as e:
+            print(f"Erro saldo Asaas: {e}")
+    # ▲▲▲ FIM NOVO BLOCO ▲▲▲     
+
     context = {
         'ofx_form': form,
-        'saldo_inter': saldo_inter, # Passamos o saldo para o template
+        'saldo_inter': saldo_inter,
+        'saldo_mp': saldo_mp,
+        'saldo_asaas': saldo_asaas,
     }
 
     return render(request, 'accounts/importar_ofx.html', context)
@@ -4972,40 +5221,57 @@ def cadastrar_cliente_rapido(request):
             return JsonResponse({'status': 'error', 'errors': form.errors})
     return JsonResponse({'status': 'error', 'message': 'Método inválido'})
 
+# Em accounts/views.py
+
 @login_required
 def bpo_dashboard_view(request):
     """
     Dashboard principal para o BPO Admin selecionar qual cliente gerenciar.
     """
-    # Garante que só o BPO Admin (o usuário real) veja esta página
+    # 1. SEGURANÇA: Garante que não está 'impersonando' ninguém agora
     if request.is_managing:
-        # Se ele está gerenciando e tentou acessar /bpo/
-        # o mais seguro é parar o gerenciamento e mostrar o dashboard.
         return redirect('stop_managing')
 
+    # 2. SEGURANÇA: Verifica se é realmente um BPO
     try:
         if request.user.subscription.user_type != 'BPO':
-            # Se um cliente final tentar acessar, manda para a home
             return redirect('home')
     except Subscription.DoesNotExist:
-        # Se não tem subscription, não é BPO
         return redirect('home')
 
-    # Busca todos os clientes vinculados a este BPO Admin
+    # 3. BUSCA NO BANCO: Pega todos os clientes vinculados
     client_links = BPOClientLink.objects.filter(bpo_admin=request.user).select_related('client', 'client__subscription')
 
+    # --- [NOVO BLOCO] CÁLCULO DE LIMITES ---
+    current_count = client_links.count()
+    limit = request.user.subscription.client_limit
+    can_add = current_count < limit
+    # ---------------------------------------
+
+    # 4. PREPARA A LISTA PARA EXIBIR NA TABELA
     clients_data = []
     for link in client_links:
+        # Pega o nome da empresa do perfil ou usa o username
+        nome_exibicao = link.client.username
+        if hasattr(link.client, 'company_profile'):
+            nome_exibicao = link.client.company_profile.nome_empresa or link.client.username
+
         clients_data.append({
             'user_id': link.client.id,
-            'username': link.client.username,
+            'username': nome_exibicao,
             'email': link.client.email,
             'subscription_status': link.client.subscription.status if hasattr(link.client, 'subscription') else 'N/A'
         })
 
+    # 5. CONTEXTO FINAL (Com as novas variáveis)
     context = {
         'clients': clients_data,
-        'is_bpo_dashboard': True, # Para o template base saber onde está
+        'is_bpo_dashboard': True, # Para o template saber onde está
+        
+        # Novas variáveis para o botão "+ Adicionar Cliente"
+        'current_count': current_count,
+        'limit': limit,
+        'can_add': can_add,
     }
     return render(request, 'accounts/bpo_dashboard.html', context)
 
@@ -6570,7 +6836,274 @@ def configurar_inter_view(request):
 
 
 
+# accounts/views.py
 
+# ... imports existentes ...
+
+
+@login_required
+@subscription_required
+def configurar_mercadopago_view(request):
+    # Tenta pegar a instância existente ou define como None para criar
+    try:
+        instance = request.user.mercadopago_creds
+    except MercadoPagoCredentials.DoesNotExist:
+        instance = None
+
+    if request.method == 'POST':
+        form = MercadoPagoCredentialsForm(request.POST, instance=instance)
+        if form.is_valid():
+            creds = form.save(commit=False)
+            creds.user = request.user
+            creds.save()
+            messages.success(request, 'Credenciais do Mercado Pago salvas com sucesso!')
+            # Redireciona para a tela de importação, igual ao fluxo do Banco Inter
+            return redirect('importar_ofx')
+        else:
+            messages.error(request, 'Erro ao salvar. Verifique os dados inseridos.')
+    else:
+        form = MercadoPagoCredentialsForm(instance=instance)
+
+    return render(request, 'accounts/configurar_mercadopago.html', {'form': form})
+
+
+
+
+@login_required
+@subscription_required
+def configurar_asaas_view(request):
+    try:
+        instance = request.user.asaas_creds
+    except AsaasCredentials.DoesNotExist:
+        instance = None
+
+    if request.method == 'POST':
+        form = AsaasCredentialsForm(request.POST, instance=instance)
+        if form.is_valid():
+            creds = form.save(commit=False)
+            creds.user = request.user
+            creds.save()
+            messages.success(request, 'Credenciais do Asaas salvas com sucesso!')
+            return redirect('importar_ofx')
+        else:
+            messages.error(request, 'Erro ao salvar. Verifique a chave inserida.')
+    else:
+        form = AsaasCredentialsForm(instance=instance)
+
+    return render(request, 'accounts/configurar_asaas.html', {'form': form})
+
+
+@login_required
+def create_checkout_session(request, plan_type):
+    """
+    Cria uma sessão de Checkout no Stripe para o plano escolhido
+    plan_type: 'financeiro' ou 'completo'
+    """
+    stripe.api_key = settings.STRIPE_SECRET_KEY
+
+    # 1. Identifica qual ID de preço usar
+    price_id = settings.STRIPE_PRICE_IDS.get(plan_type)
+    
+    if not price_id:
+        messages.error(request, "Plano inválido selecionado.")
+        return redirect('assinatura')
+
+    try:
+        # 2. Busca ou Cria o Cliente no Stripe
+        # Primeiro checamos se o usuário já tem um ID stripe salvo
+        subscription = getattr(request.user, 'subscription', None)
+        stripe_customer_id = subscription.stripe_customer_id if subscription else None
+
+        if not stripe_customer_id:
+            # Cria um novo cliente no Stripe com o email do usuário
+            customer = stripe.Customer.create(
+                email=request.user.email,
+                name=request.user.get_full_name() or request.user.username,
+                metadata={'user_id': request.user.id} # Importante para o Webhook achar o usuário depois
+            )
+            stripe_customer_id = customer.id
+            
+            # Salva o ID no banco para não criar duplicado depois
+            if subscription:
+                subscription.stripe_customer_id = stripe_customer_id
+                subscription.save()
+
+        # 3. Cria a Sessão de Checkout
+        checkout_session = stripe.checkout.Session.create(
+            customer=stripe_customer_id,
+            payment_method_types=['card'], # Aceitar cartão (pode adicionar 'boleto' se ativar no painel)
+            line_items=[
+                {
+                    'price': price_id,
+                    'quantity': 1,
+                },
+            ],
+            mode='subscription', # Modo assinatura (recorrente)
+            # URLs para onde o cliente volta após pagar ou cancelar
+            success_url=settings.DOMAIN_URL + '/assinatura/sucesso/',
+            cancel_url=settings.DOMAIN_URL + '/assinatura/cancelado/',
+            metadata={
+                'user_id': request.user.id,
+                'plan_type': plan_type  # 'financeiro' ou 'completo'
+            }
+        )
+
+        # 4. Redireciona o usuário para o link seguro do Stripe
+        return redirect(checkout_session.url, code=303)
+
+    except Exception as e:
+        messages.error(request, f"Erro ao conectar com Stripe: {str(e)}")
+        return redirect('assinatura')
+
+# Views simples de retorno (só para não dar erro 404)
+@login_required
+def assinatura_sucesso(request):
+    messages.success(request, "Pagamento recebido! Sua assinatura será ativada em instantes.")
+    return redirect('home')
+
+@login_required
+def assinatura_cancelado(request):
+    messages.warning(request, "A assinatura não foi completada. Você não foi cobrado.")
+    return redirect('assinatura')
+
+
+
+# No final de accounts/views.py
+
+from django.views.decorators.csrf import csrf_exempt
+from django.http import HttpResponse
+import stripe
+# Certifique-se que 'timedelta' e 'timezone' estão importados lá no topo,
+# mas por segurança, vou usar imports diretos aqui dentro para evitar conflitos:
+from django.utils import timezone
+from datetime import timedelta 
+
+@csrf_exempt
+def stripe_webhook(request):
+    payload = request.body
+    sig_header = request.META.get('HTTP_STRIPE_SIGNATURE')
+    event = None
+
+    try:
+        event = stripe.Webhook.construct_event(
+            payload, sig_header, settings.STRIPE_WEBHOOK_SECRET
+        )
+    except ValueError as e:
+        # Payload inválido
+        return HttpResponse(status=400)
+    except stripe.error.SignatureVerificationError as e:
+        # Assinatura inválida
+        return HttpResponse(status=400)
+
+    # --- LÓGICA DO EVENTO ---
+    if event['type'] == 'checkout.session.completed':
+        session = event['data']['object']
+        
+        # Recupera metadata
+        user_id = session.get('metadata', {}).get('user_id')
+        plan_type = session.get('metadata', {}).get('plan_type')
+        stripe_subscription_id = session.get('subscription')
+
+        print(f"🔔 WEBHOOK RECEBIDO: User ID: {user_id}, Plano: {plan_type}")
+
+        if user_id and plan_type:
+            try:
+                user = User.objects.get(id=user_id)
+                subscription = Subscription.objects.get(user=user)
+
+                # Atualiza dados básicos
+                subscription.status = 'active'
+                subscription.stripe_subscription_id = stripe_subscription_id
+                
+                # CORREÇÃO AQUI: Usando timedelta direto
+                subscription.valid_until = timezone.now().date() + timedelta(days=30)
+
+                # Lógica de Permissão
+                if plan_type == 'financeiro':
+                    subscription.has_financial_module = True
+                    subscription.has_commercial_module = False
+                    subscription.employee_limit = 2
+                
+                elif plan_type == 'completo':
+                    subscription.has_financial_module = True
+                    subscription.has_commercial_module = True
+                    subscription.employee_limit = 5
+                
+                subscription.save()
+                print(f"✅ SUCESSO TOTAL: Assinatura de {user.username} atualizada para {plan_type}!")
+
+            except User.DoesNotExist:
+                print("❌ ERRO: Usuário não encontrado no banco.")
+            except Subscription.DoesNotExist:
+                print("❌ ERRO: Assinatura (Subscription) não existe para este usuário.")
+            except Exception as e:
+                # Esse print vai nos salvar se houver outro erro!
+                print(f"❌ ERRO CRÍTICO NO CÓDIGO: {str(e)}")
+                return HttpResponse(status=500)
+
+    return HttpResponse(status=200)
+
+
+
+
+# accounts/views.py
+
+from .forms import BPOAddClientForm # Importe o formulário novo
+
+@login_required
+def bpo_add_client_view(request):
+    # 1. Verifica se é BPO
+    try:
+        sub = request.user.subscription
+        if sub.user_type != 'BPO':
+            messages.error(request, "Acesso negado. Apenas contas BPO podem adicionar clientes.")
+            return redirect('home')
+    except Subscription.DoesNotExist:
+        return redirect('home')
+
+    # 2. Verifica o Limite (AQUI ESTÁ A MÁGICA)
+    current_clients_count = BPOClientLink.objects.filter(bpo_admin=request.user).count()
+    limit = sub.client_limit
+
+    if current_clients_count >= limit:
+        messages.error(request, f"Você atingiu seu limite de {limit} clientes. Faça um upgrade para adicionar mais.")
+        return redirect('bpo_dashboard')
+
+    if request.method == 'POST':
+        form = BPOAddClientForm(request.POST)
+        if form.is_valid():
+            with transaction.atomic():
+                # A. Cria o Usuário do Cliente
+                new_client_user = User.objects.create_user(
+                    username=form.cleaned_data['email'],
+                    email=form.cleaned_data['email'],
+                    password=form.cleaned_data['password'],
+                    first_name=form.cleaned_data['first_name']
+                )
+
+                # B. Atualiza a Assinatura do Cliente (que já foi criada pelo signal post_save)
+                # Usamos get_or_create por segurança, caso o signal falhe ou seja removido
+                client_sub, created = Subscription.objects.get_or_create(user=new_client_user)
+                
+                client_sub.status = 'active'
+                client_sub.user_type = 'CLIENTE'
+                client_sub.valid_until = datetime.today().date() + timedelta(days=3650) # Validade longa
+                client_sub.has_financial_module = True
+                client_sub.has_commercial_module = sub.has_commercial_module # Herda do BPO
+                client_sub.save()
+
+                # C. Cria o Vínculo (Link)
+                BPOClientLink.objects.create(
+                    bpo_admin=request.user,
+                    client=new_client_user
+                )
+
+                messages.success(request, f"Cliente '{new_client_user.first_name}' criado e vinculado com sucesso!")
+                return redirect('bpo_dashboard')
+    else:
+        form = BPOAddClientForm()
+
+    return render(request, 'accounts/bpo_add_client.html', {'form': form, 'limit': limit, 'current': current_clients_count})
 
 
 

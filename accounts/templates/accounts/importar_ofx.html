@@ -130,6 +130,93 @@
             <p class="mt-2" style="color: #666;"><small>O sistema buscará as transações dos últimos 7 dias.</small></p>
         </div>
         {% comment %} --- FIM DA SECÇÃO --- {% endcomment %}
+        {% comment %} --- NOVA SECÇÃO MERCADO PAGO --- {% endcomment %}
+        <div class="form-container mercadopago-integration mt-4" style="border-left: 5px solid #009EE3;"> 
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <img src="https://http2.mlstatic.com/frontend-assets/ui-navigation/5.18.9/mercadolibre/logo__large_plus.png" alt="MP" style="height: 25px; object-fit: contain;">
+                <h3>Integração Mercado Pago</h3>
+            </div>
+            
+            {% if saldo_mp is not None %}
+                <div style="background-color: #fff; border: 1px solid #ddd; border-left: 5px solid #009EE3; padding: 10px 15px; margin-bottom: 15px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; margin-top: 15px;">
+                    <div>
+                        <span style="font-size: 12px; color: #666; text-transform: uppercase; font-weight: bold;">Saldo Disponível</span>
+                        <div style="font-size: 24px; font-weight: bold; color: #333;">
+                            R$ {{ saldo_mp|floatformat:2|intcomma }}
+                        </div>
+                    </div>
+                    <div style="color: #009EE3; font-size: 24px;">
+                        <i class="fas fa-hand-holding-usd"></i>
+                    </div>
+                </div>
+            {% endif %}
+            
+            <p class="description">
+                Sincronize automaticamente suas vendas aprovadas do Mercado Pago (Últimos 7 dias).
+            </p>
+
+            {% if user.mercadopago_creds %}
+                <form method="post">
+                    {% csrf_token %}
+                    <button type="submit" name="sync_mp" class="btn-conta-azul" style="background-color: #009EE3; border-color: #009EE3; color: white;">
+                        <i class="fas fa-sync"></i> Sincronizar Agora
+                    </button>
+                </form>
+                <div style="margin-top: 10px;">
+                    <a href="{% url 'configurar_mercadopago' %}" style="color: #666; text-decoration: underline;">Alterar credenciais MP</a>
+                </div>
+            {% else %}
+                <a href="{% url 'configurar_mercadopago' %}" class="btn-inter" style="border: 1px solid #009EE3; color: #009EE3;">
+                    <i class="fas fa-cog"></i> Configurar Mercado Pago
+                </a>
+            {% endif %}
+        </div>
+        {% comment %} --- FIM DA SECÇÃO MERCADO PAGO --- {% endcomment %}
+        {% comment %} --- NOVA SECÇÃO ASAAS --- {% endcomment %}
+        <div class="form-container asaas-integration mt-4" style="border-left: 5px solid #0030b9;"> 
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <img src="https://logospng.org/download/asaas/logo-asaas-icon-1024.png" alt="Asaas" style="height: 25px; object-fit: contain;">
+                <h3>Integração Asaas</h3>
+                {% if user.asaas_creds.is_sandbox %}
+                    <span style="background: #ffc107; color: #333; font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: bold;">SANDBOX</span>
+                {% endif %}
+            </div>
+            
+            {% if saldo_asaas is not None %}
+                <div style="background-color: #fff; border: 1px solid #ddd; border-left: 5px solid #0030b9; padding: 10px 15px; margin-bottom: 15px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; margin-top: 15px;">
+                    <div>
+                        <span style="font-size: 12px; color: #666; text-transform: uppercase; font-weight: bold;">Saldo Atual</span>
+                        <div style="font-size: 24px; font-weight: bold; color: #333;">
+                            R$ {{ saldo_asaas|floatformat:2|intcomma }}
+                        </div>
+                    </div>
+                    <div style="color: #0030b9; font-size: 24px;">
+                        <i class="fas fa-university"></i>
+                    </div>
+                </div>
+            {% endif %}
+            
+            <p class="description">
+                Importe extrato completo (Cobranças recebidas, Taxas e Transferências) do Asaas.
+            </p>
+
+            {% if user.asaas_creds %}
+                <form method="post">
+                    {% csrf_token %}
+                    <button type="submit" name="sync_asaas" class="btn-conta-azul" style="background-color: #0030b9; border-color: #0030b9; color: white;">
+                        <i class="fas fa-sync"></i> Sincronizar Agora
+                    </button>
+                </form>
+                <div style="margin-top: 10px;">
+                    <a href="{% url 'configurar_asaas' %}" style="color: #666; text-decoration: underline;">Alterar credenciais Asaas</a>
+                </div>
+            {% else %}
+                <a href="{% url 'configurar_asaas' %}" class="btn-inter" style="border: 1px solid #0030b9; color: #0030b9;">
+                    <i class="fas fa-cog"></i> Configurar Asaas
+                </a>
+            {% endif %}
+        </div>
+        {% comment %} --- FIM DA SECÇÃO ASAAS --- {% endcomment %}
     </div>
 
     <script src="{% static 'js/theme.js' %}"></script>

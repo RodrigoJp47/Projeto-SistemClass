@@ -134,47 +134,41 @@ def owner_required(view_func):
     return _wrapped_view
 
 
-# ▼▼▼ ADICIONE ESTA NOVA FUNÇÃO AO FINAL DO ARQUIVO ▼▼▼
+# Em accounts/decorators.py (No final do arquivo)
 
 def module_access_required(module_name):
-    """
-    Verifica se a LICENÇA (Subscription) do usuário tem permissão 
-    para acessar um módulo (Financeiro ou Comercial).
-    
-    Este decorador DEVE rodar DEPOIS de @subscription_required,
-    pois ele depende de 'request.active_subscription'.
-    """
     def decorator(view_func):
         @wraps(view_func)
         def _wrapped_view(request, *args, **kwargs):
             
-            # 1. Verifica se a assinatura ativa existe (criada pelo decorador @subscription_required)
+            # 1. Superusuário tem acesso total (CORREÇÃO DE SEGURANÇA)
+            if request.user.is_superuser:
+                return view_func(request, *args, **kwargs)
+
+            # 2. Verifica se a assinatura ativa existe
             if not hasattr(request, 'active_subscription'):
-                messages.error(request, 'Erro de sessão. Faça login novamente.')
+                messages.error(request, 'Sessão inválida ou assinatura não verificada.')
                 return redirect('login')
                 
             subscription = request.active_subscription
 
-            # 2. Verifica o módulo financeiro
+            # 3. Verifica o módulo financeiro
             if module_name == 'financial':
                 if subscription.has_financial_module:
-                    return view_func(request, *args, **kwargs) # Permite
+                    return view_func(request, *args, **kwargs)
                 else:
                     messages.error(request, 'Sua licença não inclui o Módulo Financeiro.')
-                    return redirect('home') # Nega
+                    return redirect('home')
             
-            # 3. Verifica o módulo comercial
+            # 4. Verifica o módulo comercial
             elif module_name == 'commercial':
                 if subscription.has_commercial_module:
-                    return view_func(request, *args, **kwargs) # Permite
+                    return view_func(request, *args, **kwargs)
                 else:
                     messages.error(request, 'Sua licença não inclui o Módulo Comercial.')
-                    return redirect('home') # Nega
+                    return redirect('home')
 
-            messages.error(request, 'Módulo de acesso desconhecido.')
-            return redirect('home')
+            return view_func(request, *args, **kwargs)
 
         return _wrapped_view
     return decorator
-
-# ▲▲▲ FIM DA NOVA FUNÇÃO ▲▲▲

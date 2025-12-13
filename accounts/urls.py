@@ -49,6 +49,13 @@ from .views import (
     editar_cliente_view,
     relatorios_view,
     configurar_inter_view,
+    configurar_mercadopago_view,
+    configurar_asaas_view,
+    create_checkout_session, # <--- Importe a nova view
+    assinatura_sucesso,      # <--- Importe
+    assinatura_cancelado,
+    stripe_webhook,
+    bpo_add_client_view,
 )
 
 urlpatterns = [
@@ -75,6 +82,14 @@ urlpatterns = [
     path('dashboards/', dashboards, name='dashboards'),
 
     path('configuracoes/inter/', configurar_inter_view, name='configurar_inter'),
+
+    path('configuracoes/mercadopago/', configurar_mercadopago_view, name='configurar_mercadopago'),
+    path('bpo/add-client/', bpo_add_client_view, name='bpo_add_client'),
+    path('configuracoes/asaas/', configurar_asaas_view, name='configurar_asaas'),
+    path('webhook/stripe/', stripe_webhook, name='stripe_webhook'),
+    path('checkout/<str:plan_type>/', create_checkout_session, name='create_checkout_session'),
+    path('assinatura/sucesso/', assinatura_sucesso, name='assinatura_sucesso'),
+    path('assinatura/cancelado/', assinatura_cancelado, name='assinatura_cancelado'),
    
     # --- Módulo Comercial ---
     path('faturamento/', faturamento_dashboard_view, name='faturamento_dashboard'),

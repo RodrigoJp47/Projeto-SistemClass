@@ -331,6 +331,8 @@ class MetaFaturamento(models.Model):
 class Subscription(models.Model):
     STATUS_CHOICES = [
         ('active', 'Ativa'),
+        ('past_due', 'Pagamento Pendente'),
+        ('canceled', 'Cancelada'),
         ('expired', 'Expirada'),
     ]
 
@@ -338,7 +340,7 @@ class Subscription(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     
     # Status da assinatura, que você vai mudar manualmente
-    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='expired')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='expired')
     
     # Data até quando a assinatura é válida
     valid_until = models.DateField(null=True, blank=True)
@@ -351,6 +353,12 @@ class Subscription(models.Model):
     has_financial_module = models.BooleanField(default=True, verbose_name="Possui Módulo Financeiro?")
     has_commercial_module = models.BooleanField(default=True, verbose_name="Possui Módulo Comercial?")
     # ▲▲▲ FIM DA ADIÇÃO ▲▲▲
+    client_limit = models.PositiveIntegerField(default=1, verbose_name="Limite de Clientes/CNPJs")
+
+    
+    # --- NOVOS CAMPOS PARA O STRIPE (ADICIONE ISTO) ---
+    stripe_customer_id = models.CharField(max_length=50, blank=True, null=True, help_text="ID do Cliente no Stripe")
+    stripe_subscription_id = models.CharField(max_length=50, blank=True, null=True, help_text="ID da Assinatura no Stripe")
 
     def __str__(self):
         return f"Assinatura de {self.user.username}"
@@ -841,6 +849,35 @@ class InterCredentials(models.Model):
 
     def __str__(self):
         return f"Credenciais Inter - {self.user.username}"    
+    
+
+
+
+class MercadoPagoCredentials(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='mercadopago_creds')
+    public_key = models.CharField(max_length=255, verbose_name="Public Key", blank=True, null=True)
+    access_token = models.CharField(max_length=255, verbose_name="Access Token")
+    
+    updated_at = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Credenciais MP - {self.user.username}"    
+    
+
+
+
+class AsaasCredentials(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='asaas_creds')
+    access_token = models.CharField(max_length=1024, verbose_name="Chave de API (API Key)")
+    is_sandbox = models.BooleanField(default=True, verbose_name="Ambiente de Testes (Sandbox)?")
+    
+    updated_at = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        env = "Sandbox" if self.is_sandbox else "Produção"
+        return f"Asaas ({env}) - {self.user.username}"    
 
 
 

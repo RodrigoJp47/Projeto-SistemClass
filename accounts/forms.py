@@ -606,6 +606,77 @@ class InterCredentialsForm(forms.ModelForm):
 
 
 
+from .models import MercadoPagoCredentials # Não esqueça de importar o novo modelo
+
+class MercadoPagoCredentialsForm(forms.ModelForm):
+    class Meta:
+        model = MercadoPagoCredentials
+        fields = ['public_key', 'access_token']
+        labels = {
+            'public_key': 'Chave Pública (Public Key) - Opcional',
+            'access_token': 'Token de Acesso (Access Token) - Obrigatório',
+        }
+        widgets = {
+            'public_key': forms.TextInput(attrs={
+                'class': 'form-field', 
+                'placeholder': 'APP_USR-...'
+            }),
+            'access_token': forms.TextInput(attrs={
+                'class': 'form-field', 
+                'placeholder': 'APP_USR-...'
+            }),
+        }
+        help_texts = {
+            'access_token': 'Cole aqui o seu Access Token de Produção obtido no painel de desenvolvedores do Mercado Pago.'
+        }
+
+
+# accounts/forms.py
+
+# ... (outros imports)
+from .models import AsaasCredentials # Não esqueça de importar
+
+class AsaasCredentialsForm(forms.ModelForm):
+    class Meta:
+        model = AsaasCredentials
+        fields = ['access_token', 'is_sandbox']
+        labels = {
+            'access_token': 'Chave de API (API Key)',
+            'is_sandbox': 'Ativar Modo Sandbox (Testes)',
+        }
+        widgets = {
+            'access_token': forms.TextInput(attrs={
+                'class': 'form-field', 
+                'placeholder': '$aact_...',
+                'autocomplete': 'off'
+            }),
+            'is_sandbox': forms.CheckboxInput(attrs={
+                'style': 'width: 20px; height: 20px; margin-top: 10px;'
+            }),
+        }
+        help_texts = {
+            'access_token': 'Cole aqui sua chave de API (começa com $aact).',
+            'is_sandbox': 'Mantenha marcado se estiver usando uma conta criada em sandbox.asaas.com.'
+        }
+
+
+# accounts/forms.py
+
+class BPOAddClientForm(forms.ModelForm):
+    # Campos simples para criar o usuário do cliente
+    first_name = forms.CharField(label="Nome do Cliente/Empresa", max_length=150)
+    email = forms.EmailField(label="E-mail de Login", required=True)
+    password = forms.CharField(label="Senha Inicial", widget=forms.PasswordInput)
+
+    class Meta:
+        model = User
+        fields = ('first_name', 'email', 'password')
+
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+        if User.objects.filter(email=email).exists():
+            raise forms.ValidationError("Este e-mail já está cadastrado no sistema.")
+        return email
 
 
 

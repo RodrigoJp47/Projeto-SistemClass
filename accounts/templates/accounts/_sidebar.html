@@ -44,6 +44,7 @@
             </li>
             {% endif %}
 
+            {% if user.is_superuser or user.subscription.has_commercial_module %}
             {% if not is_employee or perms.can_access_painel_vendas or perms.can_access_notas_fiscais or perms.can_access_orcamentos_venda or perms.can_access_contratos or perms.can_access_cadastros_comercial or perms.can_access_vendas or perms.can_access_metas_comerciais or perms.can_access_precificacao %}
             <li class="has-submenu">
                 <a href="#" id="comercial-toggle">
@@ -65,6 +66,13 @@
                     {% if not is_employee or perms.can_access_precificacao %}<li><a href="{% url 'precificacao' %}" class="{% if request.resolver_match.url_name == 'precificacao' %}active{% endif %}">Precificação</a></li>{% endif %}
                 </ul>
             </li>
+            {% endif %}
+            {% else %}
+                <li class="menu-item">
+                    <a href="{% url 'assinatura' %}" style="color: #777; cursor: pointer;" title="Disponível no Plano Completo">
+                        <i class="fas fa-lock"></i> <span class="text">Comercial (Upgrade)</span>
+                    </a>
+                </li>
             {% endif %}
 
             {% if not is_employee %}

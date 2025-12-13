@@ -1,0 +1,156 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configurar Mercado Pago - Gestão Financeira</title>
+    <link rel="stylesheet" href="{% static 'css/global.css' %}">
+    <link rel="stylesheet" href="{% static 'css/sidebar.css' %}">
+    <link rel="stylesheet" href="{% static 'css/themes.css' %}">
+    <link rel="stylesheet" href="{% static 'css/layout-responsive.css' %}">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        /* ▼▼▼ ESTE É O BLOCO QUE CORRIGE A SOBREPOSIÇÃO ▼▼▼ */
+        .main-content {
+            margin-left: 270px;
+            padding: 20px;
+            width: calc(100% - 270px);
+            overflow-y: auto;
+        }
+        /* ▲▲▲ FIM DO BLOCO DE CORREÇÃO ▲▲▲ */
+        .config-container {
+            max_width: 800px;
+            margin: 40px auto;
+            background: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        .mp-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 25px;
+            border-bottom: 2px solid #009EE3; /* Azul Mercado Pago */
+            padding-bottom: 15px;
+        }
+        .mp-header h2 {
+            margin: 0;
+            color: #333;
+        }
+        .mp-logo {
+            width: 50px;
+            height: auto;
+        }
+        .help-box {
+            background-color: #f8f9fa;
+            border-left: 4px solid #009EE3;
+            padding: 15px;
+            margin-bottom: 25px;
+            border-radius: 4px;
+            font-size: 0.95rem;
+            color: #555;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        .btn-save {
+            background-color: #009EE3;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background 0.3s;
+        }
+        .btn-save:hover {
+            background-color: #007bb0;
+        }
+        .btn-back {
+            color: #666;
+            text-decoration: none;
+            margin-right: 15px;
+        }
+        /* Adicione isso ao seu CSS para esticar os campos */
+        .form-group input, 
+        .form-field {
+            width: 100%;            /* Força a largura total */
+            box-sizing: border-box; /* Impede que o padding quebre o layout */
+            height: 30px;           /* Aumenta a altura para ficar mais confortável */
+        }
+    </style>
+</head>
+<body>
+    
+
+    <div class="main-content">
+        <button id="menu-toggle">&#9776;</button>
+
+        {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+            <p class="{% if message.tags %}{{ message.tags }}{% endif %}">{{ message }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="config-container">
+            <div class="mp-header">
+                <img src="https://http2.mlstatic.com/frontend-assets/ml-web-navigation/ui-navigation/5.21.22/mercadolibre/logo__large_plus.png" alt="Mercado Pago" class="mp-logo" style="object-fit: contain; object-position: left;">
+                <h2>Configuração Mercado Pago</h2>
+            </div>
+
+            <div class="help-box">
+                <strong>Como obter suas credenciais:</strong>
+                <ol style="margin-top: 10px; margin-left: 20px;">
+                    <li>Acesse o <a href="https://www.mercadopago.com.br/developers/panel" target="_blank" style="color: #009EE3;">Painel de Desenvolvedores do Mercado Pago</a>.</li>
+                    <li>Crie uma aplicação (ou selecione uma existente).</li>
+                    <li>No menu lateral, vá em <strong>Credenciais de produção</strong>.</li>
+                    <li>Copie o <strong>Access Token</strong> e cole abaixo.</li>
+                </ol>
+            </div>
+
+            <form method="post">
+                {% csrf_token %}
+                
+                {% for field in form %}
+                <div class="form-group">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.help_text %}
+                        <small style="color: #888; display: block; margin-top: 5px;">{{ field.help_text }}</small>
+                    {% endif %}
+                    {% if field.errors %}
+                        <div style="color: red; margin-top: 5px;">{{ field.errors }}</div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+
+                <div style="margin-top: 30px;">
+                    <a href="{% url 'importar_ofx' %}" class="btn-back">Voltar</a>
+                    <button type="submit" class="btn-save">Salvar Configurações</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="{% static 'js/theme.js' %}"></script>
+    <script>
+        document.getElementById('menu-toggle').addEventListener('click', function () {
+            document.querySelector('.sidebar').classList.toggle('mobile-open');
+        });
+    </script>
+</body>
+</html>

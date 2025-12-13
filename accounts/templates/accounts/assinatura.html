@@ -10,96 +10,143 @@
     <link rel="stylesheet" href="{% static 'css/sidebar.css' %}">
     <link rel="stylesheet" href="{% static 'css/themes.css' %}">
     <link rel="stylesheet" href="{% static 'css/planos.css' %}">
+    
+    <style>
+        /* Ajuste para centralizar apenas 2 cards */
+        .pricing-grid {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            flex-wrap: wrap;
+        }
+        
+        .plan-card {
+            flex: 1;
+            min-width: 300px;
+            max-width: 450px; /* Um pouco mais largo para caber as descrições */
+        }
+
+        /* Botão estilo Stripe */
+        .btn-stripe {
+            width: 100%;
+            border: none;
+            cursor: pointer;
+            background-color: #6772e5; /* Cor oficial do Stripe */
+            color: white;
+            padding: 12px 20px;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: bold;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: background-color 0.3s;
+            text-decoration: none;
+            margin-top: 20px;
+        }
+
+        .btn-stripe:hover {
+            background-color: #5469d4;
+        }
+    </style>
 </head>
 <body class="assinatura-page">
     {% include 'accounts/_sidebar.html' %}
 
     <div class="main-content">
         <h1>Escolha o Plano Ideal para sua Empresa</h1>
-        <p class="subtitulo-planos">Selecione o plano que melhor se adapta ao seu momento e cresça conosco.</p>
+        <p class="subtitulo-planos">Liberte o potencial do seu negócio com a ferramenta certa.</p>
+
+        {% if messages %}
+            <div class="messages-container" style="margin-bottom: 20px; text-align: center;">
+                {% for message in messages %}
+                    <div class="alert {{ message.tags }}" style="padding: 10px; border-radius: 5px; background: #eee; color: #333;">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
 
         <div class="pricing-grid">
 
-            <div class="plan-card {% if subscription.plan_name == 'Basico' %}active-plan{% endif %}">
-                <h3>Básico</h3>
-                <p class="plan-description">Para quem está começando a organizar as finanças.</p>
+            <div class="plan-card">
+                <h3>Plano Gestão Financeira</h3>
+                <p class="plan-description">Controle total do fluxo de caixa e organização para prestadores de serviço.</p>
                 
                 <div class="price-tag">
-                    <span class="price">R$ 99,90</span>
+                    <span class="price">R$ 139,00</span>
                     <span class="period">/mês</span>
                 </div>
                 
-                <p class="user-limit"><strong>1 Usuário</strong></p>
+                <p class="user-limit">Ideal para <strong>Organizar a Casa</strong></p>
 
                 <ul class="features-list">
+                    <li><i class="fas fa-users"></i> <strong>Até 2 Usuários</strong> inclusos</li> 
                     <li><i class="fas fa-check"></i> Contas a Pagar e Receber</li>
-                    <li><i class="fas fa-check"></i> Importação de Extrato (OFX)</li>
-                    <li><i class="fas fa-check"></i> Dashboard Financeiro Completo</li>
-                    <li><i class="fas fa-times"></i> DRE e Fluxo de Caixa Avançado</li>
-                    <li><i class="fas fa-times"></i> Gestão de Vendas e Orçamentos</li>
-                    <li><i class="fas fa-times"></i> Limite de Funcionários</li>
+                    <li><i class="fas fa-check"></i> Importação OFX & Conciliação</li>
+                    <li><i class="fas fa-check"></i> Dashboards Financeiros & DRE</li>
+                    <li><i class="fas fa-check"></i> Orçamento Anual & Tarefas</li>
+                    <li><i class="fas fa-check"></i> Gestão de Fornecedores</li>
+                    <li class="unavailable"><i class="fas fa-times"></i> Módulo Comercial (Vendas/PDV)</li>
+                    <li class="unavailable"><i class="fas fa-times"></i> Emissão de Notas Fiscais</li>
                 </ul>
 
-                <a href="https://wa.me/5531993413530?text=Olá!%20Gostaria%20de%20saber%20mais%20sobre%20o%20Plano%20Básico." class="btn-whatsapp" target="_blank">
-                    <i class="fab fa-whatsapp"></i>
-                    <span>Falar com Consultor</span>
-                </a>
+                <form action="{% url 'create_checkout_session' 'financeiro' %}" method="POST">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-stripe">
+                        <i class="fas fa-credit-card"></i>
+                        <span>Assinar Financeiro</span>
+                    </button>
+                </form>
             </div>
 
-            <div class="plan-card popular {% if subscription.plan_name == 'Profissional' %}active-plan{% endif %}">
-                <div class="popular-badge">Mais Popular</div>
-                <h3>Profissional</h3>
-                <p class="plan-description">Para empresas que precisam de controle total e dashboards.</p>
+            <div class="plan-card popular">
+                <div class="popular-badge">Recomendado</div>
+                <h3>Plano Gestão Total <br><small style="font-size: 0.6em; font-weight: normal;">(Full Commerce)</small></h3>
+                <p class="plan-description">A solução definitiva. Financeiro + Comercial integrado para expansão.</p>
                 
                 <div class="price-tag">
-                    <span class="price">R$ 169,90</span>
+                    <span class="price">R$ 189,00</span>
                     <span class="period">/mês</span>
                 </div>
                 
-                <p class="user-limit">Até <strong>5 Usuários</strong></p>
+                <p class="user-limit">Ideal para <strong>Comércio e Expansão</strong></p>
 
                 <ul class="features-list">
-                    <li><i class="fas fa-check"></i> <strong>Tudo do Básico+</strong></li>
-                    <li><i class="fas fa-check"></i> DRE e Fluxo de Caixa Avançado</li>
-                    <li><i class="fas fa-check"></i> Dashboards de KPIs e Vendas</li>
-                    <li><i class="fas fa-check"></i> Gestão de Vendas e Orçamentos</li>
-                    <li><i class="fas fa-check"></i> Cadastro de Clientes e Produtos</li>
-                    <li><i class="fas fa-times"></i> Gestão de Contratos</li>
+                    <li><i class="fas fa-users"></i> <strong>Até 5 Usuários</strong> inclusos</li>
+                    <li><i class="fas fa-check"></i> <strong>Tudo do Gestão Financeira +</strong></li>
+                    <li><i class="fas fa-check"></i> Frente de Caixa (PDV)</li>
+                    <li><i class="fas fa-check"></i> Emissão de Notas (NFe/NFSe)</li>
+                    <li><i class="fas fa-check"></i> Gestão de Contratos & Metas</li>
+                    <li><i class="fas fa-check"></i> Precificação Inteligente</li>
+                    <li><i class="fas fa-check"></i> Painel de Vendas Completo</li>
                 </ul>
                 
-                <a href="https://wa.me/5531993413530?text=Olá!%20Gostaria%20de%20saber%20mais%20sobre%20o%20Plano%20Profissional." class="btn-whatsapp" target="_blank">
-                    <i class="fab fa-whatsapp"></i>
-                    <span>Falar com Consultor</span>
-                </a>
+                <form action="{% url 'create_checkout_session' 'completo' %}" method="POST">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-stripe">
+                        <i class="fas fa-rocket"></i>
+                        <span>Assinar Completo</span>
+                    </button>
+                </form>
             </div>
 
-            <div class="plan-card {% if subscription.plan_name == 'Empresarial' %}active-plan{% endif %}">
-                <h3>Empresarial / BPO</h3>
-                <p class="plan-description">Para gestão avançada, BPO Financeiro e multi-empresas.</p>
-                
-                <div class="price-tag">
-                    <span class="price">R$ 209,90</span>
-                    <span class="period">/mês</span>
-                </div>
-                
-                <p class="user-limit"><strong>10+ Usuários</strong></p>
-
-                <ul class="features-list">
-                    <li><i class="fas fa-check"></i> <strong>Tudo do Profissional+</strong></li>
-                    <li><i class="fas fa-check"></i> Gestão de Contratos</li>
-                    <li><i class="fas fa-check"></i> Precificação de Produtos/Serviços</li>
-                    <li><i class="fas fa-check"></i> Módulo Múltiplos CNPJ's (Gestão de Clientes)</li>
-                    <li><i class="fas fa-check"></i> Orçamento Anual Detalhado</li>
-                    <li><i class="fas fa-check"></i> Módulo de Valuation (Estimativa)</li>
-                </ul>
-                
-                <a href="https://wa.me/5531993413530?text=Olá!%20Gostaria%20de%20saber%20mais%20sobre%20o%20Plano%20Empresarial/BPO." class="btn-whatsapp" target="_blank">
-                    <i class="fab fa-whatsapp"></i>
-                    <span>Falar com Consultor</span>
+        </div> 
+        <div class="bpo-section" style="margin-top: 50px; text-align: center; background: #f8f9fa; padding: 40px; border-radius: 10px;">
+            <h2>É BPO Financeiro ou Contador?</h2>
+            <p>Tenha um painel exclusivo para gerenciar múltiplos clientes com desconto progressivo por volume.</p>
+            
+            <div style="margin-top: 20px;">
+                <a href="https://wa.me/5531993413530?text=Olá!%20Sou%20BPO%20e%20gostaria%20de%20conhecer%20os%20planos%20para%20múltiplos%20clientes." 
+                class="btn-stripe" 
+                style="background-color: #25D366; max-width: 300px; margin: 0 auto;">
+                    <i class="fab fa-whatsapp"></i> Falar com Especialista BPO
                 </a>
             </div>
-
-        </div> </div>
+        </div>
+    </div>
+    
     <script src="{% static 'js/theme.js' %}"></script>
 </body>
 </html>

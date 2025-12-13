@@ -21,6 +21,19 @@
     {% include 'accounts/_sidebar.html' %} {# Inclui a sua sidebar existente #}
 
     <div class="main-content">
+        <div class="header-actions" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2>Meus Clientes ({{ current_count }}/{{ limit }})</h2>
+            
+            {% if can_add %}
+                <a href="{% url 'bpo_add_client' %}" class="btn btn-primary">
+                    + Adicionar Cliente
+                </a>
+            {% else %}
+                <button class="btn btn-secondary" disabled title="Limite do plano atingido">
+                    Limite Atingido
+                </button>
+            {% endif %}
+        </div>
         <button id="menu-toggle">&#9776;</button> {# Se você usa esse botão #}
         
         <div class="container-fluid"> {# Use a classe container apropriada do seu layout #}
