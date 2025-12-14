@@ -85,6 +85,11 @@ from .forms import AsaasCredentialsForm
 from .models import AsaasCredentials
 from .utils_asaas import buscar_extrato_asaas, buscar_saldo_asaas
 
+from .forms import OmieCredentialsForm
+from .models import OmieCredentials
+
+from .utils_omie import sincronizar_omie_completo
+
 
 from .utils_inter import buscar_extrato_inter
 from .forms import InterCredentialsForm
@@ -1780,6 +1785,28 @@ def importar_ofx_view(request):
             
             return redirect('importar_ofx')
         # ▲▲▲ [FIM] NOVO BLOCO ASAAS ▲▲▲
+
+        # ▼▼▼ [INÍCIO] NOVO BLOCO OMIE ▼▼▼
+        elif 'sync_omie' in request.POST:
+            resultado = sincronizar_omie_completo(request.user)
+            
+            if 'erro' in resultado:
+                messages.error(request, f"Erro na integração Omie: {resultado['erro']}")
+            else:
+                total_novos = resultado['pagar_novos'] + resultado['receber_novos']
+                total_atualizados = resultado['pagar_atualizados'] + resultado['receber_atualizados']
+                
+                if total_novos > 0 or total_atualizados > 0:
+                    msg = f"Omie Sincronizado: {total_novos} novos lançamentos e {total_atualizados} atualizados."
+                    messages.success(request, msg)
+                else:
+                    messages.info(request, "Omie conectado, mas não houve alterações nos dados.")
+                
+                if resultado.get('erros'):
+                    messages.warning(request, f"Alguns itens tiveram erro: {resultado['erros'][:3]}...") # Mostra os 3 primeiros erros
+            
+            return redirect('importar_ofx')
+        # ▲▲▲ [FIM] NOVO BLOCO OMIE ▲▲▲
 
 
         form = OFXImportForm(request.POST, request.FILES, user=request.user)
@@ -7105,5 +7132,32 @@ def bpo_add_client_view(request):
 
     return render(request, 'accounts/bpo_add_client.html', {'form': form, 'limit': limit, 'current': current_clients_count})
 
+
+
+
+@login_required
+@subscription_required
+def configurar_omie_view(request):
+    # Tenta pegar a instância existente ou cria uma nova
+    try:
+        instance = request.user.omie_creds
+    except OmieCredentials.DoesNotExist:
+        instance = None
+
+    if request.method == 'POST':
+        form = OmieCredentialsForm(request.POST, instance=instance)
+        if form.is_valid():
+            creds = form.save(commit=False)
+            creds.user = request.user
+            creds.save()
+            messages.success(request, 'Credenciais Omie salvas com sucesso!')
+            # Redireciona para a tela de importação, mantendo o fluxo das outras integrações
+            return redirect('importar_ofx')
+        else:
+            messages.error(request, 'Erro ao salvar. Verifique as chaves inseridas.')
+    else:
+        form = OmieCredentialsForm(instance=instance)
+
+    return render(request, 'accounts/configurar_omie.html', {'form': form})
 
 

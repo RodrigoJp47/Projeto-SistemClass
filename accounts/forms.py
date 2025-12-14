@@ -677,6 +677,34 @@ class BPOAddClientForm(forms.ModelForm):
         if User.objects.filter(email=email).exists():
             raise forms.ValidationError("Este e-mail já está cadastrado no sistema.")
         return email
+    
+
+
+from .models import OmieCredentials # Não esqueça de adicionar OmieCredentials no import do .models
+
+class OmieCredentialsForm(forms.ModelForm):
+    class Meta:
+        model = OmieCredentials
+        fields = ['app_key', 'app_secret']
+        labels = {
+            'app_key': 'App Key (Chave da Aplicação)',
+            'app_secret': 'App Secret (Segredo da Aplicação)',
+        }
+        widgets = {
+            'app_key': forms.TextInput(attrs={
+                'class': 'form-field', 
+                'placeholder': 'Ex: 38392...',
+                'autocomplete': 'off'
+            }),
+            'app_secret': forms.TextInput(attrs={
+                'class': 'form-field', 
+                'placeholder': 'Ex: 484a9...',
+                'autocomplete': 'off'
+            }),
+        }
+        help_texts = {
+            'app_key': 'Disponível no painel do desenvolvedor Omie (Configurações > API).',
+        }    
 
 
 

@@ -56,6 +56,7 @@ from .views import (
     assinatura_cancelado,
     stripe_webhook,
     bpo_add_client_view,
+    configurar_omie_view,
 )
 
 urlpatterns = [
@@ -82,7 +83,7 @@ urlpatterns = [
     path('dashboards/', dashboards, name='dashboards'),
 
     path('configuracoes/inter/', configurar_inter_view, name='configurar_inter'),
-
+    path('configuracoes/omie/', configurar_omie_view, name='configurar_omie'),
     path('configuracoes/mercadopago/', configurar_mercadopago_view, name='configurar_mercadopago'),
     path('bpo/add-client/', bpo_add_client_view, name='bpo_add_client'),
     path('configuracoes/asaas/', configurar_asaas_view, name='configurar_asaas'),

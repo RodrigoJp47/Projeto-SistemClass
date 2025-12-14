@@ -879,7 +879,16 @@ class AsaasCredentials(models.Model):
         env = "Sandbox" if self.is_sandbox else "Produção"
         return f"Asaas ({env}) - {self.user.username}"    
 
+class OmieCredentials(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='omie_creds')
+    app_key = models.CharField(max_length=255, verbose_name="App Key (Chave)")
+    app_secret = models.CharField(max_length=255, verbose_name="App Secret (Segredo)")
+    
+    updated_at = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
+    def __str__(self):
+        return f"Credenciais Omie - {self.user.username}"
 
 
 
