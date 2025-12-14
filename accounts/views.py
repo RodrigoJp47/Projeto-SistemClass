@@ -90,6 +90,11 @@ from .models import OmieCredentials
 
 from .utils_omie import sincronizar_omie_completo
 
+# Imports para o Nibo
+from .forms import NiboCredentialsForm
+from .models import NiboCredentials
+from .utils_nibo import sincronizar_nibo_completo
+
 
 from .utils_inter import buscar_extrato_inter
 from .forms import InterCredentialsForm
@@ -1807,6 +1812,28 @@ def importar_ofx_view(request):
             
             return redirect('importar_ofx')
         # ▲▲▲ [FIM] NOVO BLOCO OMIE ▲▲▲
+        # ▼▼▼ [INÍCIO] NOVO BLOCO NIBO ▼▼▼
+        elif 'sync_nibo' in request.POST:
+            resultado = sincronizar_nibo_completo(request.user)
+            
+            if 'erro' in resultado:
+                messages.error(request, f"Erro na integração Nibo: {resultado['erro']}")
+            else:
+                total_novos = resultado['pagar_novos'] + resultado['receber_novos']
+                total_atualizados = resultado['pagar_atualizados'] + resultado['receber_atualizados']
+                
+                if total_novos > 0 or total_atualizados > 0:
+                    msg = f"Nibo Sincronizado: {total_novos} novos lançamentos e {total_atualizados} atualizados."
+                    messages.success(request, msg)
+                else:
+                    messages.info(request, "Nibo conectado, mas não houve alterações nos dados.")
+                
+                if resultado.get('erros'):
+                    # Mostra os 3 primeiros erros para não poluir
+                    messages.warning(request, f"Alguns itens tiveram erro: {resultado['erros'][:3]}...")
+            
+            return redirect('importar_ofx')
+        # ▲▲▲ [FIM] NOVO BLOCO NIBO ▲▲▲
 
 
         form = OFXImportForm(request.POST, request.FILES, user=request.user)
@@ -7159,5 +7186,35 @@ def configurar_omie_view(request):
         form = OmieCredentialsForm(instance=instance)
 
     return render(request, 'accounts/configurar_omie.html', {'form': form})
+
+
+
+@login_required
+@subscription_required
+def configurar_nibo_view(request):
+    try:
+        instance = request.user.nibo_creds
+    except NiboCredentials.DoesNotExist:
+        instance = None
+
+    if request.method == 'POST':
+        form = NiboCredentialsForm(request.POST, instance=instance)
+        if form.is_valid():
+            creds = form.save(commit=False)
+            creds.user = request.user
+            creds.save()
+            messages.success(request, 'Credenciais Nibo salvas com sucesso!')
+            return redirect('importar_ofx')
+        else:
+            messages.error(request, 'Erro ao salvar. Verifique o token inserido.')
+    else:
+        form = NiboCredentialsForm(instance=instance)
+
+    return render(request, 'accounts/configurar_nibo.html', {'form': form})
+
+
+
+
+
 
 

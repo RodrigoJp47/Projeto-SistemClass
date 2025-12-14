@@ -889,6 +889,21 @@ class OmieCredentials(models.Model):
 
     def __str__(self):
         return f"Credenciais Omie - {self.user.username}"
+    
+
+# accounts/models.py
+
+class NiboCredentials(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='nibo_creds')
+    api_token = models.CharField(max_length=500, verbose_name="API Token")
+    organization_id = models.CharField(max_length=100, verbose_name="ID da Empresa (Organization ID)", help_text="O ID da sua empresa na URL do Nibo ou API.")
+    
+    updated_at = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Credenciais Nibo - {self.user.username}"
+
 
 
 

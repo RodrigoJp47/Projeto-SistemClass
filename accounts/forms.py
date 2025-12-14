@@ -708,3 +708,33 @@ class OmieCredentialsForm(forms.ModelForm):
 
 
 
+# accounts/forms.py
+from .models import NiboCredentials # Não esqueça de importar no topo
+
+class NiboCredentialsForm(forms.ModelForm):
+    class Meta:
+        model = NiboCredentials
+        fields = ['api_token', 'organization_id']
+        labels = {
+            'api_token': 'Token de API (API Token)',
+            'organization_id': 'ID da Organização (Organization ID)',
+        }
+        widgets = {
+            'api_token': forms.TextInput(attrs={
+                'class': 'form-field', 
+                'placeholder': 'Cole seu Token aqui...',
+                'autocomplete': 'off'
+            }),
+            'organization_id': forms.TextInput(attrs={
+                'class': 'form-field', 
+                'placeholder': 'Ex: 123456-abcdef...',
+                'autocomplete': 'off'
+            }),
+        }
+        help_texts = {
+            'api_token': 'Obtenha o Token no painel de integrações do Nibo.',
+        }
+
+
+
+

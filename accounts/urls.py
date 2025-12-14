@@ -57,6 +57,7 @@ from .views import (
     stripe_webhook,
     bpo_add_client_view,
     configurar_omie_view,
+    configurar_nibo_view,
 )
 
 urlpatterns = [
@@ -91,6 +92,7 @@ urlpatterns = [
     path('checkout/<str:plan_type>/', create_checkout_session, name='create_checkout_session'),
     path('assinatura/sucesso/', assinatura_sucesso, name='assinatura_sucesso'),
     path('assinatura/cancelado/', assinatura_cancelado, name='assinatura_cancelado'),
+    path('configuracoes/nibo/', configurar_nibo_view, name='configurar_nibo'),
    
     # --- Módulo Comercial ---
     path('faturamento/', faturamento_dashboard_view, name='faturamento_dashboard'),
