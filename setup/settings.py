@@ -286,3 +286,7 @@ STRIPE_PRICE_IDS = {
 }
 
 
+# Adicione isso para garantir que o Django entenda que está rodando em HTTPS no Render
+# Sem isso, você pode ter erros de "CSRF Failed" ao tentar logar vindo da Landing Page.
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+

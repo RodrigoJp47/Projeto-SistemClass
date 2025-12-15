@@ -1930,7 +1930,7 @@ def importar_ofx_view(request):
 
                     amount = Decimal(str(transaction.amount))
                     date = transaction.date.date() # Data real da transação
-                    name = (transaction.memo or f"Transação OFX {transaction.id}").encode('ascii', errors='ignore').decode('ascii')
+                    name = (transaction.memo or f"Transação OFX {transaction.id}").encode('ascii', errors='ignore').decode('ascii').strip() or f"OFX {transaction.id}"
                     description = f"Transação OFX {transaction.id}"
                     
                     # Define a janela de datas para a busca
@@ -7020,6 +7020,11 @@ def create_checkout_session(request, plan_type):
                 },
             ],
             mode='subscription', # Modo assinatura (recorrente)
+            # --- ADICIONE ESTE BLOCO ---
+            subscription_data={
+                'trial_period_days': 7, # O Stripe espera 7 dias para cobrar
+            },
+            # ---------------------------
             # URLs para onde o cliente volta após pagar ou cancelar
             success_url=settings.DOMAIN_URL + '/assinatura/sucesso/',
             cancel_url=settings.DOMAIN_URL + '/assinatura/cancelado/',
@@ -7262,7 +7267,10 @@ def configurar_tiny_view(request):
 
     return render(request, 'accounts/configurar_tiny.html', {'form': form})
 
-
+def landing_page(request):
+    if request.user.is_authenticated:
+        return redirect('smart_redirect') # Se já logado, vai pro sistema
+    return render(request, 'landing_page.html')
 
 
 

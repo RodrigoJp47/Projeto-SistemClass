@@ -59,6 +59,7 @@ from .views import (
     configurar_omie_view,
     configurar_nibo_view,
     configurar_tiny_view,
+    landing_page,
 )
 
 urlpatterns = [
@@ -68,7 +69,8 @@ urlpatterns = [
     path('register/', register_view, name='register'),
 
     # --- Páginas Principais ---
-    path('', home, name='home'),
+    path('', landing_page, name='landing_page'), # A raiz agora é a Landing Page
+    path('app/', home, name='home'),             # O Dashboard interno vai para '/app/' (ou '/home/')
     path('contas-pagar/', contas_pagar, name='contas_pagar'),
     path('contas-receber/', contas_receber, name='contas_receber'),
     path('dre/', dre_view, name='dre'),

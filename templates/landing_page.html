@@ -1,0 +1,291 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SistemClass | Gestão Financeira e Comercial Inteligente</title>
+    <meta name="description" content="O sistema definitivo para empresas e BPOs. Emissão de NFe, Conciliação Bancária, Gestão de Contratos e Dashboards Financeiros em um só lugar.">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="{% static 'css/global.css' %}">
+    <link rel="stylesheet" href="{% static 'css/themes.css' %}">
+    <link rel="stylesheet" href="{% static 'css/landing.css' %}">
+</head>
+<body>
+
+    <nav class="landing-nav">
+        <div class="container nav-container">
+            <div class="logo">
+                <span class="logo-icon"><i class="fas fa-layer-group"></i></span>
+                <span class="logo-text">SistemClass</span>
+            </div>
+            <ul class="nav-links">
+                <li><a href="#funcionalidades">Funcionalidades</a></li>
+                <li><a href="#integracoes">Integrações</a></li>
+                <li><a href="#bpo">Para BPO</a></li>
+                <li><a href="#precos">Planos</a></li>
+            </ul>
+            <div class="nav-actions">
+                <a href="{% url 'login' %}" class="btn-text">Entrar</a>
+                <a href="{% url 'register' %}" class="btn-primary">Começar Grátis</a>
+                <p class="small-text" style="font-size: 0.75rem; margin-top: 5px; opacity: 0.8;">
+                    7 dias grátis. Cancele quando quiser.
+                </p>
+            </div>
+            <button class="mobile-menu-btn"><i class="fas fa-bars"></i></button>
+        </div>
+    </nav>
+
+    <header class="hero-section">
+        <div class="hero-bg-glow"></div>
+        <div class="container hero-content">
+            <div class="hero-text">
+                <span class="badge-new">✨ Nova Integração com Focus NFe e Stripe</span>
+                <h1>O Sistema Operacional Financeiro que sua Empresa Precisa.</h1>
+                <p class="subheadline">
+                    Abandone as planilhas. Unifique Financeiro, Comercial e Emissão de Notas em uma plataforma feita para crescer com você.
+                </p>
+                <div class="hero-cta">
+                    <a href="{% url 'register' %}" class="btn-primary btn-lg">Criar Conta Gratuita <i class="fas fa-arrow-right"></i></a>
+                    <a href="#funcionalidades" class="btn-outline btn-lg">Ver Funcionalidades</a>
+                </div>
+                <p class="hero-disclaimer"><i class="fas fa-check"></i> Sem cartão de crédito necessário • Cancelamento a qualquer momento</p>
+            </div>
+            <div class="hero-image">
+                <div class="dashboard-preview">
+                    <div class="preview-header">
+                        <div class="dots"><span></span><span></span><span></span></div>
+                    </div>
+                    <div class="preview-body">
+                        <div class="chart-mockup"></div>
+                        <div class="cards-mockup">
+                            <div class="card-m"></div>
+                            <div class="card-m"></div>
+                            <div class="card-m"></div>
+                        </div>
+                    </div>
+                    <div class="floating-card glass">
+                        <i class="fas fa-file-invoice-dollar"></i>
+                        <span>NFe Emitida!</span>
+                        <strong>R$ 1.250,00</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <section class="integrations-strip" id="integracoes">
+        <div class="container">
+            <p>CONECTADO AOS MELHORES ERPs E BANCOS</p>
+            <div class="logos-grid">
+                <img src="{% static 'images/logo-conta_azul.png' %}" alt="Conta Azul" title="Conta Azul">
+                <img src="{% static 'images/logo-omie.png' %}" alt="Omie" title="Omie ERP">
+                <img src="{% static 'images/logo-tiny.png' %}" alt="Tiny" title="Tiny ERP">
+                <img src="{% static 'images/logo-nibo.png' %}" alt="Nibo" title="Nibo">
+                <img src="{% static 'images/logo-asaas.png' %}" alt="Asaas" title="Asaas">
+                <img src="{% static 'images/logo-Inter.png' %}" alt="Banco Inter" title="Banco Inter">
+                <img src="https://http2.mlstatic.com/frontend-assets/ui-navigation/5.18.9/mercadolibre/logo__large_plus.png" alt="Mercado Pago" title="Mercado Pago" style="filter: grayscale(100%) brightness(200%); opacity: 0.7;">
+            </div>
+        </div>
+    </section>
+
+    <section class="features-section" id="funcionalidades">
+        <div class="container">
+            <div class="section-header-center">
+                <h2>Tudo o que você precisa para escalar</h2>
+                <p>Chega de sistemas fragmentados. O SistemClass centraliza sua operação.</p>
+            </div>
+
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="icon-box purple"><i class="fas fa-chart-line"></i></div>
+                    <h3>Financeiro Completo</h3>
+                    <p>Contas a Pagar e Receber, Fluxo de Caixa em tempo real e conciliação bancária automática via OFX ou API.</p>
+                    <ul class="feature-list">
+                        <li><i class="fas fa-check"></i> DRE Gerencial</li>
+                        <li><i class="fas fa-check"></i> Orçamento Anual</li>
+                        <li><i class="fas fa-check"></i> Centro de Custos</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="icon-box green"><i class="fas fa-store"></i></div>
+                    <h3>Gestão Comercial</h3>
+                    <p>Do orçamento à venda finalizada. Controle estoques, vendedores e comissões com facilidade.</p>
+                    <ul class="feature-list">
+                        <li><i class="fas fa-check"></i> PDV (Frente de Caixa)</li>
+                        <li><i class="fas fa-check"></i> Precificação Inteligente</li>
+                        <li><i class="fas fa-check"></i> Gestão de Contratos</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="icon-box blue"><i class="fas fa-file-invoice"></i></div>
+                    <h3>Emissão Fiscal</h3>
+                    <p>Emita Notas Fiscais de Produto (NF-e) e Serviço (NFS-e) diretamente pelo sistema com a tecnologia Focus NFe.</p>
+                    <ul class="feature-list">
+                        <li><i class="fas fa-check"></i> Cálculo Automático de Impostos</li>
+                        <li><i class="fas fa-check"></i> Envio de XML/PDF por e-mail</li>
+                        <li><i class="fas fa-check"></i> Certificado A1</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="bpo-section-highlight" id="bpo">
+        <div class="container bpo-container">
+            <div class="bpo-content">
+                <span class="badge-bpo">EXCLUSIVO</span>
+                <h2>Você é BPO Financeiro ou Contador?</h2>
+                <p>Gerencie múltiplos clientes em um único painel. Troque de empresa com um clique, sem precisar de múltiplas senhas.</p>
+                <ul class="bpo-benefits">
+                    <li><i class="fas fa-users-cog"></i> Gestão Multi-Tenant</li>
+                    <li><i class="fas fa-shield-alt"></i> Acesso Seguro e Auditável</li>
+                    <li><i class="fas fa-percentage"></i> Preços especiais por volume</li>
+                </ul>
+                <a href="https://wa.me/5531993413530?text=Olá!%20Sou%20BPO%20e%20gostaria%20de%20saber%20mais%20sobre%20o%20SistemClass." class="btn-whatsapp">
+                    <i class="fab fa-whatsapp"></i> Falar com Especialista BPO
+                </a>
+            </div>
+            <div class="bpo-image">
+                <i class="fas fa-network-wired bpo-icon-bg"></i>
+            </div>
+        </div>
+    </section>
+
+    <section class="pricing-section" id="precos">
+        <div class="container">
+            <div class="section-header-center">
+                <h2>Planos transparentes</h2>
+                <p>Escolha o plano ideal para o momento da sua empresa.</p>
+            </div>
+
+            <div class="pricing-grid-landing">
+                <div class="plan-card-landing">
+                    <div class="plan-header">
+                        <h3>Gestão Financeira</h3>
+                        <div class="price">
+                            <span class="currency">R$</span>
+                            <span class="amount">139</span>
+                            <span class="period">/mês</span>
+                        </div>
+                        <p>Para quem precisa organizar a casa.</p>
+                    </div>
+                    <div class="plan-body">
+                        <ul>
+                            <li><i class="fas fa-users"></i> Até <strong>2 Usuários</strong></li>
+                            <li><i class="fas fa-check"></i> Contas a Pagar e Receber</li>
+                            <li><i class="fas fa-check"></i> Importação OFX & Conciliação</li>
+                            <li><i class="fas fa-check"></i> Dashboards Financeiros & DRE</li>
+                            <li><i class="fas fa-check"></i> Orçamento Anual</li>
+                            <li class="unavailable"><i class="fas fa-times"></i> Emissão de Notas Fiscais</li>
+                            <li class="unavailable"><i class="fas fa-times"></i> Módulo Comercial</li>
+                        </ul>
+                        <a href="{% url 'register' %}" class="btn-plan">Começar Agora</a>
+                    </div>
+                </div>
+
+                <div class="plan-card-landing popular">
+                    <div class="popular-badge">Mais Escolhido</div>
+                    <div class="plan-header">
+                        <h3>Gestão Total</h3>
+                        <div class="price">
+                            <span class="currency">R$</span>
+                            <span class="amount">189</span>
+                            <span class="period">/mês</span>
+                        </div>
+                        <p>Solução definitiva para crescer.</p>
+                    </div>
+                    <div class="plan-body">
+                        <ul>
+                            <li><i class="fas fa-users"></i> Até <strong>5 Usuários</strong></li>
+                            <li><i class="fas fa-check"></i> <strong>Tudo do Plano Financeiro</strong></li>
+                            <li><i class="fas fa-check"></i> Frente de Caixa (PDV)</li>
+                            <li><i class="fas fa-check"></i> Emissão de NFe e NFS-e</li>
+                            <li><i class="fas fa-check"></i> Gestão de Contratos e Metas</li>
+                            <li><i class="fas fa-check"></i> Precificação de Produtos</li>
+                            <li><i class="fas fa-check"></i> Integração Comercial</li>
+                        </ul>
+                        <a href="{% url 'register' %}" class="btn-plan btn-primary">Começar Agora</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="faq-section">
+        <div class="container">
+            <h2>Perguntas Frequentes</h2>
+            <div class="faq-grid">
+                <div class="faq-item">
+                    <h4>Preciso instalar algum programa?</h4>
+                    <p>Não. O SistemClass é 100% online. Você acessa de qualquer lugar, pelo computador ou celular.</p>
+                </div>
+                <div class="faq-item">
+                    <h4>Como funciona a integração bancária?</h4>
+                    <p>Você pode importar arquivos OFX do seu banco ou conectar via API (Inter, Asaas, etc) para busca automática.</p>
+                </div>
+                <div class="faq-item">
+                    <h4>Posso emitir notas fiscais?</h4>
+                    <p>Sim! No plano Completo, você configura seu certificado A1 e emite NFe (Produtos) e NFSe (Serviços) facilmente.</p>
+                </div>
+                <div class="faq-item">
+                    <h4>Existe fidelidade?</h4>
+                    <p>Não. Nossos planos são mensais via cartão de crédito (Stripe). Você pode cancelar quando quiser sem multa.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="landing-footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <h4>SistemClass</h4>
+                    <p>Tecnologia e inteligência para sua gestão financeira e comercial.</p>
+                </div>
+                <div class="footer-links">
+                    <h5>Produto</h5>
+                    <a href="#funcionalidades">Funcionalidades</a>
+                    <a href="#precos">Preços</a>
+                    <a href="{% url 'login' %}">Login</a>
+                </div>
+                <div class="footer-links">
+                    <h5>Legal</h5>
+                    <a href="#">Termos de Uso</a>
+                    <a href="#">Privacidade</a>
+                </div>
+                <div class="footer-contact">
+                    <h5>Contato</h5>
+                    <p><i class="fas fa-envelope"></i> contato@sistemclass.com.br</p>
+                    <p><i class="fab fa-whatsapp"></i> (31) 99999-9999</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; {% now "Y" %} SistemClass. Todos os direitos reservados.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Script simples para o menu mobile
+        document.querySelector('.mobile-menu-btn').addEventListener('click', function() {
+            document.querySelector('.nav-links').classList.toggle('active');
+        });
+
+        // Smooth scroll para links internos
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+    </script>
+</body>
+</html>

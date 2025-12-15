@@ -139,12 +139,12 @@
                     {% endif %}
                 </div>
 
-                <div class="form-group checkbox-container">
+                {% comment %} <div class="form-group checkbox-container">
                     {{ form.is_sandbox }}
                     <label for="{{ form.is_sandbox.id_for_label }}" style="margin: 0; cursor: pointer;">
                         Ativar Modo Sandbox (Ambiente de Testes)
                     </label>
-                </div>
+                </div> {% endcomment %}
 
                 <button type="submit" class="btn-save">Salvar Configurações</button>
                 <div style="text-align: center;">

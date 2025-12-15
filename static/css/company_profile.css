@@ -395,71 +395,92 @@ input:checked+.slider:before {
 
 
 /* ==========================================================================
-   RESPONSIVIDADE (MOBILE & TABLET)
+   RESPONSIVIDADE (MOBILE & TABLET) - VERSÃO CORRIGIDA
    ========================================================================== */
 
 @media screen and (max-width: 768px) {
 
-    /* 1. Ajusta o conteúdo principal para ocupar a tela toda (sem margem da sidebar) */
+    /* 1. Ajuste do Container Principal */
     .main-content {
-        margin-left: 0;
-        width: 100%;
-        padding: 15px;
+        margin-left: 0 !important;
+        width: 100% !important;
+        padding: 15px !important;
+        overflow-x: hidden; /* Evita rolagem lateral indesejada */
     }
 
     /* 2. Força o Grid do Formulário a ser 1 coluna só */
     .company-profile-page .profile-form .form-grid {
-        grid-template-columns: 1fr;
-        padding: 0 10px 10px 10px;
+        display: flex !important;
+        flex-direction: column;
+        padding: 0;
+        gap: 15px;
     }
 
-    /* 3. CORREÇÃO CRÍTICA: Quebra os Grids Internos (Fiscal Card e NFe) */
-    /* O !important é necessário para sobrescrever o estilo 'inline' do HTML */
-    .fiscal-card > div[style*="grid-template-columns"] {
-        grid-template-columns: 1fr !important; /* Força 1 coluna */
-        gap: 20px !important;
-    }
-
-    /* 4. Ajusta a linha de Logradouro (75%) e Número (25%) para empilhar */
-    /* Procura divs flexíveis dentro do form e muda a direção */
-    .profile-form div[style*="display: flex"] {
+    /* 3. CORREÇÃO DE CAMPOS LADO A LADO (Logradouro e Número) 
+       Sobrescreve o style="display: flex" que está no HTML */
+    .company-profile-page .profile-form .form-grid > div[style*="display: flex"] {
         flex-direction: column !important;
-        gap: 15px !important;
+        gap: 10px !important;
+        width: 100% !important;
     }
 
-    /* Faz os campos internos (Logradouro e Número) ocuparem 100% da largura */
-    .profile-form div[style*="display: flex"] > div {
+    /* Garante que os inputs internos ocupem a largura total */
+    .company-profile-page .profile-form .form-grid > div[style*="display: flex"] > div {
         flex: 1 1 100% !important;
         width: 100% !important;
-        max-width: 100% !important;
+        min-width: 100% !important;
     }
 
-    /* 5. Ajustes nos botões Toggle (Simples Nacional, etc) */
+    /* 4. CORREÇÃO DOS CARDS FISCAIS (As 3 colunas e as 2 colunas de NFe) 
+       Isso pega todas as DIVs dentro do card fiscal e força elas a serem blocos verticais */
+    .fiscal-card > div {
+        display: flex !important;
+        flex-direction: column !important;
+        grid-template-columns: 1fr !important;
+        gap: 20px !important;
+        width: 100% !important;
+    }
+
+    /* Correção específica para blocos internos que tenham grid (ex: NFe Produto/Serviço) */
+    .fiscal-card div[style*="grid-template-columns"] {
+        grid-template-columns: 1fr !important;
+        display: flex !important;
+        flex-direction: column !important;
+    }
+
+    /* 5. Ajustes nos Toggles/Switches para não quebrarem */
     .toggle-container {
-        width: 100%; /* Garante que o container do switch ocupe a largura toda */
-        justify-content: space-between; /* Separa o switch do texto */
+        width: 100%;
+        justify-content: space-between;
+        box-sizing: border-box;
     }
 
-    /* 6. Ajuste do Upload de Arquivos (Anexar Documentos) */
+    /* 6. Ajuste do Upload de Arquivos */
     .company-profile-page .document-form .file-upload-row {
         flex-direction: column;
-        align-items: stretch; /* Estica os inputs */
+        align-items: stretch;
     }
     
     .company-profile-page .document-form .btn {
-        width: 100%; /* Botão 'Anexar' largura total no mobile */
+        width: 100%;
         margin-top: 10px;
     }
 
-    /* 7. Garante que tabelas tenham barra de rolagem horizontal se estourarem */
+    /* 7. Tabelas responsivas */
     .table-wrapper {
+        width: 100%;
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
+        margin-bottom: 20px;
+    }
+
+    /* 8. Ajustes gerais de inputs para não estourarem a tela */
+    input, select, textarea {
+        max-width: 100% !important;
+        min-width: 0 !important; /* Permite encolher se necessário */
     }
     
-    /* 8. Ajustes finos nos cards */
-    .company-profile-page .card, 
-    .fiscal-card {
-        padding: 15px !important; /* Reduz padding interno para ganhar espaço */
+    .card {
+        overflow: hidden; /* Garante que nada saia de dentro do card */
     }
 }
