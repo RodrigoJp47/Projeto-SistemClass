@@ -1930,7 +1930,7 @@ def importar_ofx_view(request):
 
                     amount = Decimal(str(transaction.amount))
                     date = transaction.date.date() # Data real da transação
-                    name = (transaction.memo or f"Transação OFX {transaction.id}").encode('ascii', errors='ignore').decode('ascii').strip() or f"OFX {transaction.id}"
+                    name = str(transaction.payee or transaction.memo or f"Transação OFX {transaction.id}").strip()
                     description = f"Transação OFX {transaction.id}"
                     
                     # Define a janela de datas para a busca
