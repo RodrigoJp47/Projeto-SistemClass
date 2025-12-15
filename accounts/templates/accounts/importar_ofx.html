@@ -64,6 +64,7 @@
         </div>
         {% comment %} --- NOVA SECÇÃO CONTA AZUL --- {% endcomment %}
         <div class="form-container conta-azul-integration mt-4"> 
+            <img src="{% static 'images/logo-conta_azul.png' %}" alt="Conta Azul" style="height: 25px; object-fit: contain;">
             <h3>Integração Conta Azul</h3>
             <p class="description">
                 Conecte sua conta do Conta Azul para sincronizar automaticamente suas contas a pagar e receber.
@@ -90,7 +91,7 @@
         {% comment %} --- NOVA SECÇÃO BANCO INTER --- {% endcomment %}
         <div class="form-container banco-inter-integration mt-4" style="border-left: 5px solid #FF7A00;"> 
             <div style="display: flex; align-items: center; gap: 10px;">
-                
+                <img src="{% static 'images/logo-Inter.png' %}" alt="Inter" style="height: 25px; object-fit: contain;">
                 <h3>Integração Banco Inter</h3>
             </div>
             {% if saldo_inter %}
@@ -175,7 +176,7 @@
         {% comment %} --- NOVA SECÇÃO ASAAS --- {% endcomment %}
         <div class="form-container asaas-integration mt-4" style="border-left: 5px solid #0030b9;"> 
             <div style="display: flex; align-items: center; gap: 10px;">
-                <img src="https://logospng.org/download/asaas/logo-asaas-icon-1024.png" alt="Asaas" style="height: 25px; object-fit: contain;">
+                <img src="{% static 'images/logo-asaas.png' %}" alt="Asaas" style="height: 25px; object-fit: contain;">
                 <h3>Integração Asaas</h3>
                 {% if user.asaas_creds.is_sandbox %}
                     <span style="background: #ffc107; color: #333; font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: bold;">SANDBOX</span>
@@ -220,7 +221,7 @@
         {% comment %} --- NOVA SECÇÃO OMIE --- {% endcomment %}
         <div class="form-container omie-integration mt-4" style="border-left: 5px solid #00E5FF;"> 
             <div style="display: flex; align-items: center; gap: 10px;">
-                <i class="fas fa-network-wired" style="font-size: 24px; color: #00E5FF;"></i>
+                <img src="{% static 'images/logo-omie.png' %}" alt="Omie" style="height: 25px; object-fit: contain;">
                 <h3>Integração Omie ERP</h3>
             </div>
             
@@ -252,7 +253,7 @@
         {% comment %} --- NOVA SECÇÃO NIBO --- {% endcomment %}
         <div class="form-container nibo-integration mt-4" style="border-left: 5px solid #2C3E50;"> 
             <div style="display: flex; align-items: center; gap: 10px;">
-                <i class="fas fa-file-invoice-dollar" style="font-size: 24px; color: #2C3E50;"></i>
+                <img src="{% static 'images/logo-nibo.png' %}" alt="Nibo" style="height: 25px; object-fit: contain;">
                 <h3>Integração Nibo</h3>
             </div>
             
@@ -281,6 +282,38 @@
             {% endif %}
         </div>
         {% comment %} --- FIM DA SECÇÃO NIBO --- {% endcomment %}
+        {% comment %} --- NOVA SECÇÃO TINY ERP --- {% endcomment %}
+        <div class="form-container tiny-integration mt-4" style="border-left: 5px solid #0052cc;"> 
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <img src="{% static 'images/logo-tiny.png' %}" alt="Tiny" style="height: 25px; object-fit: contain;">
+                <h3 style="color: #0052cc;">Integração Tiny ERP</h3>
+            </div>
+            
+            <p class="description">
+                Sincronize Contas a Pagar e Receber diretamente do seu Tiny ERP.
+                <br><small>A sincronização respeita suas categorizações manuais (Blindagem de Dados).</small>
+            </p>
+
+            {% if user.tiny_creds %}
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <form method="post">
+                        {% csrf_token %}
+                        <button type="submit" name="sync_tiny" class="btn-conta-azul" style="background-color: #0052cc; border-color: #0052cc; color: #fff;">
+                            <i class="fas fa-sync"></i> Sincronizar Agora
+                        </button>
+                    </form>
+                    
+                    <a href="{% url 'configurar_tiny' %}" style="color: #666; text-decoration: underline; margin-left: 10px;">
+                        Alterar credenciais
+                    </a>
+                </div>
+            {% else %}
+                <a href="{% url 'configurar_tiny' %}" class="btn-inter" style="border: 1px solid #0052cc; color: #0052cc;">
+                    <i class="fas fa-cog"></i> Configurar Tiny
+                </a>
+            {% endif %}
+        </div>
+        {% comment %} --- FIM DA SECÇÃO TINY --- {% endcomment %}
     </div>
 
     <script src="{% static 'js/theme.js' %}"></script>

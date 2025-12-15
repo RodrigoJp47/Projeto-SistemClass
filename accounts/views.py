@@ -95,6 +95,10 @@ from .forms import NiboCredentialsForm
 from .models import NiboCredentials
 from .utils_nibo import sincronizar_nibo_completo
 
+from .forms import TinyCredentialsForm
+from .models import TinyCredentials
+from .utils_tiny import sincronizar_tiny_completo
+
 
 from .utils_inter import buscar_extrato_inter
 from .forms import InterCredentialsForm
@@ -1834,6 +1838,29 @@ def importar_ofx_view(request):
             
             return redirect('importar_ofx')
         # ▲▲▲ [FIM] NOVO BLOCO NIBO ▲▲▲
+
+        # ▼▼▼ [INÍCIO] NOVO BLOCO TINY ERP ▼▼▼
+        elif 'sync_tiny' in request.POST:
+            resultado = sincronizar_tiny_completo(request.user)
+            
+            if 'erro' in resultado:
+                messages.error(request, f"Erro na integração Tiny: {resultado['erro']}")
+            else:
+                total_novos = resultado['pagar_novos'] + resultado['receber_novos']
+                total_atualizados = resultado['pagar_atualizados'] + resultado['receber_atualizados']
+                
+                if total_novos > 0 or total_atualizados > 0:
+                    msg = f"Tiny Sincronizado: {total_novos} novos lançamentos e {total_atualizados} atualizados."
+                    messages.success(request, msg)
+                else:
+                    messages.info(request, "Tiny conectado, mas não houve alterações nos dados.")
+                
+                if resultado.get('erros'):
+                    # Mostra os 3 primeiros erros para não poluir a tela
+                    messages.warning(request, f"Alguns itens tiveram erro: {resultado['erros'][:3]}...")
+            
+            return redirect('importar_ofx')
+        # ▲▲▲ [FIM] NOVO BLOCO TINY ERP ▲▲▲
 
 
         form = OFXImportForm(request.POST, request.FILES, user=request.user)
@@ -7212,7 +7239,28 @@ def configurar_nibo_view(request):
 
     return render(request, 'accounts/configurar_nibo.html', {'form': form})
 
+@login_required
+@subscription_required
+def configurar_tiny_view(request):
+    try:
+        instance = request.user.tiny_creds
+    except TinyCredentials.DoesNotExist:
+        instance = None
 
+    if request.method == 'POST':
+        form = TinyCredentialsForm(request.POST, instance=instance)
+        if form.is_valid():
+            creds = form.save(commit=False)
+            creds.user = request.user
+            creds.save()
+            messages.success(request, 'Credenciais do Tiny salvas com sucesso!')
+            return redirect('importar_ofx')
+        else:
+            messages.error(request, 'Erro ao salvar. Verifique o token inserido.')
+    else:
+        form = TinyCredentialsForm(instance=instance)
+
+    return render(request, 'accounts/configurar_tiny.html', {'form': form})
 
 
 

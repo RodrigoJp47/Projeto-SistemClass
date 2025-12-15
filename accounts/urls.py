@@ -58,6 +58,7 @@ from .views import (
     bpo_add_client_view,
     configurar_omie_view,
     configurar_nibo_view,
+    configurar_tiny_view,
 )
 
 urlpatterns = [
@@ -93,6 +94,7 @@ urlpatterns = [
     path('assinatura/sucesso/', assinatura_sucesso, name='assinatura_sucesso'),
     path('assinatura/cancelado/', assinatura_cancelado, name='assinatura_cancelado'),
     path('configuracoes/nibo/', configurar_nibo_view, name='configurar_nibo'),
+    path('configuracoes/tiny/', configurar_tiny_view, name='configurar_tiny'),
    
     # --- Módulo Comercial ---
     path('faturamento/', faturamento_dashboard_view, name='faturamento_dashboard'),

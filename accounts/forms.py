@@ -738,3 +738,28 @@ class NiboCredentialsForm(forms.ModelForm):
 
 
 
+# Adicione ao final de accounts/forms.py (não esqueça de importar o model no topo)
+from .models import TinyCredentials
+
+class TinyCredentialsForm(forms.ModelForm):
+    class Meta:
+        model = TinyCredentials
+        fields = ['token']
+        labels = {
+            'token': 'Token de API (Chave de Acesso)',
+        }
+        widgets = {
+            'token': forms.TextInput(attrs={
+                'class': 'form-field', 
+                'placeholder': 'Cole seu Token do Tiny aqui...',
+                'autocomplete': 'off',
+                'style': 'width: 100%;'
+            }),
+        }
+        help_texts = {
+            'token': 'No Tiny, vá em Configurações > Aba E-commerce > API > Token.',
+        }        
+
+
+
+

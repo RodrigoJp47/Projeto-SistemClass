@@ -903,6 +903,20 @@ class NiboCredentials(models.Model):
 
     def __str__(self):
         return f"Credenciais Nibo - {self.user.username}"
+    
+
+
+# Adicione ao final de accounts/models.py
+
+class TinyCredentials(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='tiny_creds')
+    token = models.CharField(max_length=255, verbose_name="Token da API")
+    
+    updated_at = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Credenciais Tiny - {self.user.username}"    
 
 
 
