@@ -1885,6 +1885,11 @@ def importar_ofx_view(request):
                 if content is None:
                     content = raw_content.decode('utf-8', errors='replace')
 
+                # ▼▼▼▼▼▼▼▼▼▼ INÍCIO DA CORREÇÃO ▼▼▼▼▼▼▼▼▼▼
+                # Corrige erro "Empty transaction name" preenchendo tags vazias
+                content = re.sub(r'<NAME>\s*</NAME>', '<NAME>Nao Informado</NAME>', content, flags=re.IGNORECASE)
+                # ▲▲▲▲▲▲▲▲▲▲ FIM DA CORREÇÃO ▲▲▲▲▲▲▲▲▲▲    
+
                 if not content.strip().startswith('<OFX'):
                      content = re.sub(r'^OFXHEADER:.*?(?=<)', '', content, flags=re.MULTILINE | re.DOTALL)
                      content = re.sub(r'(<[A-Z/][^>]*>)\s*([^<]+)\s*(?=<|$)', r'\1\2</\1>', content)
@@ -1930,7 +1935,7 @@ def importar_ofx_view(request):
 
                     amount = Decimal(str(transaction.amount))
                     date = transaction.date.date() # Data real da transação
-                    name = str(transaction.payee or transaction.memo or f"Transação OFX {transaction.id}").strip()
+                    name = (transaction.memo or f"Transação OFX {transaction.id}").encode('ascii', errors='ignore').decode('ascii')
                     description = f"Transação OFX {transaction.id}"
                     
                     # Define a janela de datas para a busca
