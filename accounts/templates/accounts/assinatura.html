@@ -49,23 +49,116 @@
         .btn-stripe:hover {
             background-color: #5469d4;
         }
+        /* =========================================
+        Botão de Gerenciar Conta (Adapta ao Tema)
+        ========================================= */
+        .btn-manage-account {
+            /* Estrutura e Espaçamento */
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 24px;
+            border-radius: 50px; /* Mais moderno e arredondado */
+            font-weight: 600;
+            font-size: 0.95rem;
+            text-decoration: none;
+            transition: all 0.3s ease;
+
+            /* CORES INTELIGENTES (Usando variáveis do tema) */
+            
+            /* Fundo: Usa a cor de fundo secundária do tema (ex: cinza claro no light, cinza escuro no dark) */
+            background-color: var(--bg-secondary, #f0f0f0); 
+            
+            /* Texto: Usa a cor de texto principal do tema (ex: preto no light, branco no dark) */
+            color: var(--text-primary, #333);
+            
+            /* Borda sutil para definição */
+            border: 1px solid var(--border-color, rgba(0,0,0,0.1));
+            
+            /* Sombra suave para destaque */
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        /* Cor da coroa dourada (sempre dourada) */
+        .btn-manage-account i.fa-crown {
+            color: #ffc107;
+            font-size: 1.1rem;
+        }
+
+        /* Efeito Hover (Ao passar o mouse) */
+        .btn-manage-account:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            /* Fica ligeiramente mais escuro/claro ao passar o mouse */
+            filter: brightness(0.95); 
+            border-color: var(--primary-color, #8E44AD); /* Cor de destaque do seu sistema na borda */
+        }
+
+        /* AJUSTE ESPECÍFICO PARA DARK MODE 
+        (Caso suas variáveis padrão não deem contraste suficiente no escuro) */
+        body.dark-mode .btn-manage-account {
+            background-color: rgba(255, 255, 255, 0.05); /* Fundo translúcido no escuro */
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+        body.dark-mode .btn-manage-account:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
     </style>
 </head>
 <body class="assinatura-page">
     {% include 'accounts/_sidebar.html' %}
 
     <div class="main-content">
+        <div style="margin-bottom: 20px;">
+            <a href="{% url 'home' %}" style="text-decoration: none; color: var(--text-color); display: inline-flex; align-items: center; gap: 8px; font-weight: 600; opacity: 0.8; transition: opacity 0.2s;">
+                <i class="fas fa-arrow-left"></i> Voltar para o Painel
+            </a>
+        </div>
         <h1>Escolha o Plano Ideal para sua Empresa</h1>
         <p class="subtitulo-planos">Liberte o potencial do seu negócio com a ferramenta certa.</p>
 
         {% if messages %}
             <div class="messages-container" style="margin-bottom: 20px; text-align: center;">
                 {% for message in messages %}
-                    <div class="alert {{ message.tags }}" style="padding: 10px; border-radius: 5px; background: #eee; color: #333;">
+                    <div class="alert {{ message.tags }}" style="padding: 10px; border-radius: 5px; background: #eee; color: #333; margin-bottom: 10px;">
                         {{ message }}
                     </div>
                 {% endfor %}
             </div>
+        {% endif %}
+
+        {% if subscription.status == 'active' or subscription.status == 'trialing' %}
+            <div class="status-card" style="background: linear-gradient(135deg, #101010 0%, #1a1a1a 100%); border: 1px solid #333; padding: 25px; border-radius: 12px; text-align: center; max-width: 700px; margin: 0 auto 40px auto; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+                
+                <div style="display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 15px;">
+                    <i class="fas fa-check-circle" style="font-size: 40px; color: #28a745;"></i>
+                    <div style="text-align: left;">
+                        <h2 style="margin: 0; font-size: 1.5rem; color: #fff;">Assinatura Ativa</h2>
+                        <span style="color: #aaa;">Plano Atual: 
+                            <strong style="color: #fff; font-size: 1.1em;">
+                                {% if subscription.has_commercial_module %}
+                                    Gestão Total (Full Commerce)
+                                {% else %}
+                                    Gestão Financeira
+                                {% endif %}
+                            </strong>
+                        </span>
+                    </div>
+                </div>
+
+                <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <p style="margin: 0; color: #ccc;">Sua assinatura é válida até: <strong style="color: #fff;">{{ subscription.valid_until|date:"d/m/Y" }}</strong></p>
+                </div>
+                
+                <form action="{% url 'cancelar_assinatura_manual' %}" method="POST" onsubmit="return confirm('Tem certeza? Ao cancelar, você não será cobrado na próxima renovação, mas poderá perder acesso a recursos exclusivos ao fim do ciclo.');">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-stripe" style="background-color: transparent; border: 1px solid #dc3545; color: #dc3545; width: auto; padding: 8px 20px;">
+                        <i class="fas fa-times"></i> Cancelar Renovação Automática
+                    </button>
+                </form>
+            </div>
+            
+            <h3 style="text-align: center; margin-bottom: 30px; border-top: 1px solid #333; padding-top: 30px;">Deseja mudar de plano? Confira as opções:</h3>
         {% endif %}
 
         <div class="pricing-grid">
@@ -87,17 +180,20 @@
                     <li><i class="fas fa-check"></i> Importação OFX & Conciliação</li>
                     <li><i class="fas fa-check"></i> Dashboards Financeiros & DRE</li>
                     <li><i class="fas fa-check"></i> Orçamento Anual & Tarefas</li>
-                    <li><i class="fas fa-check"></i> Gestão de Fornecedores</li>
                     <li class="unavailable"><i class="fas fa-times"></i> Módulo Comercial (Vendas/PDV)</li>
                     <li class="unavailable"><i class="fas fa-times"></i> Emissão de Notas Fiscais</li>
                 </ul>
 
                 <form action="{% url 'create_checkout_session' 'financeiro' %}" method="POST">
                     {% csrf_token %}
-                    <button type="submit" class="btn-stripe">
-                        <i class="fas fa-credit-card"></i>
-                        <span>Assinar Financeiro</span>
-                    </button>
+                    {% if subscription.status == 'active' and subscription.has_commercial_module == False %}
+                        <button type="button" class="btn-stripe" style="background-color: #555; cursor: default;">Plano Atual</button>
+                    {% else %}
+                        <button type="submit" class="btn-stripe">
+                            <i class="fas fa-credit-card"></i>
+                            <span>Assinar Financeiro</span>
+                        </button>
+                    {% endif %}
                 </form>
             </div>
 
@@ -125,14 +221,18 @@
                 
                 <form action="{% url 'create_checkout_session' 'completo' %}" method="POST">
                     {% csrf_token %}
-                    <button type="submit" class="btn-stripe">
-                        <i class="fas fa-rocket"></i>
-                        <span>Assinar Completo</span>
-                    </button>
+                    {% if subscription.status == 'active' and subscription.has_commercial_module == True %}
+                        <button type="button" class="btn-stripe" style="background-color: #555; cursor: default;">Plano Atual</button>
+                    {% else %}
+                        <button type="submit" class="btn-stripe">
+                            <i class="fas fa-rocket"></i>
+                            <span>Assinar Completo</span> </button>
+                    {% endif %}
                 </form>
             </div>
 
         </div> 
+
         <div class="bpo-section" style="margin-top: 50px; text-align: center; background-color: var(--card-bg-color); border: 1px solid var(--border-color, transparent); padding: 40px; border-radius: 10px;">
             <h2 style="color: var(--text-color); margin-bottom: 10px;">É BPO Financeiro ou Contador?</h2>
             <p style="color: var(--text-color); opacity: 0.8; margin-bottom: 20px;">Tenha um painel exclusivo para gerenciar múltiplos clientes com desconto progressivo por volume.</p>

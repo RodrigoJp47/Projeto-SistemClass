@@ -1495,6 +1495,8 @@ def importar_ofx_view(request):
                 count_duplicados = 0
 
                 # ESTE É O LOOP DA API INTER (Note que usa 'transacao' e chaves como 'tipoOperacao')
+                DATE_WINDOW_DAYS = 3 
+
                 for transacao in transacoes:
                     data_str = transacao.get('dataEntrada') or transacao.get('dataLancamento')
                     valor = Decimal(str(transacao.get('valor', 0)))
@@ -1507,10 +1509,14 @@ def importar_ofx_view(request):
                         data_movimento = end_date
 
                     descricao_final = f"Importado via API Inter - {descricao}"
+                    
+                    # [NOVO] Janela de data para busca inteligente
+                    date_window_start = data_movimento - timedelta(days=DATE_WINDOW_DAYS)
+                    date_window_end = data_movimento + timedelta(days=DATE_WINDOW_DAYS)
 
-                    # --- INICIO DA LÓGICA DE NÃO DUPLICAR ---
+                    # --- LÓGICA PAGAR (Débito) ---
                     if tipo_operacao == 'D':
-                        # Verifica se já existe (PAGAR)
+                        # Verifica se JÁ FOI IMPORTADO (evita duplicar a API)
                         existe = PayableAccount.objects.filter(
                             user=request.user,
                             amount=valor,
@@ -1519,29 +1525,47 @@ def importar_ofx_view(request):
                         ).exists()
 
                         if not existe:
-                            cat_prevista, dre_prevista, _ = prever_classificacao(request.user, descricao, 'PAYABLE')
-                            # ... (resto da criação do objeto)
-                            PayableAccount.objects.create(
+                            # [CIRÚRGICO] Tenta achar conta manual aberta antes de criar
+                            match = PayableAccount.objects.filter(
                                 user=request.user,
-                                name=descricao[:100],
-                                description=descricao_final,
-                                due_date=data_movimento,
-                                amount=valor,
-                                category=cat_prevista, # Ajustado para variável curta
-                                dre_area=dre_prevista or 'OPERACIONAL', # Ajustado
-                                payment_method='DEBITO_CONTA',
-                                cost_type='VARIAVEL',
-                                occurrence='AVULSO',
-                                is_paid=True,
-                                payment_date=data_movimento,
-                                bank_account=banco_inter
-                            )
-                            count_importados += 1
+                                is_paid=False,          # Tem que estar ABERTA
+                                amount=valor,           # Valor exato
+                                due_date__range=[date_window_start, date_window_end]
+                            ).first()
+
+                            if match:
+                                # ACHOU MANUAL: Só baixa!
+                                match.is_paid = True
+                                match.payment_date = data_movimento
+                                match.bank_account = banco_inter
+                                match.description += " (Conciliado Inter)" # Opcional: marca visual
+                                match.save()
+                                # count_importados += 1 # Opcional: pode criar um contador separado se quiser
+                            else:
+                                # NÃO ACHOU: Cria novo (Seu código original)
+                                cat_prevista, dre_prevista, _ = prever_classificacao(request.user, descricao, 'PAYABLE')
+                                PayableAccount.objects.create(
+                                    user=request.user,
+                                    name=descricao[:100],
+                                    description=descricao_final,
+                                    due_date=data_movimento,
+                                    amount=valor,
+                                    category=cat_prevista,
+                                    dre_area=dre_prevista or 'OPERACIONAL',
+                                    payment_method='DEBITO_CONTA',
+                                    cost_type='VARIAVEL',
+                                    occurrence='AVULSO',
+                                    is_paid=True,
+                                    payment_date=data_movimento,
+                                    bank_account=banco_inter
+                                )
+                                count_importados += 1
                         else:
                             count_duplicados += 1
 
+                    # --- LÓGICA RECEBER (Crédito) ---
                     else:
-                        # Verifica se já existe (RECEBER)
+                        # Verifica se JÁ FOI IMPORTADO
                         existe = ReceivableAccount.objects.filter(
                             user=request.user,
                             amount=valor,
@@ -1550,23 +1574,39 @@ def importar_ofx_view(request):
                         ).exists()
 
                         if not existe:
-                            cat_prevista, dre_prevista, _ = prever_classificacao(request.user, descricao, 'RECEIVABLE')
-                            # ... (resto da criação do objeto)
-                            ReceivableAccount.objects.create(
+                            # [CIRÚRGICO] Tenta achar conta manual aberta antes de criar
+                            match = ReceivableAccount.objects.filter(
                                 user=request.user,
-                                name=descricao[:100],
-                                description=descricao_final,
-                                due_date=data_movimento,
-                                amount=valor,
-                                category=cat_prevista,
-                                dre_area=dre_prevista or 'BRUTA',
-                                payment_method='DEBITO_CONTA',
-                                occurrence='AVULSO',
-                                is_received=True,
-                                payment_date=data_movimento,
-                                bank_account=banco_inter
-                            )
-                            count_importados += 1
+                                is_received=False,      # Tem que estar ABERTA
+                                amount=valor,           # Valor exato
+                                due_date__range=[date_window_start, date_window_end]
+                            ).first()
+
+                            if match:
+                                # ACHOU MANUAL: Só baixa!
+                                match.is_received = True
+                                match.payment_date = data_movimento
+                                match.bank_account = banco_inter
+                                match.description += " (Conciliado Inter)"
+                                match.save()
+                            else:
+                                # NÃO ACHOU: Cria novo (Seu código original)
+                                cat_prevista, dre_prevista, _ = prever_classificacao(request.user, descricao, 'RECEIVABLE')
+                                ReceivableAccount.objects.create(
+                                    user=request.user,
+                                    name=descricao[:100],
+                                    description=descricao_final,
+                                    due_date=data_movimento,
+                                    amount=valor,
+                                    category=cat_prevista,
+                                    dre_area=dre_prevista or 'BRUTA',
+                                    payment_method='DEBITO_CONTA',
+                                    occurrence='AVULSO',
+                                    is_received=True,
+                                    payment_date=data_movimento,
+                                    bank_account=banco_inter
+                                )
+                                count_importados += 1
                         else:
                             count_duplicados += 1
                 
@@ -7276,6 +7316,47 @@ def landing_page(request):
     if request.user.is_authenticated:
         return redirect('smart_redirect') # Se já logado, vai pro sistema
     return render(request, 'landing_page.html')
+
+
+
+
+# 1. Certifique-se que este import está lá no TOPO do views.py, junto com os outros imports do Django
+from django.views.decorators.http import require_POST
+
+@login_required
+@require_POST
+def cancelar_assinatura_manual(request):
+    try:
+        subscription = Subscription.objects.get(user=request.user)
+        
+        if subscription.stripe_subscription_id:
+            stripe.api_key = settings.STRIPE_SECRET_KEY
+            
+            # 1. Avisa ao Stripe: "Não cobre mais, mas deixe rodar até o fim"
+            stripe.Subscription.modify(
+                subscription.stripe_subscription_id,
+                cancel_at_period_end=True
+            )
+            
+            # --- CORREÇÃO AQUI ---
+            # NÃO mudamos o status para 'canceled' agora.
+            # O usuário pagou, ele tem direito de usar até o fim.
+            # subscription.status = 'canceled'  <-- REMOVA OU COMENTE ESSA LINHA
+            
+            # Apenas salvamos se tivermos alterado algum outro campo (opcional aqui)
+            # subscription.save() 
+            
+            messages.success(request, f"Renovação automática cancelada. Seu acesso continua garantido até {subscription.valid_until.strftime('%d/%m/%Y')}.")
+        else:
+            # Se for assinatura manual (sem Stripe), aí sim cancelamos na hora ou definimos a lógica que você preferir
+            subscription.status = 'canceled'
+            subscription.save()
+            messages.warning(request, "Assinatura manual cancelada.")
+            
+    except Exception as e:
+        messages.error(request, f"Erro ao cancelar: {str(e)}")
+        
+    return redirect('assinatura') 
 
 
 

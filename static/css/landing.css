@@ -206,16 +206,21 @@ body {
     color: #666;
 }
 
-/* --- DASHBOARD MOCKUP (CSS Only Art) --- */
+/* --- DASHBOARD MOCKUP MELHORADO --- */
 .dashboard-preview {
-    background: #1a1a1a;
+    background: #161616; /* Fundo um pouco mais claro que o preto puro */
     border: 1px solid #333;
     border-radius: 12px;
-    padding: 15px;
+    padding: 20px;
     position: relative;
     box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    /* Mantém a perspectiva 3D */
     transform: perspective(1000px) rotateY(-5deg) rotateX(2deg);
     transition: transform 0.3s;
+    /* Garante tamanho mínimo */
+    min-height: 300px;
+    display: flex;
+    flex-direction: column;
 }
 
 .dashboard-preview:hover {
@@ -226,7 +231,9 @@ body {
     height: 12px;
     display: flex;
     gap: 6px;
-    margin-bottom: 15px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #333;
+    padding-bottom: 15px;
 }
 
 .dots span {
@@ -234,28 +241,67 @@ body {
     width: 10px;
     height: 10px;
     border-radius: 50%;
-    background-color: #333;
+    background-color: #444;
 }
 
+/* O Gráfico Grande */
 .chart-mockup {
-    height: 150px;
-    background: linear-gradient(180deg, rgba(142,68,173,0.1) 0%, rgba(0,0,0,0) 100%);
-    border-bottom: 2px solid var(--lp-primary);
+    flex: 2; /* Ocupa mais espaço */
+    background: linear-gradient(180deg, rgba(142,68,173,0.05) 0%, rgba(0,0,0,0) 100%);
+    border: 1px solid #333;
     margin-bottom: 15px;
-    border-radius: 4px;
+    border-radius: 8px;
     position: relative;
+    overflow: hidden;
+}
+
+/* Desenha uma linha de gráfico falsa usando CSS clip-path */
+.chart-mockup::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 60%;
+    background: linear-gradient(90deg, var(--lp-primary) 0%, #00bfff 100%);
+    opacity: 0.3;
+    /* Cria o formato de montanha/gráfico */
+    clip-path: polygon(0 100%, 0 80%, 15% 50%, 30% 60%, 45% 30%, 60% 40%, 75% 10%, 90% 30%, 100% 0, 100% 100%);
 }
 
 .cards-mockup {
     display: flex;
-    gap: 10px;
+    gap: 15px;
+    flex: 1;
 }
 
+/* Os 3 Cartões de baixo */
 .card-m {
     flex: 1;
-    height: 60px;
-    background: #252525;
+    background: #202020;
+    border: 1px solid #333;
     border-radius: 6px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 8px;
+}
+
+/* Linhas falsas simulando texto dentro dos cartões */
+.card-m::before {
+    content: '';
+    display: block;
+    width: 40%;
+    height: 6px;
+    background: #444;
+    border-radius: 4px;
+}
+.card-m::after {
+    content: '';
+    display: block;
+    width: 80%;
+    height: 6px;
+    background: #333;
+    border-radius: 4px;
 }
 
 .floating-card {
@@ -599,6 +645,93 @@ body {
     color: #555;
     border-top: 1px solid #222;
     padding-top: 20px;
+}
+
+/* --- MELHORIAS NOS CARDS DE FUNCIONALIDADES --- */
+
+.feature-card {
+    background: var(--lp-bg-card);
+    border: 1px solid var(--lp-border);
+    padding: 30px;
+    border-radius: 12px;
+    transition: transform 0.3s, border-color 0.3s;
+    display: flex;
+    flex-direction: column;
+    height: 100%; /* Garante que todos os cards tenham a mesma altura */
+}
+
+.feature-card:hover {
+    transform: translateY(-5px);
+    border-color: var(--lp-primary);
+}
+
+.feature-card-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.feature-card-header h3 {
+    margin: 0;
+    font-size: 1.4rem;
+}
+
+/* Ajuste a margem do ícone pois agora ele está num container flex */
+.icon-box {
+    margin-bottom: 0; 
+    flex-shrink: 0;
+}
+
+.feature-card p {
+    color: var(--lp-text-muted);
+    line-height: 1.5;
+    margin-bottom: 25px;
+    font-size: 1rem;
+    border-bottom: 1px solid var(--lp-border);
+    padding-bottom: 15px;
+}
+
+/* Estilo da Lista Detalhada */
+.feature-details ul {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    /* Em telas pequenas, 1 coluna. Em telas maiores, podemos ajustar se quiser */
+    grid-template-columns: 1fr; 
+    gap: 10px;
+}
+
+/* Em telas largas, divide a lista em 2 colunas se houver espaço, mas 1 coluna é mais seguro para leitura */
+@media (min-width: 1200px) {
+    .feature-details ul {
+        grid-template-columns: 1fr; 
+    }
+}
+
+.feature-details li {
+    color: #ddd; /* Texto um pouco mais claro */
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.feature-details li i {
+    color: var(--lp-primary);
+    font-size: 0.8rem;
+    min-width: 15px; /* Garante alinhamento vertical */
+}
+
+/* --- AJUSTES NA LISTA DE PREÇOS --- */
+/* Garante que o texto longo não quebre o ícone */
+.plan-body li {
+    font-size: 0.95rem;
+    align-items: flex-start; /* Alinha o ícone no topo se o texto quebrar linha */
+}
+
+.plan-body li i {
+    margin-top: 4px; /* Ajuste ótico para alinhar com a primeira linha de texto */
 }
 
 /* --- RESPONSIVE --- */

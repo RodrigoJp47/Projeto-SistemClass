@@ -60,6 +60,7 @@ from .views import (
     configurar_nibo_view,
     configurar_tiny_view,
     landing_page,
+    cancelar_assinatura_manual,
 )
 
 urlpatterns = [
@@ -82,6 +83,7 @@ urlpatterns = [
     path('configuracoes/perfil-empresa/', company_profile_view, name='company_profile'),
     
     path('configuracoes/relatorios/', relatorios_view, name='relatorios_central'),
+    path('assinatura/cancelar/', cancelar_assinatura_manual, name='cancelar_assinatura_manual'),
 
     # --- Dashboards ---
     path('dashboards/', dashboards, name='dashboards'),
