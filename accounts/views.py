@@ -5640,7 +5640,7 @@ def register_view(request):
 @login_required
 @check_employee_permission('can_access_painel_financeiro')
 def gerar_laudo_financeiro(request):
-    # --- Bloco de coleta de dados (sem alterações nas datas) ---
+    # --- 1. Definição das Datas (Estrutura Mantida) ---
     period = request.GET.get('period', '30')
     start_date_str = request.GET.get('start_date')
     end_date_str = request.GET.get('end_date')
@@ -5653,20 +5653,20 @@ def gerar_laudo_financeiro(request):
         days = int(period) if period in ['90', '180'] else 30
         start_date = end_date - timedelta(days=days)
 
+    # Datas do período anterior para comparação (Month-over-Month ou Period-over-Period)
     duration = end_date - start_date
     prev_end_date = start_date - timedelta(days=1)
     prev_start_date = prev_end_date - duration
 
-    # --- CORREÇÃO AQUI: Adicionado .exclude(dre_area='NAO_CONSTAR') nas Entradas ---
+    # --- 2. Coleta de Dados (Estrutura Mantida - Regime de Caixa) ---
     
-    # 1. Entradas do Período Atual (Corrigido)
+    # PERÍODO ATUAL
     entradas = ReceivableAccount.objects.filter(
         user=request.user, 
         is_received=True, 
-        due_date__range=[start_date, end_date]
+        due_date__range=[start_date, end_date] 
     ).exclude(dre_area='NAO_CONSTAR').aggregate(Sum('amount'))['amount__sum'] or Decimal('0')
 
-    # 2. Saídas do Período Atual (Já estava correto, mantido)
     saidas = PayableAccount.objects.filter(
         user=request.user, 
         is_paid=True, 
@@ -5675,14 +5675,13 @@ def gerar_laudo_financeiro(request):
 
     geracao_caixa = entradas - saidas
 
-    # 3. Entradas do Período Anterior (Corrigido para a comparação ficar justa)
+    # PERÍODO ANTERIOR
     entradas_ant = ReceivableAccount.objects.filter(
         user=request.user, 
         is_received=True, 
         due_date__range=[prev_start_date, prev_end_date]
     ).exclude(dre_area='NAO_CONSTAR').aggregate(Sum('amount'))['amount__sum'] or Decimal('0')
 
-    # 4. Saídas do Período Anterior (Já estava correto, mantido)
     saidas_ant = PayableAccount.objects.filter(
         user=request.user, 
         is_paid=True, 
@@ -5691,10 +5690,109 @@ def gerar_laudo_financeiro(request):
 
     geracao_caixa_ant = entradas_ant - saidas_ant
 
-    # ... O restante da função (cálculo de EBITDA, texto do laudo, etc) continua igual ...
-    receita_bruta = entradas 
-    # (continua o código original abaixo...)
+    # --- 3. Cálculos de Variação e KPI's (Expandido) ---
+    
+    # Variações Percentuais
+    var_entradas = 0
+    if entradas_ant > 0:
+        var_entradas = ((entradas - entradas_ant) / entradas_ant) * 100
+    
+    var_saidas = 0
+    if saidas_ant > 0:
+        var_saidas = ((saidas - saidas_ant) / saidas_ant) * 100
 
+    # Variação do Resultado Líquido
+    var_caixa = 0
+    if abs(geracao_caixa_ant) > 0:
+        var_caixa = ((geracao_caixa - geracao_caixa_ant) / abs(geracao_caixa_ant)) * 100
+
+    # Margem de Caixa (Eficiência de conversão de receita em caixa livre)
+    margem_caixa = 0
+    if entradas > 0:
+        margem_caixa = (geracao_caixa / entradas) * 100
+
+    # Gap de Crescimento (Receita vs Despesa) - Positivo indica ganho de alavancagem
+    gap_crescimento = var_entradas - var_saidas
+
+    # --- 4. Geração do HTML do Laudo (Estilo Executivo/Diretoria) ---
+    
+    periodo_str = f"{start_date.strftime('%d/%m/%Y')} a {end_date.strftime('%d/%m/%Y')}"
+    laudo_html = f"<h2>Relatório Executivo Financeiro<br><small style='font-size: 0.6em; color: #666;'>Período de Análise: {periodo_str}</small></h2><hr>"
+    
+    # Seção 1: Sumário Executivo
+    laudo_html += "<h3><strong>1. Sumário Executivo de Caixa</strong></h3>"
+    
+    saldo_class = "text-success" if geracao_caixa >= 0 else "text-danger"
+    sinal_saldo = "SUPERÁVIT" if geracao_caixa >= 0 else "DÉFICIT"
+    cor_margem = "green" if margem_caixa >= 10 else ("orange" if margem_caixa > 0 else "red")
+    
+    laudo_html += f"""
+    <p>O período encerrou com um <strong>{sinal_saldo} OPERACIONAL</strong> de <span class="{saldo_class}" style="font-size: 1.2em; font-weight: bold;">R$ {geracao_caixa:,.2f}</span>.</p>
+    <ul style="list-style-type: none; padding: 0;">
+        <li><strong>Entradas Totais (Recebimentos):</strong> R$ {entradas:,.2f}</li>
+        <li><strong>Saídas Totais (Pagamentos):</strong> R$ {saidas:,.2f}</li>
+        <li><strong>Margem de Caixa:</strong> <span style="color: {cor_margem}; font-weight: bold;">{margem_caixa:.1f}%</span> <small>(Percentual da receita que sobrou em caixa)</small></li>
+    </ul>
+    """
+
+    # Seção 2: Análise de Tendência e Eficiência (Cruzamento de Dados)
+    laudo_html += "<h4>📊 2. Análise de Tendência e Eficiência</h4>"
+    
+    # Análise das Entradas
+    if var_entradas > 5:
+        analise_ent = f"As entradas apresentaram uma <strong>expansão sólida de {var_entradas:.1f}%</strong> frente ao período anterior, indicando aquecimento nas vendas ou melhora na inadimplência."
+    elif var_entradas >= -5:
+        analise_ent = f"As entradas mantiveram-se <strong>estáveis ({var_entradas:.1f}%)</strong>, sugerindo manutenção do patamar de faturamento."
+    else:
+        analise_ent = f"Houve uma <strong>retração de {var_entradas:.1f}%</strong> nas entradas, o que exige investigação sobre sazonalidade ou perda de performance comercial."
+
+    laudo_html += f"<p>{analise_ent}</p>"
+
+    # Análise Cruzada (Receita x Despesa) - O ponto chave para a diretoria
+    if var_entradas > var_saidas:
+        laudo_html += f"""
+        <p>✅ <strong>Ganho de Alavancagem:</strong> Positivamente, as receitas cresceram acima das despesas (Gap de {gap_crescimento:.1f} p.p.). Isso demonstra diluição de custos fixos e aumento da eficiência operacional no período.</p>
+        """
+    elif var_saidas > var_entradas:
+        laudo_html += f"""
+        <p>⚠️ <strong>Atenção à Eficiência:</strong> As despesas cresceram em ritmo acelerado ({var_saidas:.1f}%), superando a variação das receitas ({var_entradas:.1f}%). É crucial auditar os custos variáveis e fixos para evitar erosão da margem.</p>
+        """
+    
+    # Seção 3: Diagnóstico Estratégico
+    laudo_html += "<h4>🎯 3. Diagnóstico e Plano de Ação</h4>"
+
+    if geracao_caixa < 0:
+        laudo_html += """
+        <p><strong>Situação: <span style='color:red'>CONSUMO DE CAIXA (BURN RATE).</span></strong></p>
+        <p>A operação não foi capaz de se autofinanciar neste período. Dependência de capital de terceiros ou reservas.</p>
+        <p><strong>Plano Recomendado:</strong>
+        1. Suspender investimentos não essenciais imediatamente.<br>
+        2. Renegociar prazos com fornecedores ABC (Curva A).<br>
+        3. Realizar ação comercial de 'Liquidez Imediata' para antecipar recebíveis.</p>
+        """
+    elif margem_caixa < 10:
+        laudo_html += f"""
+        <p><strong>Situação: <span style='color:orange'>EQUILÍBRIO TENSO (Margem Baixa).</span></strong></p>
+        <p>A operação é sustentável, mas vulnerável a imprevistos. A margem de {margem_caixa:.1f}% deixa pouco espaço para reinvestimento.</p>
+        <p><strong>Plano Recomendado:</strong>
+        1. Focar em produtos/serviços de maior margem de contribuição.<br>
+        2. Revisar contratos recorrentes em busca de saving de 5-10%.<br>
+        3. Evitar novas dívidas de curto prazo.</p>
+        """
+    else:
+        laudo_html += f"""
+        <p><strong>Situação: <span style='color:green'>SOLIDEZ FINANCEIRA (Alta Liquidez).</span></strong></p>
+        <p>Excelente performance com geração de caixa de {margem_caixa:.1f}%. A empresa demonstra capacidade de investimento sem comprometer o fluxo.</p>
+        <p><strong>Plano Recomendado:</strong>
+        1. Constituir ou reforçar reserva de emergência (mínimo 3 meses de custo fixo).<br>
+        2. Avaliar antecipação de pagamentos com desconto junto a fornecedores.<br>
+        3. Planejar investimentos estratégicos para expansão (CAPEX).</p>
+        """
+
+    # Rodapé Técnico
+    laudo_html += "<hr><p style='font-size: 0.8em; color: #888;'><em>Relatório gerado via Inteligência de Dados Financlass. Base de cálculo: Movimentações financeiras efetivamente liquidadas (Regime de Caixa).</em></p>"
+
+    return JsonResponse({'laudo_html': laudo_html})
 
 
 
