@@ -1950,64 +1950,131 @@
                 });
             }
 
-            // [ATUALIZADO] Função que gera o PDF corrigindo as cores (Texto Preto / Fundo Branco)
+            // [ATUALIZADO E MELHORADO] Função de geração de Laudo Profissional
             if (btnExportPdf) {
                 btnExportPdf.addEventListener('click', function() {
-                    // 1. Seleciona o elemento original
-                    const element = document.getElementById('laudo-texto');
+                    // Feedback visual no botão
+                    const originalText = this.innerHTML;
+                    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gerando PDF...';
+
+                    // 1. Prepara a data atual
+                    const hoje = new Date().toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' });
+
+                    // 2. Clona o conteúdo do texto
+                    const content = document.getElementById('laudo-texto').cloneNode(true);
+
+                    // 3. Cria o container do PDF (Papel Timbrado)
+                    const element = document.createElement('div');
                     
-                    // 2. Cria um CLONE (cópia) para podermos mudar as cores sem estragar a tela do usuário
-                    const clone = element.cloneNode(true);
+                    // Definimos o HTML e CSS Específico para o PDF aqui dentro
+                    element.innerHTML = `
+                        <style>
+                            @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap');
+                            
+                            .pdf-wrapper {
+                                font-family: 'Roboto', 'Helvetica', 'Arial', sans-serif;
+                                color: #333;
+                                background-color: #fff;
+                                padding: 40px 50px; /* Margens internas da folha */
+                                width: 800px; /* Largura fixa para simular A4 na renderização */
+                            }
 
-                    // 3. Aplica estilos de IMPRESSÃO no clone (Fundo Branco, Texto Preto)
-                    clone.style.width = '100%';
-                    clone.style.maxWidth = '800px'; 
-                    clone.style.backgroundColor = '#ffffff'; // Fundo branco
-                    clone.style.color = '#333333';           // Texto padrão escuro
-                    clone.style.padding = '20px';
-                    clone.style.fontSize = '12px';
-                    
-                    // Força a cor preta em todos os textos (títulos, parágrafos), exceto os coloridos (verde/vermelho)
-                    const textElements = clone.querySelectorAll('p, h2, h3, h4, li, strong, div, span');
-                    textElements.forEach(el => {
-                        // Se NÃO tiver classe de "positivo" nem "negativo", pinta de preto
-                        if (!el.classList.contains('positivo') && !el.classList.contains('negativo')) {
-                            el.style.color = '#333333';
-                        }
-                    });
+                            /* Cabeçalho */
+                            .pdf-header {
+                                display: flex;
+                                justify-content: space-between;
+                                align-items: center;
+                                border-bottom: 2px solid #2c3e50;
+                                padding-bottom: 15px;
+                                margin-bottom: 40px;
+                            }
+                            .pdf-header img {
+                                height: 45px; /* Altura controlada do logo */
+                            }
+                            .pdf-header-info {
+                                text-align: right;
+                            }
+                            .pdf-header-info h1 {
+                                margin: 0;
+                                font-size: 22px;
+                                text-transform: uppercase;
+                                color: #2c3e50;
+                                font-weight: 700;
+                            }
+                            .pdf-header-info p {
+                                margin: 5px 0 0 0;
+                                font-size: 12px;
+                                color: #7f8c8d;
+                            }
 
-                    // 4. Coloca o clone em um container invisível fora da tela para o PDF "fotografar"
-                    const container = document.createElement('div');
-                    container.style.position = 'fixed';
-                    container.style.top = '-10000px'; // Joga bem longe da tela visível
-                    container.style.left = '0';
-                    container.style.zIndex = '-1000';
-                    container.appendChild(clone);
-                    document.body.appendChild(container);
+                            /* Corpo do Texto - AQUI ESTÁ O ESPAÇAMENTO QUE VOCÊ PEDIU */
+                            .pdf-body {
+                                font-size: 14px;
+                                line-height: 1.8; /* Aumenta o espaço entre linhas (MUITO IMPORTANTE) */
+                                text-align: justify;
+                                color: #2c3e50;
+                            }
+                            .pdf-body p {
+                                margin-bottom: 15px; /* Espaço entre parágrafos */
+                            }
+                            .pdf-body h2, .pdf-body h3 {
+                                color: #2c3e50;
+                                margin-top: 30px;
+                                margin-bottom: 10px;
+                                font-weight: 700;
+                            }
+                            /* Mantém as cores dos pontos positivos/negativos se existirem classes */
+                            .pdf-body .positivo { color: #27ae60; font-weight: bold; }
+                            .pdf-body .negativo { color: #c0392b; font-weight: bold; }
+                            .pdf-body ul { margin-bottom: 20px; padding-left: 20px; }
+                            .pdf-body li { margin-bottom: 8px; }
 
-                    // 5. Configurações do PDF
+                            /* Rodapé */
+                            .pdf-footer {
+                                margin-top: 60px;
+                                padding-top: 15px;
+                                border-top: 1px solid #bdc3c7;
+                                font-size: 10px;
+                                text-align: center;
+                                color: #95a5a6;
+                            }
+                        </style>
+
+                        <div class="pdf-wrapper">
+                            <div class="pdf-header">
+                                <img src="/static/img/logo_escrita_preta.png" alt="Financlass">
+                                <div class="pdf-header-info">
+                                    <h1>Relatório de Análise</h1>
+                                    <p>Gerado em: ${hoje}</p>
+                                </div>
+                            </div>
+
+                            <div class="pdf-body">
+                                ${content.innerHTML}
+                            </div>
+
+                            <div class="pdf-footer">
+                                <p>Este documento foi gerado automaticamente pelo sistema de gestão financeira. As informações contidas são confidenciais.</p>
+                            </div>
+                        </div>
+                    `;
+
+                    // 4. Configurações da biblioteca (Margem 0 pois controlamos via CSS .pdf-wrapper)
                     const opt = {
-                        margin:       [10, 10, 15, 10],
-                        filename:     'Laudo_Financeiro_Financlass.pdf',
+                        margin:       0, 
+                        filename:     `Laudo_Financeiro_${new Date().toISOString().slice(0,10)}.pdf`,
                         image:        { type: 'jpeg', quality: 0.98 },
-                        html2canvas:  { scale: 2, useCORS: true, scrollY: 0 }, // scrollY: 0 evita cortes
+                        html2canvas:  { scale: 2, useCORS: true, scrollY: 0 },
                         jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
                     };
 
-                    // Muda o texto do botão
-                    const originalText = this.innerHTML;
-                    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gerando PDF...';
-                    
-                    // 6. Gera o PDF usando o CLONE e depois apaga o clone
-                    html2pdf().set(opt).from(clone).save().then(() => {
+                    // 5. Gera e Salva
+                    html2pdf().set(opt).from(element).save().then(() => {
                         this.innerHTML = originalText;
-                        document.body.removeChild(container); // Limpa a memória
                     }).catch(err => {
                         console.error("Erro ao gerar PDF:", err);
                         this.innerHTML = originalText;
-                        if(document.body.contains(container)) {
-                            document.body.removeChild(container);
-                        }
+                        alert("Ocorreu um erro ao gerar o PDF. Verifique o console.");
                     });
                 });
             }

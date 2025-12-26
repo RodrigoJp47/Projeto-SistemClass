@@ -5714,41 +5714,116 @@ def gerar_laudo_financeiro(request):
     # Gap de Crescimento (Receita vs Despesa) - Positivo indica ganho de alavancagem
     gap_crescimento = var_entradas - var_saidas
 
-    # --- 4. Geração do HTML do Laudo (Estilo Executivo/Diretoria) ---
+    # ... (MANTENHA TODO O CÓDIGO DAS SEÇÕES 1, 2 e 3 IGUAL AO SEU) ...
+
+    # --- 4. Geração do HTML do Laudo (ESTILO PROFISSIONAL) ---
     
     periodo_str = f"{start_date.strftime('%d/%m/%Y')} a {end_date.strftime('%d/%m/%Y')}"
-    laudo_html = f"<h2>Relatório Executivo Financeiro<br><small style='font-size: 0.6em; color: #666;'>Período de Análise: {periodo_str}</small></h2><hr>"
-    
-    # Seção 1: Sumário Executivo
-    laudo_html += "<h3><strong>1. Sumário Executivo de Caixa</strong></h3>"
-    
-    saldo_class = "text-success" if geracao_caixa >= 0 else "text-danger"
-    sinal_saldo = "SUPERÁVIT" if geracao_caixa >= 0 else "DÉFICIT"
-    cor_margem = "green" if margem_caixa >= 10 else ("orange" if margem_caixa > 0 else "red")
-    
-    laudo_html += f"""
-    <p>O período encerrou com um <strong>{sinal_saldo} OPERACIONAL</strong> de <span class="{saldo_class}" style="font-size: 1.2em; font-weight: bold;">R$ {geracao_caixa:,.2f}</span>.</p>
-    <ul style="list-style-type: none; padding: 0;">
-        <li><strong>Entradas Totais (Recebimentos):</strong> R$ {entradas:,.2f}</li>
-        <li><strong>Saídas Totais (Pagamentos):</strong> R$ {saidas:,.2f}</li>
-        <li><strong>Margem de Caixa:</strong> <span style="color: {cor_margem}; font-weight: bold;">{margem_caixa:.1f}%</span> <small>(Percentual da receita que sobrou em caixa)</small></li>
-    </ul>
+
+    # Aqui definimos o CSS diretamente dentro da string HTML
+    # Isso garante que o PDF respeite o visual independente do JavaScript
+    style_block = """
+    <style>
+        .laudo-container {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            color: #333;
+            line-height: 1.8; /* AUMENTA O ESPAÇAMENTO ENTRE LINHAS */
+            text-align: justify;
+            font-size: 14px;
+        }
+        .laudo-header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #2c3e50;
+            padding-bottom: 15px;
+        }
+        .laudo-header h2 {
+            margin: 0;
+            color: #fff;
+            font-size: 22px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .laudo-header p {
+            color: #7f8c8d;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+        .section-title {
+            color: #2c3e50;
+            margin-top: 25px;
+            margin-bottom: 15px;
+            font-size: 16px;
+            border-left: 4px solid #2980b9;
+            padding-left: 10px;
+            background-color: #f4f6f7;
+            padding-top: 5px;
+            padding-bottom: 5px;
+        }
+        .destaque-box {
+            background-color: #fdfefe;
+            border: 1px solid #bdc3c7;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        .footer-note {
+            margin-top: 40px;
+            padding-top: 10px;
+            border-top: 1px solid #ddd;
+            font-size: 10px;
+            color: #999;
+            text-align: center;
+        }
+        /* Utilitários de cor */
+        .txt-verde { color: #27ae60; font-weight: bold; }
+        .txt-vermelho { color: #c0392b; font-weight: bold; }
+        .txt-laranja { color: #d35400; font-weight: bold; }
+        ul li { margin-bottom: 8px; }
+    </style>
     """
 
-    # Seção 2: Análise de Tendência e Eficiência (Cruzamento de Dados)
-    laudo_html += "<h4>📊 2. Análise de Tendência e Eficiência</h4>"
+    # Início da construção do HTML com o container e estilos
+    laudo_html = style_block + "<div class='laudo-container'>"
     
-    # Análise das Entradas
+    # Cabeçalho
+    laudo_html += f"""
+    <div class="laudo-header">
+        <h2>Relatório Executivo Financeiro</h2>
+        <p>Período de Análise: {periodo_str}</p>
+    </div>
+    """
+    
+    # Seção 1: Sumário Executivo
+    saldo_class = "txt-verde" if geracao_caixa >= 0 else "txt-vermelho"
+    sinal_saldo = "SUPERÁVIT" if geracao_caixa >= 0 else "DÉFICIT"
+    cor_margem = "txt-verde" if margem_caixa >= 10 else ("txt-laranja" if margem_caixa > 0 else "txt-vermelho")
+    
+    laudo_html += f"""
+    <h3 class="section-title">1. Sumário Executivo de Caixa</h3>
+    <div class="destaque-box">
+        <p>O período encerrou com um <strong>{sinal_saldo} OPERACIONAL</strong> de <span class="{saldo_class}" style="font-size: 1.2em;">R$ {geracao_caixa:,.2f}</span>.</p>
+        <ul style="list-style-type: none; padding-left: 0;">
+            <li>🔹 <strong>Entradas Totais:</strong> R$ {entradas:,.2f}</li>
+            <li>🔻 <strong>Saídas Totais:</strong> R$ {saidas:,.2f}</li>
+            <li>📊 <strong>Margem de Caixa:</strong> <span class="{cor_margem}">{margem_caixa:.1f}%</span> <small>(Eficiência de conversão em caixa)</small></li>
+        </ul>
+    </div>
+    """
+
+    # Seção 2: Análise de Tendência
+    laudo_html += '<h3 class="section-title">2. Análise de Tendência e Eficiência</h3>'
+    
+    # Lógica do texto (mantida a sua original, apenas formatada)
     if var_entradas > 5:
-        analise_ent = f"As entradas apresentaram uma <strong>expansão sólida de {var_entradas:.1f}%</strong> frente ao período anterior, indicando aquecimento nas vendas ou melhora na inadimplência."
+        analise_ent = f"As entradas apresentaram uma <span class='txt-verde'>expansão sólida de {var_entradas:.1f}%</span> frente ao período anterior, indicando aquecimento nas vendas ou melhora na inadimplência."
     elif var_entradas >= -5:
         analise_ent = f"As entradas mantiveram-se <strong>estáveis ({var_entradas:.1f}%)</strong>, sugerindo manutenção do patamar de faturamento."
     else:
-        analise_ent = f"Houve uma <strong>retração de {var_entradas:.1f}%</strong> nas entradas, o que exige investigação sobre sazonalidade ou perda de performance comercial."
+        analise_ent = f"Houve uma <span class='txt-vermelho'>retração de {var_entradas:.1f}%</span> nas entradas. Recomendamos investigar sazonalidade ou performance comercial."
 
     laudo_html += f"<p>{analise_ent}</p>"
 
-    # Análise Cruzada (Receita x Despesa) - O ponto chave para a diretoria
     if var_entradas > var_saidas:
         laudo_html += f"""
         <p>✅ <strong>Ganho de Alavancagem:</strong> Positivamente, as receitas cresceram acima das despesas (Gap de {gap_crescimento:.1f} p.p.). Isso demonstra diluição de custos fixos e aumento da eficiência operacional no período.</p>
@@ -5758,39 +5833,50 @@ def gerar_laudo_financeiro(request):
         <p>⚠️ <strong>Atenção à Eficiência:</strong> As despesas cresceram em ritmo acelerado ({var_saidas:.1f}%), superando a variação das receitas ({var_entradas:.1f}%). É crucial auditar os custos variáveis e fixos para evitar erosão da margem.</p>
         """
     
-    # Seção 3: Diagnóstico Estratégico
-    laudo_html += "<h4>🎯 3. Diagnóstico e Plano de Ação</h4>"
+    # Seção 3: Diagnóstico
+    laudo_html += '<h3 class="section-title">3. Diagnóstico e Plano de Ação</h3>'
 
     if geracao_caixa < 0:
         laudo_html += """
-        <p><strong>Situação: <span style='color:red'>CONSUMO DE CAIXA (BURN RATE).</span></strong></p>
+        <p><strong>Situação: <span class='txt-vermelho'>CONSUMO DE CAIXA (BURN RATE).</span></strong></p>
         <p>A operação não foi capaz de se autofinanciar neste período. Dependência de capital de terceiros ou reservas.</p>
-        <p><strong>Plano Recomendado:</strong>
-        1. Suspender investimentos não essenciais imediatamente.<br>
-        2. Renegociar prazos com fornecedores ABC (Curva A).<br>
-        3. Realizar ação comercial de 'Liquidez Imediata' para antecipar recebíveis.</p>
+        <p><strong>Plano Recomendado:</strong></p>
+        <ul>
+            <li>Suspender investimentos não essenciais imediatamente.</li>
+            <li>Renegociar prazos com fornecedores Curva A.</li>
+            <li>Realizar ação comercial de 'Liquidez Imediata' para antecipar recebíveis.</li>
+        </ul>
         """
     elif margem_caixa < 10:
         laudo_html += f"""
-        <p><strong>Situação: <span style='color:orange'>EQUILÍBRIO TENSO (Margem Baixa).</span></strong></p>
+        <p><strong>Situação: <span class='txt-laranja'>EQUILÍBRIO TENSO (Margem Baixa).</span></strong></p>
         <p>A operação é sustentável, mas vulnerável a imprevistos. A margem de {margem_caixa:.1f}% deixa pouco espaço para reinvestimento.</p>
-        <p><strong>Plano Recomendado:</strong>
-        1. Focar em produtos/serviços de maior margem de contribuição.<br>
-        2. Revisar contratos recorrentes em busca de saving de 5-10%.<br>
-        3. Evitar novas dívidas de curto prazo.</p>
+        <p><strong>Plano Recomendado:</strong></p>
+        <ul>
+            <li>Focar em produtos/serviços de maior margem de contribuição.</li>
+            <li>Revisar contratos recorrentes em busca de saving de 5-10%.</li>
+            <li>Evitar novas dívidas de curto prazo.</li>
+        </ul>
         """
     else:
         laudo_html += f"""
-        <p><strong>Situação: <span style='color:green'>SOLIDEZ FINANCEIRA (Alta Liquidez).</span></strong></p>
+        <p><strong>Situação: <span class='txt-verde'>SOLIDEZ FINANCEIRA (Alta Liquidez).</span></strong></p>
         <p>Excelente performance com geração de caixa de {margem_caixa:.1f}%. A empresa demonstra capacidade de investimento sem comprometer o fluxo.</p>
-        <p><strong>Plano Recomendado:</strong>
-        1. Constituir ou reforçar reserva de emergência (mínimo 3 meses de custo fixo).<br>
-        2. Avaliar antecipação de pagamentos com desconto junto a fornecedores.<br>
-        3. Planejar investimentos estratégicos para expansão (CAPEX).</p>
+        <p><strong>Plano Recomendado:</strong></p>
+        <ul>
+            <li>Constituir ou reforçar reserva de emergência (mínimo 3 meses de custo fixo).</li>
+            <li>Avaliar antecipação de pagamentos com desconto junto a fornecedores.</li>
+            <li>Planejar investimentos estratégicos para expansão (CAPEX).</li>
+        </ul>
         """
 
-    # Rodapé Técnico
-    laudo_html += "<hr><p style='font-size: 0.8em; color: #888;'><em>Relatório gerado via Inteligência de Dados Financlass. Base de cálculo: Movimentações financeiras efetivamente liquidadas (Regime de Caixa).</em></p>"
+    # Rodapé e Fechamento do Container
+    laudo_html += """
+        <div class="footer-note">
+            <p>Relatório gerado via Inteligência de Dados Financlass. Base de cálculo: Movimentações financeiras efetivamente liquidadas (Regime de Caixa).</p>
+        </div>
+    </div>
+    """
 
     return JsonResponse({'laudo_html': laudo_html})
 
