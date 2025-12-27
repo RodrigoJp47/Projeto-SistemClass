@@ -141,13 +141,7 @@
             <div class="receivables-insights-container">
                 <div class="insight-card"><div class="title">Valor a Vencer</div><hr><div class="value">R$ {{ insights_data.total_a_vencer|floatformat:2|intcomma }}</div></div>
                 <div class="insight-card"><div class="title">Atrasados</div><hr><div class="value">R$ {{ insights_data.total_atrasado|floatformat:2|intcomma }}</div></div>
-                <div class="insight-card">
-                    <div class="title">{% if view_type == 'pagar' %}Pago com Atraso{% else %}Recebido em Atraso{% endif %}</div><hr>
-                    <div class="value">
-                        {% if insights_data.percentual_pago_atrasado == "N/A" %} {{ insights_data.percentual_pago_atrasado }}
-                        {% else %} {{ insights_data.percentual_pago_atrasado|floatformat:2 }}% {% endif %}
-                    </div>
-                </div>
+                
                 <div class="insight-card">
                     <div class="title">Média de Dias p/ {% if view_type == 'pagar' %}Pagamento{% else %}Recebimento{% endif %}</div><hr>
                     <div class="value">
