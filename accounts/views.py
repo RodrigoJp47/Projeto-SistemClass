@@ -640,7 +640,7 @@ def dre_view(request):
         ('NAO_OPERACIONAIS', {'label': '(+/-) RESULTADO NÃO OPERACIONAL', 'is_total': True}),
         ('LUCRO_ANTES_IR', {'label': '(=) LUCRO ANTES DO IMPOSTO DE RENDA (LAIR)', 'is_total': True}), # <-- NOVA LINHA
         ('TRIBUTACAO', {'label': '(-) IRPJ E CSLL (TRIBUTAÇÃO)', 'is_total': False}), # <-- NOVA LINHA
-        ('LUCRO_LIQUIDO_FINAL', {'label': '(=) LUCRO LÍQUIDO DO EXERCÍCIO', 'is_total': True}),
+        ('LUCRO_LIQUIDO_FINAL', {'label': '(=) LUCRO/PREJUÍZO LÍQUIDO DO EXERCÍCIO', 'is_total': True}),
         ('DISTRIBUICAO_LUCRO_SOCIOS', {'label': '(-) DISTRIBUIÇÃO DE LUCRO SÓCIOS', 'is_total': False}),
         ('APORTES_RETIRADAS', {'label': '(+/-) Aportes / Retiradas dos Sócios', 'is_total': False}),
         ('RESULTADO_FINAL', {'label': '(=) RESULTADO FINAL', 'is_total': True}),

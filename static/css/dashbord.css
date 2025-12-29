@@ -1016,12 +1016,12 @@ body {
 
 /* Altera a fonte do CABEÇALHO (Descrição, Total, A.V., etc.) */
 .dre-table thead th {
-    font-size: 12px; /* O valor original era 14px */
+    font-size: 13px; /* O valor original era 14px */
 }
 
 /* Altera a fonte do CORPO da tabela (os números e valores) */
 .dre-table tbody td {
-    font-size: 11px; /* O valor original era 12px */
+    font-size: 12px; /* O valor original era 12px */
 }
 
 /* ==========================================================================
@@ -2184,21 +2184,20 @@ body {
 }
 
 /* ==========================================================================
-   NOVO LAYOUT DFC: BARRA EM CIMA (100%) E ROSCAS EM BAIXO (50/50)
+   NOVO LAYOUT DFC: BARRA EM CIMA (100%) E ROSCAS EM BAIXO (50/50) - CORRIGIDO
    ========================================================================== */
 
 /* 1. Container do Gráfico de Barras (Ocupa toda a largura) */
 .dfc-full-width-row {
     width: 100%;
-    margin-bottom: 20px;
-    height: 380px; /* Mantemos a altura fixa para consistência */
+    margin-bottom: 60px; 
+    height: 380px; 
 }
 
 .dfc-full-width-row .cash-flow-container {
     height: 100%;
     display: flex;
     flex-direction: column;
-    /* Mantém os estilos do tema escuro que já configuramos antes */
     background-color: #2D3748; 
     padding: 15px;
     border-radius: 10px;
@@ -2206,7 +2205,6 @@ body {
     color: #E2E8F0;
 }
 
-/* Garante que o gráfico cresça e empurre os botões para baixo */
 .cash-flow-container .chart-area {
     flex-grow: 1;
     position: relative;
@@ -2220,39 +2218,140 @@ body {
     gap: 10px;
 }
 
-
 /* 2. Container dos Gráficos de Rosca (Lado a Lado) */
 .dfc-doughnut-row {
     display: flex;
-    gap: 20px;
+    gap: 30px; /* Aumentei o espaço entre os dois gráficos */
     margin-bottom: 30px;
-    height: 300px; /* Altura para os gráficos de rosca */
+    height: 300px; /* Altura generosa para o gráfico crescer */
 }
 
+/* Container Escuro (Metade da tela) */
 .dfc-doughnut-row .chart-half {
-    flex: 1; /* Isso garante que cada um ocupe exatamente 50% (menos o gap) */
-    background-color: #fff; /* Fundo branco (ou altere para #2D3748 se quiser escuro) */
-    padding: 15px;
+    flex: 1;
+    background-color: #2D3748;
+    /* ▼▼▼ DIMINUÍMOS O PADDING (Era 20px, agora 5px) ▼▼▼ */
+    /* Isso dá mais espaço para o gráfico encostar nas bordas */
+    padding: 5px; 
     border-radius: 10px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
     display: flex;
     flex-direction: column;
+    color: #E2E8F0;
+    overflow: hidden;
+    /* Adicionamos position relative para o canvas se basear nele */
+    position: relative; 
 }
 
 .dfc-doughnut-row h3 {
     text-align: center;
-    font-size: 14px;
-    margin-bottom: 15px;
-    color: #333; /* Ajuste a cor se mudar o fundo */
+    font-size: 15px;
+    margin-top: 10px;
+    /* ▼▼▼ AUMENTO DO ESPAÇO PARA O GRÁFICO (Era 5px, agora 20px) ▼▼▼ */
+    margin-bottom: 20px; 
+    color: #E2E8F0;
+    z-index: 10;
 }
 
+/* Container do Canvas (Área do desenho) */
 .dfc-doughnut-row .chart-container {
     flex-grow: 1;
+    /* ▼▼▼ FORÇA O CANVAS A OCUPAR 100% DA DIV PAI ▼▼▼ */
+    height: 100% !important;
+    width: 100% !important;
     position: relative;
-    min-height: 0;
+    background-color: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+    min-height: 250px; /* Garante um tamanho mínimo */
+}
+/* ==========================================================================
+   ESTILOS ESCUROS PARA O FLUXO DE CAIXA DESCONTADO (DCF)
+   ========================================================================== */
+
+.dcf-main-title {
+    color: #000;
+    text-align: left; /* <--- ALTERE AQUI (estava center) */
+    font-size: 16px;
+    margin-bottom: 20px;
+    margin-top: 20px;
 }
 
+/* 2. Container Principal (A caixa grande) */
+.dcf-container {
+    background-color: #2D3748; /* Fundo Cinza-Azulado Escuro */
+    color: #E2E8F0;            /* Texto geral claro */
+    border: 1px solid #4A5568; /* Borda sutil */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
 
+/* 3. Coluna da Esquerda (Inputs) */
+.dcf-inputs {
+    border-right: 1px solid #4A5568; /* Ajuste da cor da linha divisória */
+}
+
+.dcf-inputs h4, 
+.dcf-results h4 {
+    color: #E2E8F0; /* Subtítulos em branco */
+}
+
+/* 4. Estilização dos Campos de Input (Caixinhas de texto) */
+.input-group label {
+    color: #E2E8F0; /* Labels brancos */
+}
+
+.input-group input {
+    background-color: #1A202C; /* Fundo do input bem escuro (quase preto) */
+    color: #fff;               /* Texto do input branco */
+    border: 1px solid #4A5568; /* Borda cinza */
+}
+
+.input-group input:focus {
+    border-color: #00E0FF; /* Borda azul neon ao clicar */
+    outline: none;
+}
+
+.input-group input:disabled {
+    background-color: #2D3748; /* Input desabilitado (apenas leitura) */
+    color: #A0AEC0;            /* Texto cinza claro */
+    border-color: #4A5568;
+}
+
+.input-group small {
+    color: #A0AEC0; /* Texto de ajuda em cinza claro */
+}
+
+/* 5. Estilização da Tabela de Projeção */
+#dcf-projection-table {
+    color: #E2E8F0;
+}
+
+#dcf-projection-table thead th {
+    background-color: #1A202C; /* Cabeçalho da tabela escuro */
+    color: #fff;
+    border-bottom: 2px solid #4A5568;
+}
+
+#dcf-projection-table tbody td {
+    background-color: transparent; /* Remove fundo branco das células */
+    color: #E2E8F0;
+    border-bottom: 1px solid #4A5568;
+}
+
+/* 6. Resultado Final (Valuation) */
+.dcf-final-value {
+    border-top: 2px solid #48BB78; /* Linha verde neon */
+}
+
+.dcf-final-value span {
+    color: #E2E8F0;
+}
+
+.dcf-final-value strong {
+    color: #48BB78; /* Valor final em verde neon */
+    text-shadow: 0 0 5px rgba(72, 187, 120, 0.3); /* Leve brilho */
+}
 /* ==========================================================================
    7. RESPONSIVIDADE (MOBILE) - VERSÃO CORRIGIDA E COMPLETA
    ========================================================================== */
@@ -2357,6 +2456,6 @@ body {
         height: auto;
     }
     .dfc-doughnut-row .chart-half {
-        height: 300px; /* Altura fixa quando empilhado */
+        height: 400px; 
     }
 }

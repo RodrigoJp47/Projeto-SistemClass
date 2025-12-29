@@ -23,7 +23,7 @@
     <div class="main-content">
         {% include 'accounts/partials/bpo_banner.html' %}
         <button id="menu-toggle">&#9776;</button>
-        <h1 class="section-title">Dashboards Financeiro</h1>
+        <h1 class="section-title">BUSINESS INTELLIGENCE ( BI )</h1>
         <div class="filter-container">
             <form method="get" style="display: flex; align-items: center; gap: 10px;">
                 <label for="period">Período:</label>
@@ -132,7 +132,7 @@
         <div id="analise-de-contas-wrapper">
 
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; color: #000;">
-                <h3 class="section-title">Análise de Contas - Aging List</h3>
+                <h3 class="section-title">ANÁLISE DE CONTAS - AGING LIST</h3>
                 <div class="action-toggle-container">
                     <a href="?view_type=pagar" class="action-toggle-button pagar {% if view_type == 'pagar' %}active{% endif %}">Pagar</a>
                     <a href="?view_type=receber" class="action-toggle-button receber {% if view_type == 'receber' %}active{% endif %}">Receber</a>
@@ -185,10 +185,10 @@
 
         <hr class="section-divider">
         
-        <h2 class="section-title">DRE - P&L (Gerêncial)</h2>
+        <h2 class="section-title">DRE - P&L (GERÊNCIAL)</h2>
         <div class="dre-cards-container">
             <div class="card-dre">
-                <div class="card-dre-header"><h3>Receita Bruta</h3></div>
+                <div class="card-dre-header"><h3>RECEITA BRUTA</h3></div>
                 <div class="card-dre-body">
                     <div class="card-dre-value" data-key="receita_bruta">R$ {{ dre.receita_bruta|default:0|floatformat:2|intcomma }}</div>
                     <div class="card-dre-details">
@@ -200,7 +200,7 @@
             </div>
 
             <div class="card-dre">
-                <div class="card-dre-header"><h3>Impostos</h3></div>
+                <div class="card-dre-header"><h3>IMPOSTOS</h3></div>
                 <div class="card-dre-body">
                     <div class="card-dre-value" data-key="impostos">R$ {{ dre.impostos|default:0|floatformat:2|intcomma }}</div>
                     <div class="card-dre-details">
@@ -212,7 +212,7 @@
             </div>
 
             <div class="card-dre">
-                <div class="card-dre-header"><h3>Lucro Bruto</h3></div>
+                <div class="card-dre-header"><h3>LUCRO BRUTO</h3></div>
                 <div class="card-dre-body">
                     <div class="card-dre-value" data-key="lucro_bruto">R$ {{ dre.lucro_bruto|default:0|floatformat:2|intcomma }}</div>
                      <div class="card-dre-details">
@@ -234,7 +234,7 @@
                 </div>
             </div>
              <div class="card-dre">
-                <div class="card-dre-header"><h3>Lucro Líquido</h3></div>
+                <div class="card-dre-header"><h3>LUCRO LÍQUIDO</h3></div>
                 <div class="card-dre-body">
                     <div class="card-dre-value" data-key="lucro_liquido">R$ {{ dre.lucro_liquido|default:0|floatformat:2|intcomma }}</div>
                      <div class="card-dre-details">
@@ -246,8 +246,8 @@
             </div>
             <div class="card-dre" id="ponto-equilibrio-card">
                 <div class="card-dre-header">
-                    <h3>Ponto de Equilíbrio</h3>
-                    <span class="card-subtitle-en">(Break-even point)</span>
+                    <h3>PONTO DE EQUILÍBRIO</h3>
+                    <span class="card-subtitle-en">(Break-even)</span>
                 </div>
                 <div class="card-dre-body">
                     <div class="card-dre-value" data-key="ponto_equilibrio">R$ {{ dre.ponto_equilibrio|default:0|floatformat:2|intcomma }}</div>
@@ -261,7 +261,7 @@
 
             <div class="chart-column-50">
                 <div class="chart-small" style="background-color: #fff; padding: 10px; height: 100%;">
-                    <h3 style="color: #333; text-align: left; font-weight: bold; margin-bottom: 15px;">Lucro Líquido por Mês/Ano</h3>
+                    <h3 style="color: #333; text-align: left; font-weight: bold; margin-bottom: 15px;">LUCRO/PREJUÍZO LÍQUIDO POR MÊS/ANO</h3>
                     <div style="height: 220px;"> 
                         <canvas id="lucroBrutoWaterfallChart"></canvas> 
                     </div>
@@ -270,7 +270,7 @@
 
             <div class="chart-column-25">
                 <div class="chart-small" style="background-color: #fff; padding: 10px; height: 100%;">
-                    <h3 style="color: #333; text-align: left; font-weight: bold; margin-bottom: 15px;">Top 5 Despesas</h3>
+                    <h3 style="color: #333; text-align: left; font-weight: bold; margin-bottom: 15px;">TOP 5 DESPESAS</h3>
                     <div class="chart-container" style="min-height: 120px; background-color: #fff;">
                         <canvas id="topExpensesChart"></canvas>
                     </div>
@@ -422,7 +422,7 @@
 
         <div class="fluxo-caixa-tabela-container">
             <div class="fluxo-caixa-header">
-                <h3 class="fluxo-caixa-tabela-title">Fluxo de Caixa por Tabela</h3>
+                <h3 class="fluxo-caixa-tabela-title">FLUXO DE CAIXA POR TABELA</h3>
                 
                 <form method="get" class="fluxo-caixa-controls">
                     <input type="hidden" name="period" value="{{ request.GET.period }}">
@@ -582,7 +582,7 @@
         </div>
 
         <div class="dcf-section">
-            <h3 class="dcf-main-title">Fluxo de Caixa Descontado (DCF - Discounted Cash Flow)</h3>
+            <h3 class="dcf-main-title">FLUXO DE CAIXA DESCONTADO (DCF - DISCOUNTED CASH FLOW)</h3>
             <div class="dcf-container">
                 <div class="dcf-inputs">
                     <h4>Premissas da Projeção</h4>
@@ -656,7 +656,7 @@
 
         <hr class="section-divider">
 
-        <h2 class="section-title">Valuation (Estimativa)</h2>
+        <h2 class="section-title">VALUATION (ESTIMATIVA)</h2>
         <div class="valuation-section">
             <div class="valuation-explanation">
                 <h4>Método: Múltiplo de EBITDA</h4>
@@ -1330,7 +1330,7 @@
                 }
             }
             
-            // --- FUNÇÃO PARA CRIAR GRÁFICO DE ROSCA COM PORCENTAGEM ---
+            // --- FUNÇÃO PARA CRIAR GRÁFICO DE ROSCA (MENOR E CENTRALIZADO) ---
             function createDoughnutChartWithPercent(canvasId, labels, data, colors) {
                 const ctx = document.getElementById(canvasId);
                 if (!ctx) return;
@@ -1342,20 +1342,40 @@
                         datasets: [{
                             data: data,
                             backgroundColor: colors,
-                            hoverOffset: 4,
-                            borderWidth: 1
+                            hoverOffset: 10,
+                            borderWidth: 0,
+                            borderColor: '#2D3748',
+                            
+                            /* cutout: Controla a espessura.
+                               '50%' é padrão. 
+                               Se diminuir o gráfico e achar ele muito "gordo", aumente aqui (ex: 60% ou 70%).
+                               Se achar muito fino, diminua (ex: 40%).
+                            */
+                            cutout: '60%' 
                         }]
                     },
                     options: {
                         responsive: true,
-                        maintainAspectRatio: false,
+                        maintainAspectRatio: false, 
+                        
+                        layout: {
+                            /* ▼▼▼ AQUI ESTÁ O SEGREDO PARA DIMINUIR O GRÁFICO ▼▼▼ */
+                            /* Aumente esses valores para "espremer" o gráfico e deixá-lo menor */
+                            padding: {
+                                top: 40,    /* Empurra 40px de cima */
+                                bottom: 40, /* Empurra 40px de baixo */
+                                left: 10,
+                                right: 120
+                            }
+                        },
                         plugins: {
                             legend: { 
-                                position: 'right', // Legenda à direita fica melhor em layouts 50%
+                                position: 'right', 
                                 labels: { 
-                                    color: '#333', // Cor da legenda
-                                    boxWidth: 12, 
-                                    font: { size: 11 } 
+                                    color: '#fff', 
+                                    boxWidth: 15, 
+                                    padding: 15,
+                                    font: { size: 12 } 
                                 } 
                             },
                             tooltip: {
@@ -1363,17 +1383,10 @@
                                     label: function(context) {
                                         let label = context.label || '';
                                         let value = context.raw || 0;
-                                        
-                                        // 1. Calcula o total do dataset
                                         let dataset = context.chart.data.datasets[0];
                                         let total = dataset.data.reduce((acc, val) => acc + val, 0);
-                                        
-                                        // 2. Calcula a porcentagem
                                         let percentage = total > 0 ? ((value / total) * 100).toFixed(1) + '%' : '0%';
-                                        
-                                        // 3. Formata o valor em Reais
                                         let valueFormatted = value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-
                                         return `${label}: ${valueFormatted} (${percentage})`;
                                     }
                                 }
