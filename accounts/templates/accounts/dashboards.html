@@ -277,16 +277,7 @@
                 </div>
             </div>
 
-            <div class="chart-column-25">
-                <div class="chart-small" style="background-color: #fff; padding: 10px; height: 100%;">
-                    <h3 style="color: #333; text-align: left; font-weight: bold; margin-bottom: 8px;">Retirada de Sócios</h3>
-                    <div class="chart-container" style="min-height: 120px; background-color: #fff;">
-                        <div class="doughnut-wrapper">
-                            <canvas id="partnerWithdrawalChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            
         </div>
         
         <div id="dre-placeholder">
@@ -578,6 +569,18 @@
                     </div>
                 </div>
             </div>
+        </div>
+
+        <div class="valuation-intro-card" style="background-color: #fff; padding: 25px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 30px; border-left: 5px solid #2c3e50;">
+            <h2 style="color: #2c3e50; margin-top: 0; font-size: 1.5rem; margin-bottom: 15px;">Entendendo o Valuation</h2>
+            <p style="color: #555; line-height: 1.6; font-size: 1rem; margin: 0;">
+                Calcular o valor de uma empresa não é uma ciência exata, e existem diversas metodologias para se chegar a um número justo. 
+                Para oferecer a visão mais completa e robusta possível do seu negócio, nosso sistema utiliza as duas abordagens mais respeitadas e praticadas pelo mercado financeiro global:
+            </p>
+            <ul style="margin-top: 15px; color: #555; line-height: 1.6;">
+                <li><strong>Fluxo de Caixa Descontado (DCF):</strong> Foca no longo prazo e no potencial intrínseco da empresa de gerar riqueza no futuro trazida a valor presente.</li>
+                <li><strong>Múltiplo de EBITDA:</strong> Foca no mercado atual, comparando sua eficiência operacional e geração de caixa com a de empresas similares do seu setor.</li>
+            </ul>
         </div>
 
         <div class="dcf-section">
@@ -1073,42 +1076,121 @@
 
             // --- GRÁFICOS DO DASHBOARD FINANCEIRO ---
             const cashFlowCtx = document.getElementById('cashFlowChart');
+            
             if (cashFlowCtx) {
-                new Chart(cashFlowCtx.getContext('2d'), {
-                    type: 'bar',
-                    data: {
-                        labels: JSON.parse('{{ cashflow_labels|safe }}'),
-                        // Em dashboards.html, dentro do <script>
-                        datasets: [
-                            {
-                                label: 'Entradas',
-                                data: JSON.parse('{{ cashflow_receivable|safe }}'),
-                                borderColor: 'rgba(59, 179, 19, 1)',      /* Verde sólido para a linha */
-                                backgroundColor: 'rgba(65, 241, 91, 1)', /* Verde com 40% de opacidade para a área */
-                                fill: true,
-                                tension: 0.4,
-                                pointRadius: 0
-                            }, {
-                                label: 'Saídas',
-                                data: JSON.parse('{{ cashflow_payable|safe }}'),
-                                borderColor: 'rgba(192, 10, 10, 1)',       /* Vermelho sólido para a linha */
-                                backgroundColor: 'rgba(177, 14, 14, 1)',  /* Vermelho com 40% de opacidade para a área */
-                                fill: true,
-                                tension: 0.4,
-                                pointRadius: 0
-                            }
-                        ]
-                    },
-                    options: {
-                         responsive: true, 
-                         maintainAspectRatio: false, 
-                         interaction: {         // <-- ADICIONE ESTE BLOCO
+                try {
+                    // 1. Captura dos dados
+                    const rawEntradas = '{{ cashflow_receivable|safe }}';
+                    const rawSaidas = '{{ cashflow_payable|safe }}';
+                    const rawLabels = '{{ cashflow_labels|safe }}';
+
+                    const entradasData = rawEntradas ? JSON.parse(rawEntradas) : [];
+                    const saidasData = rawSaidas ? JSON.parse(rawSaidas) : [];
+                    const labelsData = rawLabels ? JSON.parse(rawLabels) : [];
+                    
+                    // 2. Cálculo do Saldo
+                    const saldoData = entradasData.map((entrada, index) => {
+                        const saida = saidasData[index] || 0;
+                        return (entrada || 0) - saida;
+                    });
+
+                    // 3. Renderização do Gráfico com COR FLORESCENTE
+                    new Chart(cashFlowCtx.getContext('2d'), {
+                        type: 'bar',
+                        data: {
+                            labels: labelsData,
+                            datasets: [
+                                {
+                                    type: 'line',
+                                    label: 'Saldo',
+                                    data: saldoData,
+                                    // ▼▼▼ AQUI ESTÁ A MUDANÇA PARA AZUL FLORESCENTE ▼▼▼
+                                    borderColor: '#00E0FF',      /* Azul Neon / Ciano Brilhante */
+                                    backgroundColor: '#00E0FF',  
+                                    pointBackgroundColor: '#fff', /* Ponto branco para brilhar mais */
+                                    pointBorderColor: '#00E0FF',
+                                    borderWidth: 3,               /* Linha um pouco mais grossa */
+                                    tension: 0.3,
+                                    pointRadius: 4,               /* Ponto maior */
+                                    pointHoverRadius: 6,
+                                    fill: false,
+                                    order: 0
+                                },
+                                {
+                                    label: 'Entradas',
+                                    data: entradasData,
+                                    borderColor: 'rgba(59, 179, 19, 1)',
+                                    backgroundColor: 'rgba(65, 241, 91, 1)',
+                                    fill: true,
+                                    tension: 0.4,
+                                    pointRadius: 0,
+                                    order: 1
+                                }, 
+                                {
+                                    label: 'Saídas',
+                                    data: saidasData,
+                                    borderColor: 'rgba(192, 10, 10, 1)',
+                                    backgroundColor: 'rgba(177, 14, 14, 1)',
+                                    fill: true,
+                                    tension: 0.4,
+                                    pointRadius: 0,
+                                    order: 2
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true, 
+                            maintainAspectRatio: false, 
+                            interaction: {
                                 mode: 'index',
                                 intersect: false,
-                         }, 
-                         scales: { y: { beginAtZero: true, ticks: {color: '#fff', font: { size: 10 }} } , x: { ticks: {color: '#fff', font: { size: 10 }, maxRotation: 45, minRotation: 45 }}} , plugins: { legend: { labels: {color: '#fff'}}}}
-                });
+                            }, 
+                            scales: { 
+                                y: { 
+                                    beginAtZero: true, 
+                                    ticks: {
+                                        color: '#fff', 
+                                        font: { size: 10 },
+                                        callback: function(value) {
+                                            return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });
+                                        }
+                                    } 
+                                }, 
+                                x: { 
+                                    ticks: {
+                                        color: '#fff', 
+                                        font: { size: 10 }, 
+                                        maxRotation: 45, 
+                                        minRotation: 45 
+                                    }
+                                }
+                            }, 
+                            plugins: { 
+                                legend: { 
+                                    labels: { color: '#fff' }
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            let label = context.dataset.label || '';
+                                            if (label) {
+                                                label += ': ';
+                                            }
+                                            if (context.parsed.y !== null) {
+                                                label += new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(context.parsed.y);
+                                            }
+                                            return label;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                } catch (error) {
+                    console.error("Erro ao gerar gráfico Resumo do Ano:", error);
+                }
             }
+            
 
             // --- INÍCIO DA ALTERAÇÃO: GRÁFICOS DO DASHBOARD FLUXO DE CAIXA ---
             const fcMonthlyData = {
@@ -1122,38 +1204,111 @@
                 payables: JSON.parse('{{ fc_daily_payable|safe }}')
             };
 
+            // --- LÓGICA DO GRÁFICO DFC (FLUXO DE CAIXA) - VISUAL NEON ---
             let fcEvolutionChart;
             function initializeFCEvolutionChart(viewType) {
                 const ctx = document.getElementById('cashFlowBarChart').getContext('2d');
                 if (fcEvolutionChart) { fcEvolutionChart.destroy(); }
                 
+                // 1. Seleciona os dados baseados na visão (Mensal ou Diária)
                 const dataToShow = (viewType === 'daily') ? fcDailyData : fcMonthlyData;
 
+                // 2. CÁLCULO DINÂMICO DO SALDO (Entradas - Saídas)
+                // Criamos um array de saldo subtraindo saídas de entradas item a item
+                const saldoData = dataToShow.receivables.map((entrada, index) => {
+                    const saida = dataToShow.payables[index] || 0;
+                    return (entrada || 0) - saida;
+                });
+
                 fcEvolutionChart = new Chart(ctx, {
-                    type: 'bar', // Tipo de gráfico fixo
+                    type: 'bar', // O tipo base é barra
                     data: {
                         labels: dataToShow.labels,
-                        datasets: [{
-                            label: 'Entradas',
-                            data: dataToShow.receivables,
-                            backgroundColor: '#1a8f1eff',
-                            borderColor: '#25ab25ff',
-                            borderWidth: 1,
-                            barPercentage: 1.2,
-                        }, {
-                            label: 'Saídas',
-                            data: dataToShow.payables,
-                            backgroundColor: '#ff0000',
-                            borderColor: '#cc0000',
-                            borderWidth: 1,
-                            barPercentage: 1.2,
-                        }]
+                        datasets: [
+                            {
+                                // --- DATASET 1: LINHA DE SALDO (Igual ao Resumo do Ano) ---
+                                type: 'line',
+                                label: 'Saldo',
+                                data: saldoData,
+                                borderColor: '#00E0FF',      /* Azul Neon */
+                                backgroundColor: '#00E0FF',
+                                pointBackgroundColor: '#fff', 
+                                pointBorderColor: '#00E0FF',
+                                borderWidth: 3,
+                                tension: 0.4,                /* Curva suave */
+                                pointRadius: 4,
+                                fill: false,
+                                order: 0                     /* Garante que a linha fique NA FRENTE das barras */
+                            },
+                            {
+                                // --- DATASET 2: ENTRADAS ---
+                                label: 'Entradas',
+                                data: dataToShow.receivables,
+                                backgroundColor: 'rgba(65, 241, 91, 1)', /* Verde Vibrante */
+                                borderColor: 'rgba(59, 179, 19, 1)',
+                                borderWidth: 1,
+                                barPercentage: 0.6,
+                                order: 1
+                            }, 
+                            {
+                                // --- DATASET 3: SAÍDAS ---
+                                label: 'Saídas',
+                                data: dataToShow.payables,
+                                backgroundColor: 'rgba(177, 14, 14, 1)', /* Vermelho Escuro */
+                                borderColor: 'rgba(192, 10, 10, 1)',
+                                borderWidth: 1,
+                                barPercentage: 0.6,
+                                order: 2
+                            }
+                        ]
                     },
                     options: { 
                         responsive: true,
-                        maintainAspectRatio: false, /* Adicionado para respeitar a altura fixa do container */
-                        scales: { y: { beginAtZero: true, ticks: { color: '#000', font: { size: 10 } } }, x: { ticks: { color: '#000', font: { size: 10 } } } }, 
-                        plugins: { legend: { position: 'top', labels: { color: '#000' } } } 
+                        maintainAspectRatio: false,
+                        interaction: {
+                            mode: 'index',
+                            intersect: false,
+                        },
+                        scales: { 
+                            y: { 
+                                beginAtZero: true, 
+                                grid: { color: '#4A5568' }, /* Linhas de grade cinza suave */
+                                ticks: { 
+                                    color: '#fff',          /* TEXTO BRANCO NO EIXO Y */
+                                    font: { size: 10 },
+                                    callback: function(value) {
+                                        return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });
+                                    }
+                                } 
+                            }, 
+                            x: { 
+                                grid: { display: false },
+                                ticks: { 
+                                    color: '#fff',          /* TEXTO BRANCO NO EIXO X */
+                                    font: { size: 10 } 
+                                } 
+                            } 
+                        }, 
+                        plugins: { 
+                            legend: { 
+                                position: 'top', 
+                                labels: { color: '#fff' }   /* LEGENDA BRANCA */
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.dataset.label || '';
+                                        if (label) {
+                                            label += ': ';
+                                        }
+                                        if (context.parsed.y !== null) {
+                                            label += new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(context.parsed.y);
+                                        }
+                                        return label;
+                                    }
+                                }
+                            }
+                        } 
                     }
                 });
             }
@@ -1469,51 +1624,59 @@
             const receivableVariation = parseFloat('{{ receivable_variation|default:0 }}');
             setupVariationMeter('meter-arrow-entradas', receivableVariation);
 
-            // --- FIM DO NOVO BLOCO ---
-
-            // Em dashboards.html, cole este bloco dentro do seu script principal
-
-            // --- NOVOS GRÁFICOS DA SEÇÃO DRE ---
-
-            
-            // 1. Gráfico TOP 5 DESPESAS (Barras Horizontais)
+            // 1. Gráfico TOP 5 DESPESAS (Barras Horizontais) - AJUSTADO
             const topExpensesCanvas = document.getElementById('topExpensesChart');
             if (topExpensesCanvas) {
                 const topExpensesLabels = JSON.parse('{{ top_despesas_labels_json|safe }}');
                 const topExpensesData = JSON.parse('{{ top_despesas_data_json|safe }}');
 
-                // --- INÍCIO DA NOVA LÓGICA PARA TRUNCAR TEXTOS LONGOS ---
-                const characterLimit = 15; // Defina o limite de caracteres que você quer exibir
-                const truncatedLabels = topExpensesLabels.map(label => {
-                    if (label.length > characterLimit) {
-                        // Se o texto for maior que o limite, corta e adiciona "..."
-                        return label.substring(0, characterLimit).trim() + '...';
-                    }
-                    return label; // Se for curto, mantém o original
-                });
-                // --- FIM DA NOVA LÓGICA ---
+                // NOTA: Removi a lógica de "truncatedLabels" para que os nomes apareçam inteiros.
+                // O Chart.js vai calcular o espaço necessário automaticamente.
 
                 new Chart(topExpensesCanvas.getContext('2d'), {
                     type: 'bar',
                     data: {
-                        labels: truncatedLabels, // <-- ALTERADO: Usa os novos textos truncados
+                        labels: topExpensesLabels, // <-- Voltamos a usar as labels originais (com nome completo)
                         datasets: [{
                             label: 'Total Gasto',
                             data: topExpensesData,
                             backgroundColor: 'rgba(221, 28, 31, 1)',
                             borderColor: 'rgba(151, 15, 17, 1)',
                             borderWidth: 1,
-                            barPercentage: 0.6 
+                            
+                            // ▼▼▼ AJUSTE DA ESPESSURA DA BARRA ▼▼▼
+                            barPercentage: 0.8,    
+                            categoryPercentage: 0.8,
+                            maxBarThickness: 30,   /* Define a grossura MÁXIMA da barra (em pixels) */
+                            // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
                         }]
                     },
                     options: {
-                        indexAxis: 'y',
+                        indexAxis: 'y', // Gráfico horizontal
                         responsive: true,
                         maintainAspectRatio: false,
-                        plugins: { legend: { display: false } },
+                        layout: {
+                            // Adiciona um pequeno respiro à esquerda se necessário
+                            padding: { left: 0 } 
+                        },
+                        plugins: { 
+                            legend: { display: false } 
+                        },
                         scales: {
-                            x: { ticks: { font: { size: 10 }, callback: value => 'R$ ' + value.toLocaleString('pt-BR') } },
-                            y: { ticks: { font: { size: 11 } } }
+                            x: { 
+                                ticks: { 
+                                    font: { size: 10 }, 
+                                    callback: value => 'R$ ' + value.toLocaleString('pt-BR') 
+                                } 
+                            },
+                            y: { 
+                                // Configuração para garantir que o texto apareça
+                                ticks: { 
+                                    font: { size: 11, weight: 'bold' },
+                                    autoSkip: false, // Garante que não pule nomes se a lista for grande
+                                    mirror: false    // Garante que o texto fique FORA do gráfico (na esquerda)
+                                } 
+                            }
                         }
                     }
                 });

@@ -285,12 +285,15 @@ body {
     gap: 5px;
 }
 
+/* ==========================================================================
+   4. SEÇÃO: FLUXO DE CAIXA (DFC) - ESTILO ESCURO
+   ========================================================================== */
 .cash-flow-container {
-    background-color: var(--color-background-ice);
+    background-color: #2D3748; /* <-- 1. FUNDO ESCURO (Igual ao primeiro gráfico) */
     padding: 10px;
     border-radius: 10px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    color: var(--color-text-primary);
+    color: #E2E8F0; /* <-- 2. TEXTO CLARO (Branco gelo) */
     margin-bottom: var(--spacing-md);
 }
 
@@ -299,28 +302,26 @@ body {
     font-weight: bold;
     text-align: center;
     margin-bottom: 10px;
+    color: #E2E8F0; /* Garante que o título fique branco */
 }
 
-.cash-flow-container .chart-area {
-    height: 300px;
-    margin-bottom: 5px;
-}
-
-.cash-flow-container .mini-cards {
-    display: flex;
-    gap: 10px;
-    justify-content: center;
-}
-
+/* Ajuste dos mini-cards (Visão Mensal/Diária) para combinar com o fundo escuro */
 .cash-flow-container .mini-card {
-    
     padding: 8px;
-    background-color: #07501d;
-    color: var(--color-text-light);
+    background-color: #1a202c; /* Fundo ainda mais escuro para os botões */
+    color: #a0aec0;
     text-align: center;
     border-radius: 5px;
     cursor: pointer;
-    font-size: 11px; 
+    font-size: 11px;
+    border: 1px solid #4a5568;
+}
+
+.cash-flow-container .mini-card.active {
+    background-color: #00E0FF; /* Azul Neon para o botão ativo */
+    color: #000; /* Texto preto para contraste no neon */
+    font-weight: bold;
+    border-color: #00E0FF;
 }
 
 /* --- Container da linha inferior (Tabela e Gráficos de Categoria) --- */
@@ -547,8 +548,8 @@ body {
 
 .insight-card {
     flex: 1;
-    background-color: #d6eec9;
-    color: var(--color-text-primary);
+    background-color: #042e04;
+    color: #fff;
     padding: var(--spacing-sm);
     border-radius: var(--border-radius-md);
     text-align: center;
@@ -1023,30 +1024,25 @@ body {
     font-size: 11px; /* O valor original era 12px */
 }
 
-/* Em dashbord.css, substitua o bloco de layout dos gráficos por este */
-
 /* ==========================================================================
-   ESTILOS PARA A LINHA DE GRÁFICOS DA DRE (50/25/25) - AJUSTADO
+   ESTILOS PARA A LINHA DE GRÁFICOS DA DRE (50/50) - AJUSTADO
    ========================================================================== */
 .chart-row-container {
     max-height: 300px;
     display: flex;
-    gap: 5px; /* <-- AJUSTADO: Espaçamento entre as colunas diminuído (era 20px) */
+    gap: 15px; /* Aumentei um pouco o gap para ficar mais elegante */
     margin-bottom: 10px;
-    align-items: stretch; /* <-- IMPORTANTE: Garante que as colunas estiquem para a mesma altura */
+    align-items: stretch; 
 }
 
-/* Define a largura das colunas */
+/* Alterado para usar flex: 1, garantindo divisão exata do espaço */
 .chart-column-50 {
-    width: 50%;
-}
-.chart-column-25 {
-    width: 25%;
+    flex: 1;       /* Cresce para ocupar todo espaço disponível igualmente */
+    min-width: 0;  /* Essencial para impedir que o gráfico estoure o container */
+    display: flex; /* Mantém o comportamento flex para o filho (.chart-small) */
 }
 
-/* As 3 regras abaixo são a chave para resolver o problema da altura.
-   Elas garantem que o card branco e o gráfico dentro dele
-   ocupem 100% da altura da coluna mais alta. */
+
 
 .chart-column-50,
 .chart-column-25 {
@@ -1055,14 +1051,26 @@ body {
 
 .chart-column-50 .chart-small,
 .chart-column-25 .chart-small {
-    width: 100%; /* Garante que o card ocupe toda a coluna */
+    width: 100%;
     display: flex;
     flex-direction: column;
+    overflow: hidden; /* Garante que nada vaze */
 }
 
+/* Ajuste específico para o container do Canvas */
 .chart-column-50 .chart-container,
 .chart-column-25 .chart-container {
-    flex-grow: 1; /* Faz a área do canvas do gráfico crescer para preencher o espaço vertical */
+    flex-grow: 1;
+    position: relative;
+    width: 100%;       /* <--- FORÇA A LARGURA TOTAL */
+    min-height: 120px; /* Altura mínima garantida */
+    display: block;    /* <--- IMPORTANTE: Remove display:flex que pode encolher o canvas */
+}
+
+/* Garante que o canvas obedeça ao container pai */
+.chart-column-50 canvas {
+    width: 100% !important;
+    height: 100% !important;
 }
 
 /* ==========================================================================
@@ -1320,42 +1328,105 @@ body {
     background-color: #fff;
 }
 
-/* Em dashbord.css, use este novo bloco de estilos */
 /* ==========================================================================
-   NOVOS ESTILOS PARA O LAYOUT DA SEÇÃO DFC (70/30)
+   LAYOUT DA SEÇÃO DFC (70/30) - ALINHAMENTO DE ALTURA CORRIGIDO
    ========================================================================== */
 
 .dfc-top-row {
     display: flex;
-    gap: var(--spacing-md);
-    margin-bottom: var(--spacing-md);
-    align-items: stretch;
+    gap: 20px;
+    margin-bottom: 20px;
+    align-items: stretch; /* Garante que as colunas tenham a mesma altura */
+    height: 380px;        /* <--- DEFINA UMA ALTURA FIXA PARA IGUALAR TUDO */
 }
 
-/* Coluna da esquerda com 70% da largura */
+/* --- Coluna da Esquerda (70%) --- */
 .dfc-main-chart-70 {
-    flex-basis: 70%;
-    min-width: 0;
-}
-
-/* Coluna da direita com 30% da largura, que empilha os gráficos */
-.dfc-doughnut-charts-30 {
-    flex-basis: 30%;
+    flex: 7; /* Equivalente a 70% */
     min-width: 0;
     display: flex;
-    flex-direction: column; /* ESSENCIAL: empilha os itens verticalmente */
-    gap: var(--spacing-md); /* Espaço entre os dois gráficos de rosca */
-}
-
-/* Garante que os containers internos ocupem toda a altura disponível */
-.dfc-main-chart-70 .cash-flow-container,
-.dfc-doughnut-charts-30 .chart-half {
-    flex: 1; /* Permite que o card cresça e ocupe o espaço disponível */
-    display: flex; /* Adicionado para garantir o alinhamento interno */
     flex-direction: column;
 }
 
-/* Em dashbord.css, adicione ou substitua este bloco */
+/* O container escuro deve preencher toda a altura da coluna */
+.dfc-main-chart-70 .cash-flow-container {
+    flex: 1; /* Cresce para ocupar 100% da altura disponível */
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    
+    /* Reaplica estilos visuais caso tenham se perdido */
+    background-color: #2D3748;
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    color: #E2E8F0;
+    margin-bottom: 0; /* Remove margem inferior pois já está no row */
+}
+
+/* A área onde fica o CANVAS deve crescer para empurrar os botões para baixo */
+.cash-flow-container .chart-area {
+    flex-grow: 1;       /* Ocupa todo o espaço vazio */
+    position: relative; /* Necessário para o Chart.js */
+    width: 100%;
+    min-height: 0;      /* Truque vital para flexbox + canvas não vazarem */
+    margin-bottom: 10px;
+}
+
+/* Container dos botões (Visão Mensal/Diária) para ficarem lado a lado */
+.cash-flow-container .mini-cards {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: auto; /* Garante que fique no rodapé do card */
+}
+
+/* Estilo dos botões individuais */
+.cash-flow-container .mini-card {
+    padding: 8px 20px;
+    min-width: 120px; /* Tamanho mínimo elegante */
+    text-align: center;
+    border-radius: 5px;
+    cursor: pointer;
+    background-color: #1a202c;
+    border: 1px solid #4a5568;
+    color: #a0aec0;
+    font-size: 12px;
+}
+
+.cash-flow-container .mini-card.active {
+    background-color: #00E0FF;
+    color: #000;
+    font-weight: bold;
+    border-color: #00E0FF;
+    box-shadow: 0 0 10px rgba(0, 224, 255, 0.4);
+}
+
+
+/* --- Coluna da Direita (30%) --- */
+.dfc-doughnut-charts-30 {
+    flex: 3; /* Equivalente a 30% */
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 20px; /* Espaço entre os dois gráficos da direita */
+}
+
+.dfc-doughnut-charts-30 .chart-half {
+    flex: 1; /* Cada gráfico ocupa 50% da altura da coluna direita */
+    display: flex;
+    flex-direction: column;
+    background-color: #f8f9fa; /* Fundo claro original */
+    padding: 10px;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.dfc-doughnut-charts-30 .chart-container {
+    flex: 1; /* O gráfico cresce para preencher o card */
+    position: relative;
+    min-height: 0;
+}
 
 /* ==========================================================================
    ESTILOS PARA A LINHA INFERIOR DO DFC (TABELA 40% / GRÁFICO 60%)
