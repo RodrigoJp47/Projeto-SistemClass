@@ -61,6 +61,7 @@ from .views import (
     configurar_tiny_view,
     landing_page,
     cancelar_assinatura_manual,
+    editar_funcionario_view,
 )
 
 urlpatterns = [
@@ -99,7 +100,7 @@ urlpatterns = [
     path('assinatura/cancelado/', assinatura_cancelado, name='assinatura_cancelado'),
     path('configuracoes/nibo/', configurar_nibo_view, name='configurar_nibo'),
     path('configuracoes/tiny/', configurar_tiny_view, name='configurar_tiny'),
-   
+    path('gerenciar-usuarios/editar/<int:pk>/', editar_funcionario_view, name='editar_funcionario'),
     # --- Módulo Comercial ---
     path('faturamento/', faturamento_dashboard_view, name='faturamento_dashboard'),
     path('comercial/cadastros/', comercial_cadastros_view, name='comercial_cadastros'),

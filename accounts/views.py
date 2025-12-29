@@ -7542,5 +7542,30 @@ def cancelar_assinatura_manual(request):
         
     return redirect('assinatura') 
 
+# 1. Adicione a importação no topo do arquivo junto com os outros forms
+from .forms import EmployeePermissionsForm 
 
+# 2. Adicione esta função em algum lugar do arquivo views.py
+@login_required
+@owner_required
+@subscription_required
+def editar_funcionario_view(request, pk):
+    # Busca o vínculo do funcionário (garantindo que pertence ao dono logado)
+    link = get_object_or_404(CompanyUserLink, pk=pk, owner=request.user)
+    
+    if request.method == 'POST':
+        form = EmployeePermissionsForm(request.POST, instance=link)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'Permissões de {link.employee.first_name} atualizadas com sucesso!')
+            return redirect('manage_users')
+    else:
+        form = EmployeePermissionsForm(instance=link)
+
+    context = {
+        'form': form,
+        'item_name': f"Permissões de {link.employee.first_name}",
+    }
+    # Reutiliza o template genérico de edição
+    return render(request, 'accounts/editar_item.html', context)
 

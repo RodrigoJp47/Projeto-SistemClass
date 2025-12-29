@@ -172,6 +172,9 @@
                                 </td>
                                 
                                 <td class="actions-cell text-center">
+                                    <a href="{% url 'editar_funcionario' link.id %}" class="btn btn-warning btn-sm" title="Editar Permissões" style="margin-right: 5px; display: inline-block;">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
                                     {# Formulário para Excluir #}
                                     <form method="post" action="{% url 'manage_users' %}" style="display: inline;">
                                         {% csrf_token %}

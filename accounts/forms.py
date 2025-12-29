@@ -760,6 +760,50 @@ class TinyCredentialsForm(forms.ModelForm):
             'token': 'No Tiny, vá em Configurações > Aba E-commerce > API > Token.',
         }        
 
+# Adicione isso ao final do accounts/forms.py
+from .models import CompanyUserLink
 
+class EmployeePermissionsForm(forms.ModelForm):
+    class Meta:
+        model = CompanyUserLink
+        fields = [
+            'can_access_home',
+            'can_access_contas_pagar',
+            'can_access_contas_receber',
+            'can_access_tarefas',
+            'can_access_orcamento_anual',
+            'can_access_painel_financeiro',
+            'can_access_fornecedores',
+            'can_access_clientes_financeiro',
+            'can_access_pdv',
+            'can_access_painel_vendas',
+            'can_access_notas_fiscais',
+            'can_access_orcamentos_venda',
+            'can_access_contratos',
+            'can_access_cadastros_comercial',
+            'can_access_vendas',
+            'can_access_metas_comerciais',
+            'can_access_precificacao',
+        ]
+        # Opcional: Melhora os labels para ficarem mais legíveis
+        labels = {
+            'can_access_home': 'Acesso à Home',
+            'can_access_contas_pagar': 'Contas a Pagar',
+            'can_access_contas_receber': 'Contas a Receber',
+            'can_access_tarefas': 'Tarefas',
+            'can_access_orcamento_anual': 'Orçamento Anual',
+            'can_access_painel_financeiro': 'Painel Financeiro (Dashboards)',
+            'can_access_fornecedores': 'Fornecedores',
+            'can_access_clientes_financeiro': 'Clientes (Financeiro)',
+            'can_access_pdv': 'Frente de Caixa (PDV)',
+            'can_access_painel_vendas': 'Painel de Vendas',
+            'can_access_notas_fiscais': 'Notas Fiscais',
+            'can_access_orcamentos_venda': 'Orçamentos',
+            'can_access_contratos': 'Contratos',
+            'can_access_cadastros_comercial': 'Cadastros (Produtos/Vendedores)',
+            'can_access_vendas': 'Vendas (Listagem)',
+            'can_access_metas_comerciais': 'Metas Comerciais',
+            'can_access_precificacao': 'Precificação',
+        }
 
 

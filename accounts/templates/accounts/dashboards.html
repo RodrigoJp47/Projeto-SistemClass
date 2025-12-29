@@ -156,7 +156,7 @@
             </div>
             <div class="client-analysis-container">
                 <div class="analysis-column">
-                    <h3>Valor em aberto por cliente</h3>
+                    <h3>Valor em aberto</h3>
                     <input type="text" id="client-search" placeholder="Pesquisar...">
                     <div class="chart-wrapper">
                         <canvas id="clientOpenAmountChart"></canvas>
@@ -393,31 +393,29 @@
 
         <h2 class="section-title">DFC - CASH FLOW</h2>
         
-        <div class="dfc-top-row">
-            <div class="dfc-main-chart-70">
-                <div class="cash-flow-container">
-                    <div class="chart-area">
-                        <canvas id="cashFlowBarChart"></canvas>
-                    </div>
-                    <div class="mini-cards">
-                        <div class="mini-card active" data-view="monthly">Visão Mensal</div>
-                        <div class="mini-card" data-view="daily">Visão Diária</div>
-                    </div>
+        <div class="dfc-full-width-row">
+            <div class="cash-flow-container">
+                <div class="chart-area">
+                    <canvas id="cashFlowBarChart"></canvas>
+                </div>
+                <div class="mini-cards">
+                    <div class="mini-card active" data-view="monthly">Visão Mensal</div>
+                    <div class="mini-card" data-view="daily">Visão Diária</div>
                 </div>
             </div>
+        </div>
 
-            <div class="dfc-doughnut-charts-30">
-                <div class="chart-half">
-                    <h3>Receitas por categorias</h3>
-                    <div class="chart-container">
-                       <canvas id="receivableCategoryChart"></canvas>
-                    </div>   
-                </div>
-                <div class="chart-half">
-                    <h3>Despesas por categorias</h3>
-                    <div class="chart-container">
-                       <canvas id="payableCategoryChart"></canvas>
-                    </div>
+        <div class="dfc-doughnut-row">
+            <div class="chart-half">
+                <h3>Receitas por categorias</h3>
+                <div class="chart-container">
+                   <canvas id="receivableCategoryChart"></canvas>
+                </div>   
+            </div>
+            <div class="chart-half">
+                <h3>Despesas por categorias</h3>
+                <div class="chart-container">
+                   <canvas id="payableCategoryChart"></canvas>
                 </div>
             </div>
         </div>
@@ -1332,50 +1330,72 @@
                 }
             }
             
-            const receivableCategoryCtx = document.getElementById('receivableCategoryChart');
-            if (receivableCategoryCtx) {
-                new Chart(receivableCategoryCtx.getContext('2d'), {
-                    type: 'doughnut', // <-- TIPO NOVO
+            // --- FUNÇÃO PARA CRIAR GRÁFICO DE ROSCA COM PORCENTAGEM ---
+            function createDoughnutChartWithPercent(canvasId, labels, data, colors) {
+                const ctx = document.getElementById(canvasId);
+                if (!ctx) return;
+
+                new Chart(ctx.getContext('2d'), {
+                    type: 'doughnut',
                     data: {
-                        labels: JSON.parse('{{ receivable_category_labels|safe }}'),
+                        labels: labels,
                         datasets: [{
-                            label: 'Valor Recebido',
-                            data: JSON.parse('{{ receivable_category_data|safe }}'),
-                            backgroundColor: ['#28a745', '#20c997', '#17a2b8', '#6f42c1', '#0d6efd'], // Array de cores
-                            hoverOffset: 4
+                            data: data,
+                            backgroundColor: colors,
+                            hoverOffset: 4,
+                            borderWidth: 1
                         }]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
                         plugins: {
-                            legend: { position: 'bottom', labels: { color: '#000', boxWidth: 12, font: { size: 11 } } }
+                            legend: { 
+                                position: 'right', // Legenda à direita fica melhor em layouts 50%
+                                labels: { 
+                                    color: '#333', // Cor da legenda
+                                    boxWidth: 12, 
+                                    font: { size: 11 } 
+                                } 
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.label || '';
+                                        let value = context.raw || 0;
+                                        
+                                        // 1. Calcula o total do dataset
+                                        let dataset = context.chart.data.datasets[0];
+                                        let total = dataset.data.reduce((acc, val) => acc + val, 0);
+                                        
+                                        // 2. Calcula a porcentagem
+                                        let percentage = total > 0 ? ((value / total) * 100).toFixed(1) + '%' : '0%';
+                                        
+                                        // 3. Formata o valor em Reais
+                                        let valueFormatted = value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+                                        return `${label}: ${valueFormatted} (${percentage})`;
+                                    }
+                                }
+                            }
                         }
                     }
                 });
             }
-            const payableCategoryCtx = document.getElementById('payableCategoryChart');
-            if (payableCategoryCtx) {
-                new Chart(payableCategoryCtx.getContext('2d'), {
-                    type: 'doughnut', // <-- TIPO NOVO
-                    data: {
-                        labels: JSON.parse('{{ payable_category_labels|safe }}'),
-                        datasets: [{
-                            label: 'Valor Pago',
-                            data: JSON.parse('{{ payable_category_data|safe }}'),
-                            backgroundColor: ['#dc3545', '#fd7e14', '#ffc107', '#6c757d', '#343a40'], // Array de cores
-                            hoverOffset: 4
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { position: 'bottom', labels: { color: '#000', boxWidth: 12, font: { size: 11 } } }
-                        }
-                    }
-                });
-            }
+
+            // --- INICIALIZAÇÃO DOS GRÁFICOS DE ROSCA ---
+            
+            // 1. Receitas
+            const recLabels = JSON.parse('{{ receivable_category_labels|safe }}');
+            const recData = JSON.parse('{{ receivable_category_data|safe }}');
+            const recColors = ['#28a745', '#20c997', '#17a2b8', '#6f42c1', '#0d6efd'];
+            createDoughnutChartWithPercent('receivableCategoryChart', recLabels, recData, recColors);
+
+            // 2. Despesas
+            const payLabels = JSON.parse('{{ payable_category_labels|safe }}');
+            const payData = JSON.parse('{{ payable_category_data|safe }}');
+            const payColors = ['#dc3545', '#fd7e14', '#ffc107', '#6c757d', '#343a40'];
+            createDoughnutChartWithPercent('payableCategoryChart', payLabels, payData, payColors);
 
 
             // --- GRÁFICOS DO DASHBOARD KPIS ---
@@ -1855,9 +1875,8 @@
 
             
 
-            // --- INÍCIO: NOVOS GRÁFICOS PREVISTO VS REALIZADO (COM CORES DINÂMICAS) ---
+            // --- GRÁFICOS PREVISTO VS REALIZADO (Versão Dark Mode) ---
 
-            // A função agora aceita um parâmetro 'colors' para definir a paleta do gráfico
             function createPvrChart(canvasId, chartData, colors) {
                 const canvas = document.getElementById(canvasId);
                 if (canvas && chartData) {
@@ -1883,9 +1902,37 @@
                             ]
                         },
                         options: {
-                            responsive: true, maintainAspectRatio: false,
-                            plugins: { legend: { position: 'top', labels: { color: '#000' } } },
-                            scales: { y: { beginAtZero: true, ticks: { color: '#000', font: { size: 10 } } }, x: { ticks: { color: '#000', font: { size: 10 } } } }
+                            responsive: true, 
+                            maintainAspectRatio: false,
+                            plugins: { 
+                                legend: { 
+                                    position: 'top', 
+                                    labels: { 
+                                        color: '#fff', /* <--- LEGENDA BRANCA */
+                                        font: { size: 11 }
+                                    } 
+                                } 
+                            },
+                            scales: { 
+                                y: { 
+                                    beginAtZero: true, 
+                                    grid: { color: '#4A5568' }, /* Linhas de grade cinza suave */
+                                    ticks: { 
+                                        color: '#fff', /* <--- EIXO Y BRANCO */
+                                        font: { size: 10 },
+                                        callback: function(value) {
+                                            return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });
+                                        }
+                                    } 
+                                }, 
+                                x: { 
+                                    grid: { display: false },
+                                    ticks: { 
+                                        color: '#fff', /* <--- EIXO X BRANCO */
+                                        font: { size: 10 } 
+                                    } 
+                                } 
+                            }
                         }
                     });
                 }
