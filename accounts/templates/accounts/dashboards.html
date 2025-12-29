@@ -139,18 +139,18 @@
                 </div>
             </div>
             <div class="receivables-insights-container">
-                <div class="insight-card"><div class="title">Valor a Vencer</div><hr><div class="value">R$ {{ insights_data.total_a_vencer|floatformat:2|intcomma }}</div></div>
-                <div class="insight-card"><div class="title">Atrasados</div><hr><div class="value">R$ {{ insights_data.total_atrasado|floatformat:2|intcomma }}</div></div>
+                <div class="insight-card"><div class="title">VALOR A VENCER</div><hr><div class="value">R$ {{ insights_data.total_a_vencer|floatformat:2|intcomma }}</div></div>
+                <div class="insight-card"><div class="title">ATRASADOS</div><hr><div class="value">R$ {{ insights_data.total_atrasado|floatformat:2|intcomma }}</div></div>
                 
-                <div class="insight-card">
+                {% comment %} <div class="insight-card">
                     <div class="title">Média de Dias p/ {% if view_type == 'pagar' %}Pagamento{% else %}Recebimento{% endif %}</div><hr>
                     <div class="value">
                         {% if insights_data.media_dias_pagamento == "N/A" %} {{ insights_data.media_dias_pagamento }}
                         {% else %} {{ insights_data.media_dias_pagamento|floatformat:0 }} dias {% endif %}
                     </div>
-                </div>
+                </div> {% endcomment %}
                 <div class="insight-card">
-                    <div class="title">{% if view_type == 'pagar' %}Taxa de Atraso{% else %}Inadimplência{% endif %}</div><hr>
+                    <div class="title">{% if view_type == 'pagar' %}TAXA DE ATRASO{% else %}INADIMPLÊNCIA{% endif %}</div><hr>
                     <div class="value">{{ insights_data.taxa_inadimplencia|floatformat:2 }}%</div>
                 </div>
             </div>

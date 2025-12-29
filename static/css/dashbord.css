@@ -52,50 +52,95 @@ body {
 }
 
 /* ==========================================================================
-   2. CONTAINER DE FILTROS
+   2. CONTAINER DE FILTROS (ESTILO ROBUSTO)
    ========================================================================== */
 .filter-container {
-    margin-bottom: var(--spacing-sm);
+    background-color: #fff;       /* Fundo branco para destacar do cinza da página */
+    padding: 20px 25px;           /* Espaçamento interno generoso */
+    border-radius: 8px;           /* Bordas arredondadas */
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08); /* Sombra suave para dar profundidade */
+    border: 1px solid #e0e0e0;    /* Borda sutil */
+    margin-bottom: 30px;          /* Espaço para separar dos gráficos */
     display: flex;
     align-items: center;
-    gap: 5px;
+    flex-wrap: wrap;              /* Permite quebrar linha em telas menores */
+    gap: 15px;                    /* Espaço entre os elementos */
+}
+
+/* Ajuste para o formulário interno acompanhar o container */
+.filter-container form {
+    display: flex;
+    align-items: center;
+    gap: 15px !important; /* Força o espaçamento entre inputs */
     flex-wrap: wrap;
+    width: 100%;
 }
 
 .filter-container label {
-    color: var(--color-text-primary);
-    font-size: var(--font-size-base);
-    margin-right: 5px;
+    color: #333;
+    font-weight: bold;            /* Labels em negrito */
+    font-size: 13px;
+    text-transform: uppercase;    /* Letras maiúsculas para dar peso */
+    letter-spacing: 0.5px;
+    margin-right: 0;
 }
 
+/* Estilo dos Campos (Select e Data) */
 .filter-container select,
-.filter-container input[type="date"],
-.filter-container button {
-    padding: 5px;
-    background-color: #333; /* Mantida cor escura para contraste com a página clara */
-    color: var(--color-text-light);
-    border: none;
-    border-radius: 4px;
-    font-size: var(--font-size-base);
+.filter-container input[type="date"] {
+    padding: 10px 15px;           /* Campos mais altos e confortáveis */
+    background-color: #f8f9fa;    /* Fundo cinza bem claro (não mais preto) */
+    color: #333;                  /* Texto escuro para leitura fácil */
+    border: 1px solid #ccc;       /* Borda cinza padrão */
+    border-radius: 6px;
+    font-size: 14px;
+    outline: none;
+    transition: all 0.3s ease;
+    min-width: 160px;             /* Largura mínima para ficarem uniformes */
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
 }
 
+/* Efeito ao clicar/focar no campo */
+.filter-container select:focus,
+.filter-container input[type="date"]:focus {
+    border-color: #07501d;        /* Borda verde ao focar */
+    background-color: #fff;       /* Fundo fica branco */
+    box-shadow: 0 0 0 3px rgba(7, 80, 29, 0.15); /* Anel de foco verde suave */
+}
+
+/* Estilo do Botão Filtrar */
 .filter-container button {
-    background-color: #07501d;
+    padding: 10px 30px;           /* Botão mais largo */
+    background-color: #07501d;    /* Seu verde padrão */
     color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: bold;
+    text-transform: uppercase;
     cursor: pointer;
-    padding: 5px 16px;
-    transition: background-color 0.2s;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 6px rgba(7, 80, 29, 0.2); /* Sombra colorida */
+    margin-left: auto;            /* Empurra o botão para a direita se houver espaço */
 }
 
 .filter-container button:hover {
-    background-color: #07501d;
+    background-color: #053b15;    /* Verde mais escuro no hover */
+    transform: translateY(-2px);  /* Leve subida ao passar o mouse */
+    box-shadow: 0 6px 12px rgba(7, 80, 29, 0.3);
 }
 
+/* Ajuste específico para o bloco de datas personalizadas */
 #custom-date {
     display: flex;
     align-items: center;
     gap: 10px;
+    background-color: #f1f3f5;    /* Destaque sutil para o grupo de datas */
+    padding: 5px 15px;
+    border-radius: 6px;
+    border: 1px dashed #ccc;
 }
+
 
 /* ==========================================================================
    3. SEÇÃO: PAINEL CONSOLIDADO
@@ -1488,7 +1533,7 @@ body {
 
 /* 2. Estilo base para cada uma das 3 colunas */
 .analysis-column {
-    flex: 1;
+    
     min-width: 0;
     display: flex;
     flex-direction: column;
@@ -1496,6 +1541,16 @@ body {
     padding: 15px;
     border-radius: 8px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+/* 1ª Coluna (Valor em aberto): Ganha peso 4 (aprox. 40% do espaço) */
+.analysis-column:nth-child(1) {
+    flex: 4; 
+}
+
+/* 2ª e 3ª Colunas: Ganham peso 3 cada (aprox. 30% do espaço cada) */
+.analysis-column:nth-child(2),
+.analysis-column:nth-child(3) {
+    flex: 3; 
 }
 .analysis-column h3 {
     font-size: 11px;
@@ -2037,7 +2092,7 @@ body {
 
 /* 1. Título (Ex: Valor a Vencer) */
 .insight-card .title {
-    font-size: 15px; /* Aumentei de 13px para 15px */
+    font-size: 13px; /* Aumentei de 13px para 15px */
     font-weight: bold;
 }
 
