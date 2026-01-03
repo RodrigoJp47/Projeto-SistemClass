@@ -1,103 +1,163 @@
-/* Estilos que estavam no seu home.html */
+/* ==========================================================================
+   CORE TASKS - ESTILOS DE TAREFAS E CADASTROS
+   ========================================================================== */
+
 * {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
 }
 
-
-
 .main-content {
-    /* Mantido o margin-left original de 290px para acomodar a sidebar */
     margin-left: 270px;
     padding: 20px;
     width: calc(100% - 270px);
     overflow-y: auto;
 }
+
+/* --- CONTAINER PRINCIPAL (PADRÃO DARK MODE) --- */
 .tasks-container {
     max-width: 900px;
     margin: 40px auto;
     padding: 30px;
-    background-color: var(--color-background-light); /* Usa a cor do seu theme.css */
+    
+    /* Fundo Escuro para combinar com o Dashboard */
+    background-color: #202020; 
     border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    border: 1px solid var(--color-border); /* Usa a cor do seu theme.css */
+    
+    /* Sombra e Borda Escuras */
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    border: 1px solid #333; 
 }
 
+/* Título no Dark Mode */
 .tasks-container h1 {
-    color: var(--color-text-primary); /* Usa a cor do seu theme.css */
-    border-bottom: 2px solid var(--color-border-light);
-    padding-bottom: 10px;
+    color: #FFFFFF;
+    border-bottom: 2px solid #333;
+    padding-bottom: 15px;
+    margin-bottom: 25px;
 }
 
 .tasks-container .form-group {
-    margin-bottom: 15px;
+    margin-bottom: 20px;
 }
 
+/* Labels no Dark Mode */
 .tasks-container .form-group label {
     display: block;
-    margin-bottom: 5px;
-    font-weight: bold;
-    color: var(--color-text-secondary);
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #CCCCCC; /* Cinza claro para leitura */
 }
 
+/* Inputs no Dark Mode */
 .tasks-container input[type="text"],
 .tasks-container input[type="email"],
 .tasks-container .form-control {
     width: 100%;
-    padding: 10px;
-    border: 1px solid var(--color-border);
-    border-radius: 4px;
+    padding: 12px;
+    
+    /* Fundo do Input mais escuro que o card */
+    background-color: #121212; 
+    border: 1px solid #444;
+    border-radius: 6px;
     box-sizing: border-box;
-    background-color: var(--color-background);
-    color: var(--color-text-primary);
+    
+    /* Texto Branco */
+    color: #FFFFFF; 
+    transition: border-color 0.3s;
 }
 
+.tasks-container input:focus,
+.tasks-container .form-control:focus {
+    border-color: #3498db;
+    outline: none;
+}
+
+/* --- BOTÕES E LINKS --- */
 .tasks-container .btn {
-    padding: 10px 15px;
+    padding: 12px 24px;
     border: none;
-    border-radius: 4px;
+    border-radius: 6px;
     cursor: pointer;
     text-decoration: none;
     display: inline-block;
-    font-size: 1em;
+    font-size: 1rem;
+    font-weight: 600;
+    margin-top: 10px;
 }
 
 .tasks-container .btn-primary {
     background-color: #3498db;
     color: white;
+    transition: background-color 0.2s;
 }
 
 .tasks-container .btn-primary:hover {
     background-color: #2980b9;
 }
 
-/* Em: static/css/core_tasks.css */
-
 .tasks-container .nav-link {
-    background-color: #2980b9;
-    padding: 7px;
     display: inline-block;
-    margin: 0 0 25px 0; /* Ajusta a margem para ficar só embaixo */
+    margin-bottom: 20px;
     font-weight: bold;
-    color: var(--color-primary, #fff); /* Usa a cor primária do seu tema */
-    text-decoration: none; /* Remove o sublinhado */
-    transition: opacity 0.2s ease;
+    color: #3498db;
+    text-decoration: none;
+    transition: color 0.2s ease;
 }
 
 .tasks-container .nav-link:hover {
-    text-decoration: underline; /* Adiciona sublinhado ao passar o mouse */
-    opacity: 0.8;
+    color: #5dade2;
+    text-decoration: underline;
 }
 
-/* --- @media query para Responsividade --- */
+/* ==========================================================================
+   SUPORTE AO TEMA CLARO (LIGHT MODE)
+   Esta parte garante que fique bonito quando você ativar o tema branco
+   ========================================================================== */
+
+body.theme-white .tasks-container {
+    background-color: #FFFFFF;
+    border: 1px solid #DEE2E6;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+body.theme-white .tasks-container h1 {
+    color: #212529;
+    border-bottom-color: #EEE;
+}
+
+body.theme-white .tasks-container .form-group label {
+    color: #495057;
+}
+
+body.theme-white .tasks-container input[type="text"],
+body.theme-white .tasks-container input[type="email"],
+body.theme-white .tasks-container .form-control {
+    background-color: #FFFFFF;
+    color: #212529;
+    border: 1px solid #CED4DA;
+}
+
+body.theme-white .tasks-container input:focus,
+body.theme-white .tasks-container .form-control:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+/* ==========================================================================
+   RESPONSIVIDADE
+   ========================================================================== */
 @media (max-width: 768px) {
     .tasks-container {
-        /* Em telas pequenas, remove a margem e a sombra */
         margin: 0;
         padding: 20px;
         box-shadow: none;
         border-radius: 0;
         border: none;
+        background-color: transparent; /* Remove o fundo do card no mobile se preferir */
     }
+    
+    /* Mantém legibilidade no mobile */
+    .tasks-container h1 { font-size: 1.5rem; }
 }

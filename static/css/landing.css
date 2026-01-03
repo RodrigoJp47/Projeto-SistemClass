@@ -338,11 +338,10 @@ body {
     100% { transform: translateY(0px); }
 }
 
-/* --- INTEGRATIONS --- */
 .integrations-strip {
-    background-color: #050505;
-    border-top: 1px solid #1a1a1a;
-    border-bottom: 1px solid #1a1a1a;
+    background-color: #1a1a1a; /* Mudado de #050505 para um cinza mais visível */
+    border-top: 1px solid #333; /* Borda um pouco mais clara também */
+    border-bottom: 1px solid #333;
     padding: 40px 0;
     text-align: center;
 }
@@ -362,16 +361,46 @@ body {
     gap: 40px;
 }
 
+/* =========================================
+   CORREÇÃO FINAL (V3) - MERCADO LIVRE
+   ========================================= */
+
+/* 1. GERAL (Sem alterações) */
 .logos-grid img {
-    height: 30px;
-    opacity: 0.5;
-    filter: grayscale(100%);
+    height: 35px;
+    opacity: 0.9;
     transition: all 0.3s;
+    filter: none; 
 }
 
+
+/* 3. GRUPO "TRANSPARENTE SIMPLES" (Olist)
+   Apenas pinta a logo de branco.
+*/
+.logos-grid img[src*="olist"] {
+    filter: brightness(0) invert(1) !important;
+    mix-blend-mode: normal !important;
+    opacity: 1 !important;
+}
+
+/* 4. EXCEÇÃO "MERCADO PAGO" (Versão Detalhada) */
+.logos-grid img[src*="mercado"], 
+.logos-grid img[src*="Mercado"] {
+    /* Mantendo o tamanho que você ajustou */
+    height: 120px !important; 
+    width: auto !important;
+    
+    mix-blend-mode: normal !important;
+    opacity: 1 !important;
+    
+    
+}
+
+/* 5. HOVER (Ao passar o mouse) */
 .logos-grid img:hover {
-    opacity: 1;
-    filter: grayscale(0%);
+    opacity: 1 !important;
+    filter: none !important;
+    mix-blend-mode: normal !important;
 }
 
 /* --- FEATURES --- */
