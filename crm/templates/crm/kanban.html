@@ -1,0 +1,311 @@
+{% load static %}
+{% load humanize %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRM Pipeline | SistemClass</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    
+    <link rel="stylesheet" href="{% static 'css/sidebar.css' %}">
+    <link rel="stylesheet" href="{% static 'css/global.css' %}">
+    <link rel="stylesheet" href="{% static 'css/themes.css' %}">
+    <link rel="stylesheet" href="{% static 'css/layout-responsive.css' %}">
+    
+    <link rel="stylesheet" href="{% static 'css/kanban.css' %}">
+</head>
+
+<body class="crm-page">
+
+    {% include 'accounts/_sidebar.html' %}
+
+    <div class="main-content">
+        
+        <header class="top-bar">
+            <div class="breadcrumb">
+                <h1>Pipeline de Vendas</h1>
+                <span>CRM > Visão Geral</span>
+            </div>
+            
+            <div class="user-info">
+                <button id="mobile-menu-toggle" class="mobile-menu-btn">
+                    <i class="fas fa-bars"></i>
+                </button>
+                
+                <span class="user-name">Olá, {{ request.user.first_name }}</span>
+                <div class="user-avatar">
+                    {{ request.user.first_name|first }}{{ request.user.last_name|first }}
+                </div>
+            </div>
+        </header>
+
+        <div style="padding: 20px 20px 0 20px; display: flex; justify-content: flex-end;">
+            <button onclick="document.getElementById('modalNovaOportunidade').style.display='flex'" class="btn-novo-crm" style="background: #3498db; color: white; padding: 10px 20px; border-radius: 5px; border: none; cursor: pointer; font-weight: bold; font-size: 14px;">
+                <i class="fas fa-plus"></i> Nova Oportunidade
+            </button>
+        </div>
+
+        <div class="kanban-board">
+            
+            {% for etapa, oportunidades in kanban_data.items %}
+            <div class="kanban-column" data-etapa-id="{{ etapa.id }}" ondrop="drop(event)" ondragover="allowDrop(event)">
+                
+                <div class="kanban-column-header">
+                    <span style="border-left: 4px solid {{ etapa.cor_hexa }}; padding-left: 8px;">
+                        {{ etapa.nome }}
+                    </span>
+                    <span class="column-count">{{ oportunidades.count }}</span>
+                </div>
+
+                <div class="kanban-column-body">
+                    {% for op in oportunidades %}
+                    <div class="kanban-card" draggable="true" ondragstart="drag(event)" id="op-{{ op.id }}" data-id="{{ op.id }}">
+                        
+                        <div class="card-title">{{ op.titulo }}</div>
+                        
+                        <div class="card-client">
+                            <i class="fas fa-user-tie"></i> {{ op.cliente.nome|truncatechars:20 }}
+                        </div>
+                        
+                        {% if op.vendedor %}
+                        <div class="card-client" style="color: #888;">
+                            <i class="fas fa-id-badge"></i> {{ op.vendedor.nome|truncatechars:15 }}
+                        </div>
+                        {% endif %}
+
+                        <div class="card-footer" style="flex-direction: column; align-items: flex-start; gap: 8px;">
+    
+                            <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
+                                <div class="card-value">R$ {{ op.valor_estimado|floatformat:2 }}</div>
+                                <div class="card-priority priority-{{ op.prioridade|lower }}">
+                                    {{ op.get_prioridade_display }}
+                                </div>
+                            </div>
+
+                            <div style="width: 100%; display: flex; gap: 5px; margin-top: 5px;">
+                                
+                                {% if op.orcamento_gerado %}
+                                    <a href="{% url 'orcamentos_venda' %}" class="btn-action-crm btn-ver">
+                                        <i class="fas fa-file-invoice-dollar"></i> Ver Prop.
+                                    </a>
+                                {% else %}
+                                    <a href="{% url 'crm_converter_orcamento' op.id %}" class="btn-action-crm btn-gerar" onclick="return confirm('Deseja gerar um orçamento para este cliente?');">
+                                        <i class="fas fa-magic"></i> Gerar Orçamento
+                                    </a>
+                                {% endif %}
+                                
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                        <div style="text-align: center; color: #aaa; padding: 20px; font-size: 12px; font-style: italic;">
+                            Arraste cards para cá
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div> 
+            
+    </div> 
+
+    <div id="modalNovaOportunidade" class="modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
+        <div class="modal-content" style="background: white; padding: 25px; border-radius: 8px; width: 500px; max-width: 95%;">
+            <h3 style="margin-top:0; border-bottom: 1px solid #eee; padding-bottom: 10px;">Nova Oportunidade</h3>
+            
+            <form method="POST" action="{% url 'crm_pipeline' %}">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="create_new">
+                
+                <div style="margin-bottom: 15px; background: #f9f9f9; padding: 10px; border-radius: 5px;">
+                    <label style="font-size: 12px; color: #666; font-weight: bold;">Preencher com Produto (Opcional)</label>
+                    <select id="selectProdutoRapido" class="form-control" style="width: 100%; padding: 6px; border: 1px solid #ddd; margin-top: 5px;" onchange="preencherProduto()">
+                        <option value="">-- Selecione para preencher --</option>
+                        {% for prod in produtos %}
+                        <option value="{{ prod.nome }}" data-preco="{{ prod.preco_venda }}">{{ prod.nome }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div style="margin-bottom: 15px;">
+                    <label style="display:block; margin-bottom:5px; font-weight:bold;">Título da Oportunidade *</label>
+                    <input type="text" id="inputTitulo" name="titulo" required class="form-control" placeholder="Ex: Venda de 10 Pneus" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                </div>
+
+                <div style="margin-bottom: 15px;">
+                    <label style="display:block; margin-bottom:5px; font-weight:bold;">Cliente *</label>
+                    <select id="selectClienteCRM" name="cliente" required class="form-control" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" onchange="mostrarDadosCliente()">
+                        <option value="">Selecione...</option>
+                        {% for cli in clientes %}
+                        <option value="{{ cli.id }}" 
+                                data-email="{{ cli.email|default:'' }}" 
+                                data-telefone="{{ cli.telefone|default:'' }}"
+                                data-cpf="{{ cli.cpf_cnpj|default:'' }}">
+                            {{ cli.nome }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    
+                    <div id="dadosClientePreview" style="display: none; margin-top: 10px; background: #eef2f7; padding: 10px; border-radius: 4px; font-size: 12px; color: #555;">
+                        <div style="display: flex; gap: 10px;">
+                            <span id="previewTel"><i class="fas fa-phone"></i> <span></span></span>
+                            <span id="previewEmail"><i class="fas fa-envelope"></i> <span></span></span>
+                        </div>
+                        <div style="margin-top: 5px;">
+                            <span id="previewDoc"><strong>DOC:</strong> <span></span></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 15px;">
+                    <label style="display:block; margin-bottom:5px; font-weight:bold;">Valor Estimado (R$)</label>
+                    <input type="number" id="inputValor" step="0.01" name="valor" class="form-control" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                </div>
+
+                <div style="text-align: right; margin-top: 20px;">
+                    <button type="button" onclick="document.getElementById('modalNovaOportunidade').style.display='none'" style="padding: 10px 15px; border: none; background: #ccc; cursor: pointer; border-radius: 4px; margin-right: 10px;">Cancelar</button>
+                    <button type="submit" style="padding: 10px 15px; border: none; background: #3498db; color: white; cursor: pointer; border-radius: 4px; font-weight: bold;">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <script>
+        // --- Lógica do Drag and Drop (Mantida) ---
+        function allowDrop(ev) { ev.preventDefault(); }
+        function drag(ev) { ev.dataTransfer.setData("text", ev.target.id); ev.target.classList.add('dragging'); }
+        function drop(ev) {
+            ev.preventDefault();
+            var data = ev.dataTransfer.getData("text");
+            var card = document.getElementById(data);
+            if (!card) return;
+            card.classList.remove('dragging');
+            var column = ev.target.closest('.kanban-column');
+            if (column) {
+                var body = column.querySelector('.kanban-column-body');
+                body.appendChild(card);
+                var emptyMsg = body.querySelector('div[style*="font-style: italic"]');
+                if(emptyMsg) emptyMsg.style.display = 'none';
+                
+                var oportunidadeId = card.getAttribute('data-id');
+                var novaEtapaId = column.getAttribute('data-etapa-id');
+                var url = "{% url 'mover_oportunidade' %}"; 
+
+                fetch(url, {
+                    method: "POST",
+                    headers: { "X-CSRFToken": "{{ csrf_token }}", "Content-Type": "application/json" },
+                    body: JSON.stringify({ oportunidade_id: oportunidadeId, etapa_id: novaEtapaId })
+                }).then(res => { if(!res.ok) console.error("Erro ao salvar movimento"); });
+            }
+        }
+        
+        // --- Lógica do Modal (Mantida) ---
+        function preencherProduto() {
+            var select = document.getElementById('selectProdutoRapido');
+            var option = select.options[select.selectedIndex];
+            if (option.value) {
+                document.getElementById('inputTitulo').value = option.value;
+                var preco = option.getAttribute('data-preco').replace(',', '.'); 
+                document.getElementById('inputValor').value = preco;
+            }
+        }
+
+        function mostrarDadosCliente() {
+            var select = document.getElementById('selectClienteCRM');
+            var option = select.options[select.selectedIndex];
+            var previewDiv = document.getElementById('dadosClientePreview');
+            if (option.value) {
+                var tel = option.getAttribute('data-telefone') || 'N/A';
+                var email = option.getAttribute('data-email') || 'N/A';
+                var cpf = option.getAttribute('data-cpf') || 'N/A';
+                document.querySelector('#previewTel span').innerText = tel;
+                document.querySelector('#previewEmail span').innerText = email;
+                document.querySelector('#previewDoc span').innerText = cpf;
+                previewDiv.style.display = 'block';
+            } else {
+                previewDiv.style.display = 'none';
+            }
+        }
+
+        // --- INICIALIZAÇÃO E TEMA ---
+    document.addEventListener('DOMContentLoaded', function () {
+        
+        // 1. Menu Mobile (CORRIGIDO)
+        const mobileMenuBtn = document.getElementById('mobile-menu-toggle');
+        const sidebar = document.querySelector('.sidebar');
+        
+        if (mobileMenuBtn && sidebar) {
+            mobileMenuBtn.addEventListener('click', function(e) {
+                e.stopPropagation(); // Evita conflitos de clique
+                // AQUI ESTAVA O ERRO: Seu CSS usa 'mobile-open', não 'active'
+                sidebar.classList.toggle('mobile-open'); 
+            });
+
+            // Opcional: Fechar o menu ao clicar fora dele
+            document.addEventListener('click', function(e) {
+                if (sidebar.classList.contains('mobile-open') && 
+                    !sidebar.contains(e.target) && 
+                    e.target !== mobileMenuBtn && 
+                    !mobileMenuBtn.contains(e.target)) {
+                    sidebar.classList.remove('mobile-open');
+                }
+            });
+        }
+
+        // 2. Submenus da Sidebar (Lógica do seu sistema)
+        function setupSubmenuToggle(toggleId, submenuId) {
+            const toggleButton = document.getElementById(toggleId);
+            const submenu = document.getElementById(submenuId);
+            if (toggleButton && submenu) {
+                toggleButton.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    submenu.style.display = submenu.style.display === 'block' ? 'none' : 'block';
+                });
+            }
+        }
+        setupSubmenuToggle('financeiro-toggle', 'financeiro-submenu');
+        setupSubmenuToggle('comercial-toggle', 'comercial-submenu');
+        setupSubmenuToggle('configuracoes-toggle', 'configuracoes-submenu');
+        
+        const activeLink = document.querySelector('.sidebar .submenu a.active');
+        if (activeLink) {
+            const parentSubmenu = activeLink.closest('.submenu');
+            if (parentSubmenu) parentSubmenu.style.display = 'block';
+        }
+
+        // 3. LÓGICA DO TEMA
+        const themeToggleBtn = document.getElementById('theme-toggle-btn');
+        const themeIconSun = document.getElementById('theme-icon-sun');
+        const themeIconMoon = document.getElementById('theme-icon-moon');
+        const body = document.body;
+
+        function applyTheme(themeName) {
+            body.classList.remove('theme-white');
+            
+            if (themeName === 'white') {
+                body.classList.add('theme-white');
+                if (themeIconSun) themeIconSun.style.display = 'block';
+                if (themeIconMoon) themeIconMoon.style.display = 'none';
+            } else {
+                if (themeIconSun) themeIconSun.style.display = 'none';
+                if (themeIconMoon) themeIconMoon.style.display = 'block';
+            }
+            localStorage.setItem('selectedTheme', themeName);
+        }
+
+        if (themeToggleBtn) {
+            themeToggleBtn.addEventListener('click', function () {
+                const isWhite = body.classList.contains('theme-white');
+                const newTheme = isWhite ? 'black' : 'white';
+                applyTheme(newTheme);
+            });
+        }
+
+        const savedTheme = localStorage.getItem('selectedTheme') || 'black';
+        applyTheme(savedTheme);
+    });
+    </script>
+</body>
+</html>

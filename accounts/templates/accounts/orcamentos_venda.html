@@ -256,6 +256,23 @@
                 parentSubmenu.style.display = 'block';
             }
         }
+
+        // --- NOVO CÓDIGO: AUTO-ABRIR ORÇAMENTO VINDO DO CRM ---
+        const urlParams = new URLSearchParams(window.location.search);
+        const editId = urlParams.get('editar_id'); // Procura por ?editar_id=123 na URL
+
+        if (editId) {
+            // Simula um pequeno delay para garantir que tudo carregou
+            setTimeout(() => {
+                // Procura o botão de editar correspondente ao ID na tabela
+                const editBtn = document.querySelector(`.edit-orcamento-btn[data-orcamento-id="${editId}"]`);
+                if (editBtn) {
+                    editBtn.click(); // Clica no botão via código
+                    // Mostra um alerta visual ou foca na tela
+                    alert("Orçamento gerado pelo CRM carregado para edição.");
+                }
+            }, 500);
+        }
         // ========= INÍCIO DO BLOCO COPIADO DE vendas.html =========
         // Modal de Cliente
         const clienteModal = document.getElementById('cliente-modal');

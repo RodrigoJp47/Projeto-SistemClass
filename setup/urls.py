@@ -13,6 +13,7 @@ from django.conf.urls.static import static
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('accounts.urls')),
+    path('crm/', include('crm.urls')),
     path('tarefas/', include('core.urls')),
     path('notas_fiscais/', include('notas_fiscais.urls')),
     path('pdv/', include('pdv.urls')),

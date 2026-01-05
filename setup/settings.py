@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'notas_fiscais',
     'storages',
     'pdv',
+    'crm',
 ]
 
 MIDDLEWARE = [
