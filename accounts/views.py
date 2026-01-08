@@ -7253,7 +7253,7 @@ def create_checkout_session(request, plan_type):
         # 3. Cria a Sessão de Checkout
         checkout_session = stripe.checkout.Session.create(
             customer=stripe_customer_id,
-            payment_method_types=['card'], 
+            payment_method_types=['card', 'boleto'], 
             line_items=[
                 {
                     'price': price_id,
