@@ -7219,8 +7219,8 @@ def configurar_asaas_view(request):
 @login_required
 def create_checkout_session(request, plan_type):
     """
-    Cria uma sessão de Checkout no Stripe para o plano escolhido
-    plan_type: 'financeiro' ou 'completo'
+    Cria uma sessão de Checkout no Stripe para o plano escolhido.
+    Corrigido: Define mode='subscription' e remove trial do Stripe (cobrança imediata).
     """
     stripe.api_key = settings.STRIPE_SECRET_KEY
 
@@ -7233,7 +7233,6 @@ def create_checkout_session(request, plan_type):
 
     try:
         # 2. Busca ou Cria o Cliente no Stripe
-        # Primeiro checamos se o usuário já tem um ID stripe salvo
         subscription = getattr(request.user, 'subscription', None)
         stripe_customer_id = subscription.stripe_customer_id if subscription else None
 
@@ -7242,11 +7241,11 @@ def create_checkout_session(request, plan_type):
             customer = stripe.Customer.create(
                 email=request.user.email,
                 name=request.user.get_full_name() or request.user.username,
-                metadata={'user_id': request.user.id} # Importante para o Webhook achar o usuário depois
+                metadata={'user_id': request.user.id} 
             )
             stripe_customer_id = customer.id
             
-            # Salva o ID no banco para não criar duplicado depois
+            # Salva o ID no banco
             if subscription:
                 subscription.stripe_customer_id = stripe_customer_id
                 subscription.save()
@@ -7254,35 +7253,40 @@ def create_checkout_session(request, plan_type):
         # 3. Cria a Sessão de Checkout
         checkout_session = stripe.checkout.Session.create(
             customer=stripe_customer_id,
-            payment_method_types=['card'], # Aceitar cartão (pode adicionar 'boleto' se ativar no painel)
+            payment_method_types=['card'], 
             line_items=[
                 {
                     'price': price_id,
                     'quantity': 1,
                 },
             ],
-            # mode='subscription', # Modo assinatura (recorrente)
-            # # --- ADICIONE ESTE BLOCO ---
+            # --- CORREÇÃO AQUI ---
+            mode='subscription',  # <--- REMOVI O '#' (AGORA ESTÁ ATIVO)
+            
             # subscription_data={
-            #     'trial_period_days': 7, # O Stripe espera 7 dias para cobrar
-            # },
-            # ---------------------------
-            # URLs para onde o cliente volta após pagar ou cancelar
+            #     'trial_period_days': 7, 
+            # }, 
+            # Mantivemos o trial comentado acima ^ 
+            # O cliente paga na hora, pois já usou o trial do seu sistema.
+            
             success_url=settings.DOMAIN_URL + '/assinatura/sucesso/',
             cancel_url=settings.DOMAIN_URL + '/assinatura/cancelado/',
             metadata={
                 'user_id': request.user.id,
-                'plan_type': plan_type  # 'financeiro' ou 'completo'
+                'plan_type': plan_type
             }
         )
 
-        # 4. Redireciona o usuário para o link seguro do Stripe
+        # 4. Redireciona
         return redirect(checkout_session.url, code=303)
 
     except Exception as e:
+        # Adicionei um print para ajudar no debug se der erro de novo
+        print(f"Erro Stripe: {str(e)}") 
         messages.error(request, f"Erro ao conectar com Stripe: {str(e)}")
         return redirect('assinatura')
 
+    
 # Views simples de retorno (só para não dar erro 404)
 @login_required
 def assinatura_sucesso(request):
