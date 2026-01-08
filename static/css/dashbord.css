@@ -2408,6 +2408,40 @@ body {
     text-shadow: 0 0 5px rgba(72, 187, 120, 0.3); /* Leve brilho */
 }
 /* ==========================================================================
+   AJUSTES PARA O PDF (EVITAR CORTES BRUSCOS)
+   ========================================================================== */
+
+/* Aplica a regra de não quebrar página dentro destes elementos */
+.chart-container,           /* Gráfico Resumo do Ano */
+.cards-container,           /* Cards coloridos */
+.new-kpi-container,         /* Grade de KPIs */
+.dre-cards-container,       /* Cards da DRE */
+.insights-section,          /* Seção de Análise DRE */
+.dfc-top-row,               /* Linha do DFC (Barra + Roscas) */
+.dfc-bottom-row,            /* Linha inferior DFC */
+.fluxo-caixa-tabela-container, /* Tabela DFC */
+.pvr-section,               /* Seção inteira do Previsto vs Realizado */
+.dcf-container,             /* Valuation DCF */
+.valuation-section,         /* Valuation Múltiplos */
+.client-analysis-container  /* Análise de Contas */
+{
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    margin-bottom: 20px; /* Dá um respiro para ajudar o cálculo da quebra */
+}
+
+/* Garante que as linhas de tabelas tentem não quebrar no meio do texto */
+tr {
+    page-break-inside: avoid !important;
+}
+
+/* Opcional: Se uma seção for MAIOR que uma página A4, permita quebrar, 
+   mas tente evitar quebrar logo após o título */
+h1, h2, h3, .section-title {
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+}
+/* ==========================================================================
    7. RESPONSIVIDADE (MOBILE) - VERSÃO CORRIGIDA E COMPLETA
    ========================================================================== */
 @media screen and (max-width: 768px) {

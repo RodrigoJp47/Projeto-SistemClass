@@ -5616,21 +5616,34 @@ def assinatura_view(request):
 
 
 
+# accounts/views.py
+
 def register_view(request):
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
-            # 1. Salva o formulário e cria o novo usuário
+            # 1. Salva o usuário
             user = form.save()
             
-            # 2. CRIA AUTOMATICAMENTE A ASSINATURA 'EXPIRADA' PARA O NOVO USUÁRIO
+            # 2. Configura o TRIAL de 7 dias
+            # O signal 'create_subscription_for_new_user' já criou a assinatura
+            # Agora nós a atualizamos para o modo Trial
+            if hasattr(user, 'subscription'):
+                sub = user.subscription
+                sub.status = 'trial'  # Define como teste
+                # Define a validade para hoje + 7 dias
+                sub.valid_until = timezone.now().date() + timedelta(days=7)
+                sub.save()
             
-            
-            # 3. Loga o usuário automaticamente após o cadastro
+            # 3. Loga o usuário
             login(request, user)
             
-            messages.success(request, 'Cadastro realizado com sucesso! Bem-vindo(a).')
-            return redirect('assinatura')
+            messages.success(request, 'Cadastro realizado! Aproveite seus 7 dias de teste grátis.')
+            
+            # 4. MUDANÇA ESTRATÉGICA: Redireciona direto para o sistema
+            # Antes era: return redirect('assinatura')
+            return redirect('smart_redirect') 
+            
     else:
         form = CustomUserCreationForm()
         
@@ -7248,11 +7261,11 @@ def create_checkout_session(request, plan_type):
                     'quantity': 1,
                 },
             ],
-            mode='subscription', # Modo assinatura (recorrente)
-            # --- ADICIONE ESTE BLOCO ---
-            subscription_data={
-                'trial_period_days': 7, # O Stripe espera 7 dias para cobrar
-            },
+            # mode='subscription', # Modo assinatura (recorrente)
+            # # --- ADICIONE ESTE BLOCO ---
+            # subscription_data={
+            #     'trial_period_days': 7, # O Stripe espera 7 dias para cobrar
+            # },
             # ---------------------------
             # URLs para onde o cliente volta após pagar ou cancelar
             success_url=settings.DOMAIN_URL + '/assinatura/sucesso/',
@@ -7293,8 +7306,9 @@ import stripe
 from django.utils import timezone
 from datetime import timedelta 
 
+
 @csrf_exempt
-def stripe_webhook(request):
+def stripe_webhook(request):  # Mantivemos o nome antigo para bater com seu urls.py
     payload = request.body
     sig_header = request.META.get('HTTP_STRIPE_SIGNATURE')
     event = None
@@ -7304,57 +7318,87 @@ def stripe_webhook(request):
             payload, sig_header, settings.STRIPE_WEBHOOK_SECRET
         )
     except ValueError as e:
-        # Payload inválido
         return HttpResponse(status=400)
     except stripe.error.SignatureVerificationError as e:
-        # Assinatura inválida
         return HttpResponse(status=400)
 
-    # --- LÓGICA DO EVENTO ---
+    # --- EVENTO 1: CLIENTE PAGOU A 1ª VEZ (Fim do Trial -> Ativo) ---
     if event['type'] == 'checkout.session.completed':
         session = event['data']['object']
         
-        # Recupera metadata
+        # Recupera dados
         user_id = session.get('metadata', {}).get('user_id')
-        plan_type = session.get('metadata', {}).get('plan_type')
+        plan_type = session.get('metadata', {}).get('plan_type') # Importante para sua lógica de permissão
         stripe_subscription_id = session.get('subscription')
 
-        print(f"🔔 WEBHOOK RECEBIDO: User ID: {user_id}, Plano: {plan_type}")
-
-        if user_id and plan_type:
+        if user_id:
             try:
                 user = User.objects.get(id=user_id)
-                subscription = Subscription.objects.get(user=user)
-
-                # Atualiza dados básicos
-                subscription.status = 'active'
-                subscription.stripe_subscription_id = stripe_subscription_id
+                sub = user.subscription # Pega a assinatura que estava em 'trial'
                 
-                # CORREÇÃO AQUI: Usando timedelta direto
-                subscription.valid_until = timezone.now().date() + timedelta(days=30)
+                # 1. Atualiza IDs e Status
+                sub.stripe_subscription_id = stripe_subscription_id
+                sub.status = 'active' 
+                
+                # 2. Sincroniza a data de validade com o Stripe
+                stripe_sub = stripe.Subscription.retrieve(stripe_subscription_id)
+                current_period_end = stripe_sub['current_period_end']
+                sub.valid_until = datetime.fromtimestamp(current_period_end).date()
 
-                # Lógica de Permissão
+                # 3. Lógica de Permissões (Trazida do seu código antigo #1)
+                # Isso garante que os módulos sejam liberados corretamente
                 if plan_type == 'financeiro':
-                    subscription.has_financial_module = True
-                    subscription.has_commercial_module = False
-                    subscription.employee_limit = 2
-                
+                    sub.has_financial_module = True
+                    sub.has_commercial_module = False
+                    sub.employee_limit = 2
                 elif plan_type == 'completo':
-                    subscription.has_financial_module = True
-                    subscription.has_commercial_module = True
-                    subscription.employee_limit = 5
+                    sub.has_financial_module = True
+                    sub.has_commercial_module = True
+                    sub.employee_limit = 5
                 
-                subscription.save()
-                print(f"✅ SUCESSO TOTAL: Assinatura de {user.username} atualizada para {plan_type}!")
-
+                sub.save()
+                print(f"✅ SUCESSO: Usuário {user.username} saiu do Trial para {plan_type}!")
+                
             except User.DoesNotExist:
-                print("❌ ERRO: Usuário não encontrado no banco.")
-            except Subscription.DoesNotExist:
-                print("❌ ERRO: Assinatura (Subscription) não existe para este usuário.")
+                print(f"❌ ERRO: Usuário ID {user_id} não encontrado.")
             except Exception as e:
-                # Esse print vai nos salvar se houver outro erro!
-                print(f"❌ ERRO CRÍTICO NO CÓDIGO: {str(e)}")
-                return HttpResponse(status=500)
+                print(f"❌ ERRO CRÍTICO: {str(e)}")
+
+    # --- EVENTO 2: RENOVAÇÃO MENSAL ---
+    elif event['type'] == 'invoice.payment_succeeded':
+        invoice = event['data']['object']
+        stripe_subscription_id = invoice.get('subscription')
+
+        if stripe_subscription_id:
+            try:
+                # Busca pelo ID do Stripe (que salvamos no passo anterior)
+                sub = Subscription.objects.get(stripe_subscription_id=stripe_subscription_id)
+                
+                sub.status = 'active'
+                
+                # Atualiza a validade
+                lines = invoice.get('lines', {}).get('data', [])
+                if lines:
+                    period_end = lines[0]['period']['end']
+                    sub.valid_until = datetime.fromtimestamp(period_end).date()
+                
+                sub.save()
+                print(f"Renovação processada para {stripe_subscription_id}")
+                
+            except Subscription.DoesNotExist:
+                pass
+
+    # --- EVENTO 3: CANCELAMENTO ---
+    elif event['type'] == 'customer.subscription.deleted':
+        subscription_data = event['data']['object']
+        stripe_subscription_id = subscription_data.get('id')
+        
+        try:
+            sub = Subscription.objects.get(stripe_subscription_id=stripe_subscription_id)
+            sub.status = 'canceled'
+            sub.save()
+        except Subscription.DoesNotExist:
+            pass
 
     return HttpResponse(status=200)
 
@@ -7568,4 +7612,10 @@ def editar_funcionario_view(request, pk):
     }
     # Reutiliza o template genérico de edição
     return render(request, 'accounts/editar_item.html', context)
+
+
+
+
+
+
 

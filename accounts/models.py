@@ -331,6 +331,7 @@ class MetaFaturamento(models.Model):
 class Subscription(models.Model):
     STATUS_CHOICES = [
         ('active', 'Ativa'),
+        ('trial', 'Em Teste Grátis'),
         ('past_due', 'Pagamento Pendente'),
         ('canceled', 'Cancelada'),
         ('expired', 'Expirada'),

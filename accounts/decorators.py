@@ -11,65 +11,69 @@ from django.contrib.auth.models import User # Adicione esta importação se falt
 def subscription_required(view_func):
     @wraps(view_func)
     def _wrapped_view(request, *args, **kwargs):
-        # 1. Verifica se o usuário está autenticado
+        # 1. Autenticação básica
         if not request.user.is_authenticated:
             return redirect('login')
 
-        # 2. Permite acesso de superusuário
+        # 2. Superusuário sempre passa
         if request.user.is_superuser:
             return view_func(request, *args, **kwargs)
 
-        # Flag e variável para armazenar a assinatura
-        is_employee_user = False
         subscription_to_check = None
 
-        # 3. Lógica principal: Descobrir qual assinatura verificar
+        # 3. Identifica de quem é a assinatura (Lógica para Funcionários)
         try:
-            # Tenta encontrar um vínculo de funcionário
+            # Tenta achar link de funcionário
             link = CompanyUserLink.objects.select_related('owner__subscription').get(employee=request.user, is_active=True)
-            # Se encontrou, a assinatura a ser verificada é a do DONO
             subscription_to_check = link.owner.subscription
-            is_employee_user = True
-            
         except CompanyUserLink.DoesNotExist:
-            # Não é um funcionário, então verifica a assinatura PRÓPRIA
-            is_employee_user = False
-            try:
+            # Se não é funcionário, verifica a própria assinatura
+            if hasattr(request, 'subscription'):
                 subscription_to_check = request.user.subscription
-            except Subscription.DoesNotExist:
-                # É um usuário normal (não-funcionário) SEM assinatura.
-                # Esta é a situação que o get_or_create estava "corrigindo" errado.
-                messages.error(request, 'Assinatura não encontrada. Por favor, contate o suporte.')
-                return redirect('assinatura')
-                
-        except Subscription.DoesNotExist:
-            # É um funcionário (is_employee_user=True), mas o DONO não tem uma assinatura.
-            messages.error(request, 'A assinatura principal (do dono) desta conta não foi encontrada.')
-            return redirect('assinatura')
-        except Exception as e:
-            # Captura outros erros inesperados (ex: related object 'subscription' não existe)
-            messages.error(request, f'Ocorreu um erro ao verificar seu vínculo de funcionário: {e}')
+
+        # 4. Se não achou assinatura nenhuma, erro crítico
+        if not subscription_to_check:
+            messages.error(request, 'Nenhuma assinatura encontrada.')
             return redirect('login')
 
+        # === LÓGICA DE BLOQUEIO / TRIAL ===
+        
+        status = subscription_to_check.status
+        valid_until = subscription_to_check.valid_until
+        today = timezone.now().date()
 
-        # 4. Agora que temos a 'subscription_to_check', validamos ela
-        is_active = (
-            subscription_to_check.status == 'active' and
-            subscription_to_check.valid_until and
-            subscription_to_check.valid_until >= timezone.now().date()
-        )
+        # CASO A: Assinatura Ativa (Pagante)
+        if status == 'active':
+            # Opcional: Se quiser checar validade mesmo para ativos (caso o webhook falhe)
+            # if valid_until and valid_until < today:
+            #     messages.error(request, 'Sua assinatura expirou. Renove para continuar.')
+            #     return redirect('assinatura')
+            pass # Acesso Liberado
 
-        if is_active:
-            # Injeta a assinatura válida no request para a view usar
-            request.active_subscription = subscription_to_check
-            return view_func(request, *args, **kwargs)
-        else:
-            # Assinatura (do dono ou própria) está expirada ou inativa
-            if is_employee_user:
-                messages.warning(request, 'A assinatura principal desta conta expirou ou não está ativa. Peça ao administrador para verificar.')
+        # CASO B: Período de Teste (Trial)
+        elif status == 'trial':
+            if valid_until and valid_until >= today:
+                # AINDA ESTÁ NO PRAZO -> Acesso Liberado
+                pass 
             else:
-                messages.warning(request, 'Sua assinatura expirou ou não está ativa. Por favor, renove para continuar.')
+                # PRAZO ACABOU -> Bloqueio
+                messages.warning(request, 'Seu período de teste de 7 dias acabou. Escolha um plano para continuar.')
+                return redirect('assinatura') # Manda para a tela de planos
+        
+        # CASO C: Pagamento Pendente (Past Due) - Geralmente damos uma colher de chá ou bloqueamos
+        elif status == 'past_due':
+             messages.warning(request, 'Há um pagamento pendente. Regularize para evitar bloqueio.')
+             # return redirect('assinatura') # Descomente se quiser bloquear direto
+             pass
+
+        # CASO D: Cancelada ou Expirada
+        else:
+            messages.error(request, 'Sua assinatura não está ativa.')
             return redirect('assinatura')
+
+        # Se passou pelas verificações acima, armazena na request para uso nas views e libera
+        request.active_subscription = subscription_to_check
+        return view_func(request, *args, **kwargs)
 
     return _wrapped_view
 
