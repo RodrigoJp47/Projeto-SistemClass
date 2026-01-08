@@ -43,7 +43,7 @@ def subscription_required(view_func):
         today = timezone.now().date()
 
         # CASO A: Assinatura Ativa (Pagante)
-        if status == 'active':
+        if str(status).lower() in ['active', 'ativo', 'ativa']:
             # Opcional: Se quiser checar validade mesmo para ativos (caso o webhook falhe)
             # if valid_until and valid_until < today:
             #     messages.error(request, 'Sua assinatura expirou. Renove para continuar.')
