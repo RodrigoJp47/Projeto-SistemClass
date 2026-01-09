@@ -1,0 +1,353 @@
+
+
+{% load static %}
+{% load humanize %}
+{% load l10n %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fluxo de Caixa Analítico</title>
+    
+    <link rel="stylesheet" href="{% static 'css/sidebar.css' %}">
+    <link rel="stylesheet" href="{% static 'css/global.css' %}">
+    <link rel="stylesheet" href="{% static 'css/themes.css' %}">
+    <link rel="stylesheet" href="{% static 'css/layout-responsive.css' %}">
+    
+    <style>
+        /* --- 1. CORES E TEMA --- */
+        :root {
+            --bg-color: #121212;
+            --card-bg-color: #1e1e1e;
+            --text-color: #e0e0e0;
+            --border-color: #333333;
+            --hover-color: #2c2c2c;
+        }
+
+        body.theme-white {
+            --bg-color: #f4f6f9;
+            --card-bg-color: #ffffff;
+            --text-color: #333333;
+            --border-color: #dddddd;
+            --hover-color: #f1f1f1;
+        }
+
+        /* --- 2. RESET E LAYOUT --- */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: var(--bg-color); 
+            color: var(--text-color);
+            display: flex;
+            min-height: 100vh;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .main-content {
+            margin-left: 270px;
+            padding: 20px;
+            width: calc(100% - 270px);
+            overflow-y: auto;
+            transition: margin-left 0.3s, width 0.3s;
+        }
+        
+        .main-content.sidebar-collapsed {
+            margin-left: 80px;
+            width: calc(100% - 80px);
+        }
+
+        /* --- CSS DO SIDEBAR (Recolher) --- */
+        .sidebar { width: 270px; transition: width 0.3s ease; }
+        .sidebar.sidebar-collapsed { width: 80px !important; min-width: 80px !important; }
+        .sidebar.sidebar-collapsed .text,
+        .sidebar.sidebar-collapsed .sidebar-header h2,
+        .sidebar.sidebar-collapsed .logo-container p { display: none !important; }
+        .sidebar.sidebar-collapsed ul li a { text-align: center; padding-left: 0 !important; }
+        .sidebar.sidebar-collapsed .has-submenu::after,
+        .sidebar.sidebar-collapsed .fa-chevron-down { display: none !important; }
+        .sidebar.sidebar-collapsed .logo-container img { width: 40px; margin: 0 auto; display: block; }
+
+        /* --- 3. TABELA --- */
+        .table-responsive {
+            overflow-x: auto;
+            background: var(--card-bg-color);
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin-top: 20px;
+            border: 1px solid var(--border-color);
+        }
+
+        table.analytic-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; min-width: 1200px; }
+        .analytic-table th, .analytic-table td { padding: 10px; border-bottom: 1px solid var(--border-color); text-align: right; color: var(--text-color); }
+        .analytic-table th { background-color: var(--bg-color); font-weight: 600; text-align: center; }
+
+        /* Coluna Fixa */
+        .analytic-table td:first-child, .analytic-table th:first-child {
+            text-align: left; position: sticky; left: 0;
+            background-color: var(--card-bg-color); z-index: 1; font-weight: 600; min-width: 200px;
+            border-right: 1px solid var(--border-color);
+        }
+        .analytic-table th:first-child { background-color: var(--bg-color); }
+        
+        .text-success { color: #28a745 !important; }
+        .text-danger { color: #dc3545 !important; }
+        .text-blue { color: #007bff !important; }
+        .bg-group { background-color: rgba(128, 128, 128, 0.1); font-weight: bold; }
+        .row-total { background-color: rgba(128, 128, 128, 0.15); font-weight: bold; }
+
+        .filter-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; color: var(--text-color); }
+        /* --- ESTILO DOS BOTÕES DE FILTRO --- */
+        .view-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .btn-view {
+            padding: 6px 12px;
+            border: 1px solid var(--border-color);
+            background: var(--card-bg-color);
+            color: var(--text-color);
+            border-radius: 4px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-view:hover {
+            background-color: var(--hover-color);
+        }
+        .btn-view.active {
+            background-color: #007bff;
+            color: #fff;
+            border-color: #007bff;
+        }
+        .month-select {
+            padding: 6px;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            background: var(--card-bg-color);
+            color: var(--text-color);
+            margin-right: 10px;
+        }
+        .year-selector select { padding: 5px 10px; border-radius: 4px; border: 1px solid var(--border-color); background-color: var(--card-bg-color); color: var(--text-color); }
+        
+        #menu-toggle { display: none; background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-color); }
+        @media (max-width: 768px) { .main-content { margin-left: 0; width: 100%; } #menu-toggle { display: block; } }
+    </style>
+</head>
+<body class="home-page">
+
+    {% include 'accounts/_sidebar.html' %}
+
+    <div class="main-content">
+        <button id="menu-toggle" style="margin-bottom: 15px;">&#9776;</button>
+
+        <div class="filter-header">
+            <h2>Fluxo de Caixa Analítico - {{ ano|unlocalize }}</h2>
+            
+            <form method="get" class="view-controls">
+                
+                {% if view_mode %}<input type="hidden" name="view" value="{{ view_mode }}">{% endif %}
+
+                <select name="status_view" class="month-select" onchange="this.form.submit()" style="font-weight: bold; border-color: #007bff;">
+                    <option value="realizado" {% if status_view == 'realizado' %}selected{% endif %}>Realizado (Pgto)</option>
+                    <option value="projetado" {% if status_view == 'projetado' %}selected{% endif %}>Projetado (Vencimento)</option>
+                </select>
+
+                <span style="border-left: 1px solid var(--border-color); height: 25px; margin: 0 5px;"></span>
+
+                {% if view_mode == 'diario' %}
+                <select name="mes" class="month-select" onchange="this.form.submit()">
+                    <option value="1" {% if mes == 1 %}selected{% endif %}>Janeiro</option>
+                    <option value="2" {% if mes == 2 %}selected{% endif %}>Fevereiro</option>
+                    <option value="3" {% if mes == 3 %}selected{% endif %}>Março</option>
+                    <option value="4" {% if mes == 4 %}selected{% endif %}>Abril</option>
+                    <option value="5" {% if mes == 5 %}selected{% endif %}>Maio</option>
+                    <option value="6" {% if mes == 6 %}selected{% endif %}>Junho</option>
+                    <option value="7" {% if mes == 7 %}selected{% endif %}>Julho</option>
+                    <option value="8" {% if mes == 8 %}selected{% endif %}>Agosto</option>
+                    <option value="9" {% if mes == 9 %}selected{% endif %}>Setembro</option>
+                    <option value="10" {% if mes == 10 %}selected{% endif %}>Outubro</option>
+                    <option value="11" {% if mes == 11 %}selected{% endif %}>Novembro</option>
+                    <option value="12" {% if mes == 12 %}selected{% endif %}>Dezembro</option>
+                </select>
+                {% endif %}
+
+                <button type="submit" name="view" value="mensal" class="btn-view {% if view_mode == 'mensal' %}active{% endif %}">Mensal</button>
+                <button type="submit" name="view" value="diario" class="btn-view {% if view_mode == 'diario' %}active{% endif %}">Diário</button>
+
+                <div style="margin-left: 15px; display: flex; align-items: center; gap: 5px;">
+                    <label for="ano">Ano:</label>
+                    <select name="ano" id="ano" onchange="this.form.submit()" class="month-select">
+                        <option value="{{ ano|add:'-1'|unlocalize }}">{{ ano|add:'-1'|unlocalize }}</option>
+                        <option value="{{ ano|unlocalize }}" selected>{{ ano|unlocalize }}</option>
+                        <option value="{{ ano|add:'1'|unlocalize }}">{{ ano|add:'1'|unlocalize }}</option>
+                    </select>
+                </div>
+                
+            </form>
+        </div>
+
+        <div class="table-responsive">
+            <table class="analytic-table">
+                <thead>
+                    <tr>
+                        <th>Nome / Descrição</th>
+                        {% for label in colunas_labels %}
+                            <th>{{ label }}</th>
+                        {% endfor %}
+                        <th>Total</th> </tr>
+                </thead>
+                <tbody>
+                    
+                    <tr class="bg-group">
+                        <td colspan="40" class="text-success" style="text-align: left;">RECEITAS (ENTRADAS)</td>
+                    </tr>
+                    
+                    {% for item in dados_receita %}
+                    <tr>
+                        <td>{{ item.nome }}</td>
+                        {% for val in item.valores %}
+                            <td>
+                                {% if val > 0 %}{{ val|floatformat:2|intcomma }}{% else %}-{% endif %}
+                            </td>
+                        {% endfor %}
+                        <td style="font-weight:bold;">{{ item.total|floatformat:2|intcomma }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="40" style="text-align:center; opacity:0.7;">Nenhuma receita registrada neste período.</td></tr>
+                    {% endfor %}
+                    
+                    <tr class="row-total text-success">
+                        <td>TOTAL RECEITAS</td>
+                        {% for val in totais_receita_col %}
+                            <td>{{ val|floatformat:2|intcomma }}</td>
+                        {% endfor %}
+                        <td>{{ total_receitas_ano|floatformat:2|intcomma }}</td>
+                    </tr>
+
+                    <tr><td colspan="40" style="border:none; height:20px;"></td></tr>
+
+                    <tr class="bg-group">
+                        <td colspan="40" class="text-danger" style="text-align: left;">DESPESAS (SAÍDAS)</td>
+                    </tr>
+                    {% for item in dados_despesa %}
+                    <tr>
+                        <td>{{ item.nome }}</td>
+                        {% for val in item.valores %}
+                            <td>
+                                {% if val > 0 %}{{ val|floatformat:2|intcomma }}{% else %}-{% endif %}
+                            </td>
+                        {% endfor %}
+                        <td style="font-weight:bold;">{{ item.total|floatformat:2|intcomma }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="40" style="text-align:center; opacity:0.7;">Nenhuma despesa registrada neste período.</td></tr>
+                    {% endfor %}
+
+                    <tr class="row-total text-danger">
+                        <td>TOTAL DESPESAS</td>
+                        {% for val in totais_despesa_col %}
+                            <td>{{ val|floatformat:2|intcomma }}</td>
+                        {% endfor %}
+                        <td>{{ total_despesas_ano|floatformat:2|intcomma }}</td>
+                    </tr>
+
+                    <tr><td colspan="40" style="border:none; height:20px;"></td></tr>
+
+                    <tr class="row-total text-blue" style="border-top: 2px solid #007bff;">
+                        <td>SALDO LÍQUIDO</td>
+                        {% for val in saldo_mensal %}
+                            <td class="{% if val < 0 %}text-danger{% else %}text-blue{% endif %}">
+                                {{ val|floatformat:2|intcomma }}
+                            </td>
+                        {% endfor %}
+                        <td>{{ saldo_acumulado_ano|floatformat:2|intcomma }}</td>
+                    </tr>
+
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // --- 1. TEMA ---
+            const themeBtn = document.getElementById('theme-toggle-btn');
+            const sunIcon = document.getElementById('theme-icon-sun');
+            const moonIcon = document.getElementById('theme-icon-moon');
+            const body = document.body;
+
+            function updateIcons(isWhite) {
+                if (isWhite) {
+                    if(sunIcon) sunIcon.style.display = 'none';
+                    if(moonIcon) moonIcon.style.display = 'block';
+                } else {
+                    if(sunIcon) sunIcon.style.display = 'block';
+                    if(moonIcon) moonIcon.style.display = 'none';
+                }
+            }
+            function applyTheme(themeName) {
+                if (themeName === 'white') {
+                    body.classList.add('theme-white');
+                    updateIcons(true);
+                } else {
+                    body.classList.remove('theme-white');
+                    updateIcons(false);
+                }
+                localStorage.setItem('selectedTheme', themeName);
+            }
+
+            // CORREÇÃO: Reativei o listener aqui para garantir que funcione
+            if (themeBtn) {
+                themeBtn.addEventListener('click', function(e) {
+                    // Evita conflito se houver múltiplos listeners, mas garante que funcione
+                    const isWhite = body.classList.contains('theme-white');
+                    applyTheme(isWhite ? 'black' : 'white');
+                });
+            }
+            
+            const savedTheme = localStorage.getItem('selectedTheme') || 'black';
+            applyTheme(savedTheme);
+
+            // --- 2. MENU TOGGLE ---
+            const sidebar = document.querySelector('.sidebar');
+            const mainContent = document.querySelector('.main-content');
+            const desktopToggleButton = document.getElementById('desktop-toggle-btn');
+            
+            function setupSubmenuToggle(toggleId, submenuId) {
+                const toggleButton = document.getElementById(toggleId);
+                const submenu = document.getElementById(submenuId);
+                if (toggleButton && submenu) {
+                    toggleButton.addEventListener('click', function(event) {
+                        event.preventDefault();
+                        if (sidebar.classList.contains('sidebar-collapsed')) {
+                            sidebar.classList.remove('sidebar-collapsed');
+                            if(mainContent) mainContent.classList.remove('sidebar-collapsed');
+                            localStorage.setItem('sidebarCollapsed', 'false');
+                            if(desktopToggleButton) { desktopToggleButton.innerHTML = '«'; desktopToggleButton.title = 'Recolher menu'; }
+                        }
+                        submenu.style.display = (submenu.style.display === 'block') ? 'none' : 'block';
+                    });
+                }
+            }
+            setupSubmenuToggle('financeiro-toggle', 'financeiro-submenu');
+            setupSubmenuToggle('comercial-toggle', 'comercial-submenu');
+            setupSubmenuToggle('configuracoes-toggle', 'configuracoes-submenu');
+            
+            const financeiroSubmenu = document.getElementById('financeiro-submenu');
+            if(financeiroSubmenu && !sidebar.classList.contains('sidebar-collapsed')){
+                financeiroSubmenu.style.display = 'block';
+            }
+
+            const menuToggleButton = document.getElementById('menu-toggle');
+            if (menuToggleButton && sidebar) {
+                menuToggleButton.addEventListener('click', () => sidebar.classList.toggle('mobile-open'));
+            }
+        });
+    </script>
+</body>
+</html>

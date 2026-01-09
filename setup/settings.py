@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     'storages',
     'pdv',
     'crm',
+    'relatorios',
 ]
 
 MIDDLEWARE = [

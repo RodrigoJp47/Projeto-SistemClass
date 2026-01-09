@@ -99,6 +99,7 @@
                                     <div class="form-check">{{ employee_form.can_access_painel_financeiro.label_tag }} {{ employee_form.can_access_painel_financeiro }}</div>
                                     <div class="form-check">{{ employee_form.can_access_fornecedores.label_tag }} {{ employee_form.can_access_fornecedores }}</div>
                                     <div class="form-check">{{ employee_form.can_access_clientes_financeiro.label_tag }} {{ employee_form.can_access_clientes_financeiro }}</div>
+                                    <div class="form-check">{{ employee_form.can_access_fluxo_caixa.label_tag }} {{ employee_form.can_access_fluxo_caixa }}</div>
                                 </div>
                                 <div class="permission-column">
                                     <strong>Comercial</strong>
@@ -156,6 +157,9 @@
                                     {% endif %}
                                 </td>
                                 <td class="permissions-cell">
+                                    {% if link.can_access_fluxo_caixa %}
+                                        <span class="badge status-active" title="Acessa Fluxo de Caixa" style="background-color: #17a2b8;">Fluxo Cx</span>
+                                    {% endif %}
                                     {% if link.can_access_pdv %}
                                         <span class="badge status-active" style="background-color: #6f42c1;">Frente de Caixa</span>
                                     {% endif %}

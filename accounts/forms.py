@@ -475,6 +475,7 @@ class EmployeeCreationForm(forms.ModelForm):
     can_access_painel_financeiro = forms.BooleanField(label="Painel Financeiro", required=False)
     can_access_fornecedores = forms.BooleanField(label="Fornecedores", required=False)
     can_access_clientes_financeiro = forms.BooleanField(label="Clientes (Financeiro)", required=False)
+    can_access_fluxo_caixa = forms.BooleanField(label="Fluxo de Caixa Analítico", required=False)
 
     # --- Permissões Comercial ---
     can_access_painel_vendas = forms.BooleanField(label="Painel de Vendas", required=False)
@@ -775,6 +776,7 @@ class EmployeePermissionsForm(forms.ModelForm):
             'can_access_painel_financeiro',
             'can_access_fornecedores',
             'can_access_clientes_financeiro',
+            'can_access_fluxo_caixa',
             'can_access_pdv',
             'can_access_painel_vendas',
             'can_access_notas_fiscais',
