@@ -104,6 +104,10 @@
                                 <div class="permission-column">
                                     <strong>Comercial</strong>
                                     <div class="form-check highlight-permission">
+                                        {{ employee_form.can_access_crm.label_tag }} 
+                                        {{ employee_form.can_access_crm }}
+                                    </div>
+                                    <div class="form-check highlight-permission">
                                         {{ employee_form.can_access_pdv.label_tag }} 
                                         {{ employee_form.can_access_pdv }}
                                     </div>
@@ -157,6 +161,9 @@
                                     {% endif %}
                                 </td>
                                 <td class="permissions-cell">
+                                    {% if link.can_access_crm %}
+                                        <span class="badge status-active" style="background-color: #3498db;">CRM</span>
+                                    {% endif %}
                                     {% if link.can_access_fluxo_caixa %}
                                         <span class="badge status-active" title="Acessa Fluxo de Caixa" style="background-color: #17a2b8;">Fluxo Cx</span>
                                     {% endif %}

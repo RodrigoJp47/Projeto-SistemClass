@@ -708,6 +708,7 @@ class CompanyUserLink(models.Model):
     can_access_painel_financeiro = models.BooleanField(default=False, verbose_name="Acesso a Painel Financeiro (Dashboards)")
     can_access_fornecedores = models.BooleanField(default=False, verbose_name="Acesso a Fornecedores")
     can_access_clientes_financeiro = models.BooleanField(default=False, verbose_name="Acesso a Clientes (Financeiro)")
+    can_access_crm = models.BooleanField(default=False, verbose_name="Acesso ao CRM / Pipeline")
     can_access_fluxo_caixa = models.BooleanField(default=False, verbose_name="Acesso a Fluxo de Caixa")
     
     # --- Permissões Módulo Comercial ---

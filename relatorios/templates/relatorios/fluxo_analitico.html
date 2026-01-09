@@ -189,6 +189,15 @@
                 </div>
                 
             </form>
+            <div class="actions" style="margin-left: auto; display: flex; gap: 10px;">
+                <a href="{% url 'exportar_fluxo_excel' %}?ano={{ ano }}&view={{ view_mode }}&status_view={{ status_view }}&mes={{ mes }}" class="btn-view" style="background-color: #28a745; color: white; text-decoration: none; border: none;">
+                    <i class="fas fa-file-excel"></i> Excel
+                </a>
+
+                <a href="{% url 'exportar_fluxo_pdf' %}?ano={{ ano }}&view={{ view_mode }}&status_view={{ status_view }}&mes={{ mes }}" target="_blank" class="btn-view" style="background-color: #dc3545; color: white; text-decoration: none; border: none;">
+                    <i class="fas fa-file-pdf"></i> PDF
+                </a>
+            </div>
         </div>
 
         <div class="table-responsive">

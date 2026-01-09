@@ -1,0 +1,149 @@
+
+
+{% load humanize %}
+{% load l10n %}  <!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Relatório Fluxo de Caixa</title>
+    <style>
+        @page {
+            size: A4 landscape;
+            margin: 0.5cm; /* Margem menor para caber mais conteúdo */
+            @frame footer_frame {
+                -pdf-frame-content: footerContent;
+                bottom: 0cm;
+                margin-left: 0.5cm;
+                margin-right: 0.5cm;
+                height: 1cm;
+            }
+        }
+
+        body {
+            font-family: Helvetica, Arial, sans-serif;
+            /* Aumentei um pouco: de 5px para 6.5px no diário */
+            font-size: {% if view_mode == 'diario' %}6.5px{% else %}10px{% endif %};
+        }
+
+        h2 {
+            text-align: center;
+            font-size: 14px;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            repeat-header: yes;
+        }
+
+        th, td {
+            border: 0.5px solid #666;
+            padding: 1.5px; /* Padding menor para apertar as colunas */
+            text-align: right;
+            vertical-align: middle;
+        }
+
+        th {
+            background-color: #f0f0f0;
+            text-align: center;
+            font-weight: bold;
+            color: #333;
+        }
+
+        /* Coluna de Descrição */
+        td:first-child, th:first-child {
+            text-align: left;
+            /* Reduzi um pouco a largura da descrição para sobrar para os dias */
+            width: {% if view_mode == 'diario' %}100px{% else %}200px{% endif %};
+            white-space: nowrap;
+            overflow: hidden;
+        }
+
+        .text-success { color: #006400; font-weight: bold; }
+        .text-danger { color: #8B0000; font-weight: bold; }
+        .text-blue { color: #00008B; font-weight: bold; }
+        
+        .bg-group { 
+            background-color: #e6e6e6; 
+            font-weight: bold; 
+            text-align: left !important;
+            font-size: {% if view_mode == 'diario' %}7px{% else %}11px{% endif %};
+        }
+        
+        .row-total { 
+            background-color: #f9f9f9; 
+            font-weight: bold; 
+        }
+    </style>
+</head>
+<body>
+    <h2>Fluxo de Caixa Analítico - {{ ano|unlocalize }} ({{ view_mode|title }})</h2>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Descrição</th>
+                {% for label in colunas_labels %}
+                    <th>{{ label }}</th>
+                {% endfor %}
+                <th>Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr class="bg-group"><td colspan="{{ colunas_labels|length|add:2 }}">RECEITAS</td></tr>
+            {% for item in dados_receita %}
+            <tr>
+                <td>{{ item.nome|truncatechars:30 }}</td>
+                {% for val in item.valores %}
+                    <td>{% if val > 0 %}{{ val|floatformat:2|intcomma }}{% else %}-{% endif %}</td>
+                {% endfor %}
+                <td>{{ item.total|floatformat:2|intcomma }}</td>
+            </tr>
+            {% endfor %}
+            <tr class="row-total text-success">
+                <td>TOTAL RECEITAS</td>
+                {% for val in totais_receita_col %}
+                    <td>{{ val|floatformat:2|intcomma }}</td>
+                {% endfor %}
+                <td>{{ total_receitas_ano|floatformat:2|intcomma }}</td>
+            </tr>
+
+            <tr><td colspan="{{ colunas_labels|length|add:2 }}" style="border:none; height: 5px;"></td></tr>
+
+            <tr class="bg-group"><td colspan="{{ colunas_labels|length|add:2 }}">DESPESAS</td></tr>
+            {% for item in dados_despesa %}
+            <tr>
+                <td>{{ item.nome|truncatechars:30 }}</td>
+                {% for val in item.valores %}
+                    <td>{% if val > 0 %}{{ val|floatformat:2|intcomma }}{% else %}-{% endif %}</td>
+                {% endfor %}
+                <td>{{ item.total|floatformat:2|intcomma }}</td>
+            </tr>
+            {% endfor %}
+            <tr class="row-total text-danger">
+                <td>TOTAL DESPESAS</td>
+                {% for val in totais_despesa_col %}
+                    <td>{{ val|floatformat:2|intcomma }}</td>
+                {% endfor %}
+                <td>{{ total_despesas_ano|floatformat:2|intcomma }}</td>
+            </tr>
+
+            <tr><td colspan="{{ colunas_labels|length|add:2 }}" style="border:none; height: 5px;"></td></tr>
+
+            <tr class="row-total text-blue">
+                <td>SALDO LÍQUIDO</td>
+                {% for val in saldo_mensal %}
+                    <td>{{ val|floatformat:2|intcomma }}</td>
+                {% endfor %}
+                <td>{{ saldo_acumulado_ano|floatformat:2|intcomma }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div id="footerContent" style="text-align:right; font-size:8px;">
+        Gerado em {% now "d/m/Y H:i" %} - Página <pdf:pagenumber>
+    </div>
+</body>
+</html>

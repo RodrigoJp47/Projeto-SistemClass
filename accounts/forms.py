@@ -487,6 +487,7 @@ class EmployeeCreationForm(forms.ModelForm):
     can_access_metas_comerciais = forms.BooleanField(label="Gestão de Metas", required=False)
     can_access_precificacao = forms.BooleanField(label="Precificação", required=False)
     can_access_pdv = forms.BooleanField(label="Acesso ao PDV (Frente de Caixa)", required=False)
+    can_access_crm = forms.BooleanField(label="Acesso ao CRM (Pipeline)", required=False)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -777,6 +778,7 @@ class EmployeePermissionsForm(forms.ModelForm):
             'can_access_fornecedores',
             'can_access_clientes_financeiro',
             'can_access_fluxo_caixa',
+            'can_access_crm',
             'can_access_pdv',
             'can_access_painel_vendas',
             'can_access_notas_fiscais',
@@ -797,6 +799,7 @@ class EmployeePermissionsForm(forms.ModelForm):
             'can_access_painel_financeiro': 'Painel Financeiro (Dashboards)',
             'can_access_fornecedores': 'Fornecedores',
             'can_access_clientes_financeiro': 'Clientes (Financeiro)',
+            'can_access_crm': 'Acesso ao CRM / Pipeline',
             'can_access_pdv': 'Frente de Caixa (PDV)',
             'can_access_painel_vendas': 'Painel de Vendas',
             'can_access_notas_fiscais': 'Notas Fiscais',
