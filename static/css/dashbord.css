@@ -2441,6 +2441,41 @@ h1, h2, h3, .section-title {
     page-break-after: avoid !important;
     break-after: avoid !important;
 }
+
+/* ==========================================================================
+   CORREÇÃO PARA GERAÇÃO DE PDF (NOVO)
+   ========================================================================== */
+
+/* Quando a classe .generating-pdf é adicionada ao body via JS */
+body.generating-pdf {
+    height: auto !important;
+    overflow: visible !important;
+}
+
+body.generating-pdf .sidebar,
+body.generating-pdf #menu-toggle,
+body.generating-pdf .action-toggle-container,
+body.generating-pdf #pdf-tip-bubble,
+body.generating-pdf #btn-save-full-pdf {
+    display: none !important; /* Esconde menu e botões */
+}
+
+body.generating-pdf .main-content {
+    margin-left: 0 !important; /* Remove o espaço da sidebar */
+    width: 100% !important;    /* Usa 100% da largura do papel */
+    height: auto !important;   /* Força altura total */
+    overflow: visible !important; /* Remove barras de rolagem internas */
+    background-color: #fff !important; /* Garante fundo branco */
+    padding: 10px !important;
+}
+
+/* Ajustes finos para gráficos não quebrarem */
+body.generating-pdf .chart-container,
+body.generating-pdf .dfc-full-width-row,
+body.generating-pdf .dfc-doughnut-row {
+    break-inside: avoid;
+    page-break-inside: avoid;
+}
 /* ==========================================================================
    7. RESPONSIVIDADE (MOBILE) - VERSÃO CORRIGIDA E COMPLETA
    ========================================================================== */

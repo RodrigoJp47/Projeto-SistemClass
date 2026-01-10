@@ -698,79 +698,80 @@
         {{ overdue_by_period_labels|json_script:"overdue-labels-data" }}
         {{ overdue_by_period_data|json_script:"overdue-data-data" }}
         
-        
+        <div style="
+            margin-top: 60px; 
+            margin-bottom: 40px; 
+            width: 100%;
+            display: flex; 
+            flex-direction: column; 
+            align-items: flex-end; /* Mantém alinhado à direita */
+            padding-right: 10px;">
 
-    
-    </div>
-
-    <div style="
-        position: fixed; 
-        bottom: 30px; 
-        right: 30px; 
-        z-index: 9999; 
-        display: flex; 
-        flex-direction: column; 
-        align-items: flex-end;">
-
-        <div id="pdf-tip-bubble" style="
-            visibility: hidden; 
-            opacity: 0;
-            transition: opacity 0.3s, transform 0.3s;
-            transform: translateY(10px);
-            background-color: #2c3e50; 
-            color: #fff; 
-            padding: 10px 15px; 
-            border-radius: 8px; 
-            font-size: 11px; 
-            max-width: 220px; 
-            text-align: right; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-            margin-bottom: 10px;
-            border: 1px solid rgba(255,255,255,0.1);
-            position: relative;">
-            <strong>Dica DRE:</strong> Para salvar o histórico completo, filtre e gere o PDF mês a mês.
-            <div style="position: absolute; bottom: -6px; right: 15px; width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 6px solid #2c3e50;"></div>
-        </div>
-
-        <div style="position: relative;">
-            
-            <div onmouseenter="showTip()" onmouseleave="hideTip()" style="
-                position: absolute;
-                top: -8px;
-                right: -5px;
-                background-color: #fff;
-                color: #c0392b;
-                width: 22px;
-                height: 22px;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-weight: bold;
-                font-size: 14px;
-                cursor: help;
-                box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-                border: 2px solid #c0392b;
-                z-index: 10;">
-                ?
+            <div id="pdf-tip-bubble" style="
+                visibility: hidden; 
+                opacity: 0;
+                transition: opacity 0.3s, transform 0.3s;
+                transform: translateY(10px);
+                background-color: #2c3e50; 
+                color: #fff; 
+                padding: 10px 15px; 
+                border-radius: 8px; 
+                font-size: 11px; 
+                max-width: 220px; 
+                text-align: right; 
+                box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+                margin-bottom: 10px;
+                border: 1px solid rgba(255,255,255,0.1);
+                position: relative;">
+                <strong>Dica DRE:</strong> Para salvar o histórico completo, filtre e gere o PDF mês a mês.
+                <div style="position: absolute; bottom: -6px; right: 15px; width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 6px solid #2c3e50;"></div>
             </div>
 
-            <button id="btn-save-full-pdf" style="
-                padding: 15px 20px; 
-                background-color: #c0392b; 
-                color: white; 
-                border: none; 
-                border-radius: 50px; 
-                box-shadow: 0 4px 12px rgba(0,0,0,0.3); 
-                cursor: pointer; 
-                font-weight: bold; 
-                font-size: 14px;
-                display: flex; 
-                align-items: center; 
-                gap: 10px;">
-                <i class="fas fa-file-pdf"></i> Salvar Dashboard Completo
-            </button>
+            <div style="position: relative;">
+                
+                <div onmouseenter="showTip()" onmouseleave="hideTip()" style="
+                    position: absolute;
+                    top: -8px;
+                    right: -5px;
+                    background-color: #fff;
+                    color: #c0392b;
+                    width: 22px;
+                    height: 22px;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-weight: bold;
+                    font-size: 14px;
+                    cursor: help;
+                    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+                    border: 2px solid #c0392b;
+                    z-index: 10;">
+                    ?
+                </div>
+
+                <button id="btn-save-full-pdf" style="
+                    padding: 15px 20px; 
+                    background-color: #c0392b; 
+                    color: white; 
+                    border: none; 
+                    border-radius: 50px; 
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.3); 
+                    cursor: pointer; 
+                    font-weight: bold; 
+                    font-size: 14px;
+                    display: flex; 
+                    align-items: center; 
+                    gap: 10px;">
+                    <i class="fas fa-file-pdf"></i> Salvar Dashboard Completo
+                </button>
+            </div>
         </div>
+
+    
+    
+
+    
     </div>
 
     <script>
@@ -2395,50 +2396,55 @@
                     laudoModal.style.display = 'none';
                 }
             }
-            // ▲▲▲ FIM DO BLOCO ATUALIZADO ▲▲▲
-            // --- LÓGICA PARA GERAR PDF DO DASHBOARD INTEIRO ---
+            // --- LÓGICA PARA GERAR PDF DO DASHBOARD INTEIRO (CORRIGIDA) ---
             const btnSaveFullPdf = document.getElementById('btn-save-full-pdf');
-            
+
             if (btnSaveFullPdf) {
                 btnSaveFullPdf.addEventListener('click', function() {
-                    // 1. Feedback visual (mudando texto do botão)
+                    // 1. Feedback visual
                     const originalText = this.innerHTML;
-                    this.innerHTML = 'Gerando PDF... Aguarde';
+                    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gerando PDF...';
                     this.disabled = true;
 
-                    // 2. Seleciona o conteúdo principal (ignora sidebar)
-                    const element = document.querySelector('.main-content');
-                    
-                    // 3. Configurações do PDF
-                    // 3. Configurações do PDF
-                    const opt = {
-                        margin:       [5, 5, 5, 5], // Margem [Topo, Dir, Inf, Esq]
-                        filename:     `Dashboard_Financeiro_${new Date().toISOString().slice(0,10)}.pdf`,
-                        image:        { type: 'jpeg', quality: 0.98 },
-                        html2canvas:  { 
-                            scale: 2, 
-                            useCORS: true, 
-                            scrollY: 0,
-                            ignoreElements: (element) => element.id === 'btn-save-full-pdf' || element.id === 'menu-toggle'
-                        },
-                        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' },
-                        
-                        // ▼▼▼ ALTERE APENAS ESTA LINHA ▼▼▼
-                        // Usamos 'css' e 'legacy' para forçar ele a obedecer o arquivo .css
-                        pagebreak: { mode: ['css', 'legacy'] } 
-                    };
+                    // 2. Adiciona a classe que ajusta o CSS para impressão
+                    document.body.classList.add('generating-pdf');
 
-                    // 4. Gera e Salva
-                    html2pdf().set(opt).from(element).save().then(() => {
-                        // Restaura o botão
-                        this.innerHTML = originalText;
-                        this.disabled = false;
-                    }).catch(err => {
-                        console.error("Erro ao gerar PDF:", err);
-                        alert("Erro ao gerar PDF.");
-                        this.innerHTML = originalText;
-                        this.disabled = false;
-                    });
+                    // 3. Pequeno delay para garantir que o CSS foi aplicado e os gráficos redimensionados
+                    setTimeout(() => {
+                        const element = document.querySelector('.main-content');
+
+                        // 4. Configurações Otimizadas do PDF
+                        const opt = {
+                            margin:       [5, 5, 5, 5], // Margens pequenas (mm)
+                            filename:     `Dashboard_Financeiro_${new Date().toISOString().slice(0,10)}.pdf`,
+                            image:        { type: 'jpeg', quality: 0.98 },
+                            html2canvas:  { 
+                                scale: 2, // Melhora a resolução (evita borrões)
+                                useCORS: true, 
+                                scrollY: 0,
+                                // Força o canvas a capturar a altura total e largura total limpa
+                                windowWidth: document.documentElement.offsetWidth,
+                                windowHeight: document.documentElement.scrollHeight
+                            },
+                            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' },
+                            pagebreak:    { mode: ['css', 'legacy'] } 
+                        };
+
+                        // 5. Gera e Salva
+                        html2pdf().set(opt).from(element).save().then(() => {
+                            // Restaura o estado original
+                            document.body.classList.remove('generating-pdf');
+                            this.innerHTML = originalText;
+                            this.disabled = false;
+                        }).catch(err => {
+                            console.error("Erro ao gerar PDF:", err);
+                            alert("Erro ao gerar PDF.");
+                            document.body.classList.remove('generating-pdf');
+                            this.innerHTML = originalText;
+                            this.disabled = false;
+                        });
+                        
+                    }, 500); // Aguarda 500ms para o navegador renderizar o layout sem a sidebar
                 });
             }
 
