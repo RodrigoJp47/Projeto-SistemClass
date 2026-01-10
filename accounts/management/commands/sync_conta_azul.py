@@ -302,7 +302,8 @@ class Command(BaseCommand):
 
                             # 2. Previsão Inteligente
                             cat_inteligente, dre_inteligente, banco_inteligente = self.prever_classificacao(user, fornecedor_nome, 'PAYABLE')
-                            categoria_padrao, _ = Category.objects.get_or_create(name='Despesa V2 Padrão', category_type='PAYABLE', user=user)
+                            # categoria_padrao, _ = Category.objects.get_or_create(name='Despesa V2 Padrão', category_type='PAYABLE', user=user)
+                            categoria_padrao, _ = Category.objects.get_or_create(name='Despesas Operacionais (-)', category_type='PAYABLE', user=user)
 
                             # 3. Define Categoria/DRE/Banco (BLINDAGEM)
                             if existe:
@@ -338,7 +339,8 @@ class Command(BaseCommand):
                             )
 
                             # 5. Refinamento: Se existe mas ainda é "Padrão", permite inteligência atualizar
-                            if not created and obj.category.name == 'Despesa V2 Padrão' and cat_inteligente:
+                            # if not created and obj.category.name == 'Despesa V2 Padrão' and cat_inteligente:
+                            if not created and obj.category.name == 'Despesas Operacionais (-)' and cat_inteligente:
                                 obj.category = cat_inteligente
                                 obj.dre_area = dre_inteligente if dre_inteligente else obj.dre_area
                                 if banco_inteligente: obj.bank_account = banco_inteligente
