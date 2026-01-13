@@ -15,10 +15,19 @@ urlpatterns = [
     ),
     # --- ESTA É A LINHA QUE FALTAVA NO SEU ARQUIVO ---
     path(
-        'consultar/<str:ref_id>/', 
+        'consultar/<int:nota_id>/', # <--- MUDAMOS DE str:ref_id PARA int:nota_id
         views.consultar_nota_view, 
         name='consultar_nota'
     ),
+    # path(
+    #     'consultar/<str:ref_id>/', 
+    #     views.consultar_nota_view, 
+    #     name='consultar_nota'
+    # ),
     # -------------------------------------------------
-    path('excluir/<int:nota_id>/', views.excluir_nota_view, name='excluir_nota'),
+    path(
+        'excluir/<int:nota_id>/',
+        views.excluir_nota_view, 
+        name='excluir_nota'
+    ),
 ]

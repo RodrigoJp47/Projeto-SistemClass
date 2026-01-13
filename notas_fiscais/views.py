@@ -157,6 +157,7 @@ def emitir_nota_view(request, venda_id):
                         "tomador": {
                              "cnpj_cpf": cliente.cpf_cnpj.replace(".", "").replace("-", "").replace("/", ""),
                              "razao_social": cliente.razao_social or cliente.nome,
+                             "email": cliente.email,
                              "endereco": {
                                 "logradouro": cliente.logradouro,
                                 "numero": cliente.numero,
@@ -197,6 +198,7 @@ def emitir_nota_view(request, venda_id):
                         "natureza_operacao": form.cleaned_data['natureza_operacao'],
                         "cnpj_emitente": cnpj_emitente,
                         "nome_destinatario": cliente.razao_social or cliente.nome,
+                        "email_destinatario": cliente.email,
                         "cpf_cnpj_destinatario": cliente.cpf_cnpj.replace(".", "").replace("-", "").replace("/", ""),
                         "logradouro_destinatario": cliente.logradouro,
                         "numero_destinatario": cliente.numero,
@@ -274,40 +276,36 @@ def emitir_nota_view(request, venda_id):
         form = EmissaoNotaFiscalForm()
 
     return render(request, 'notas_fiscais/emitir_nota.html', {'form': form, 'venda': venda})
+
+
+@login_required
 @subscription_required
 @module_access_required('commercial')
 @check_employee_permission('can_access_notas_fiscais')
-def consultar_nota_view(request, ref_id):
-    # ref_id é o ID da nossa NotaFiscal (que passamos como ?ref= na criação)
-    # Mas a Focus retorna o status usando a referência que enviamos.
-    
-    nota = get_object_or_404(NotaFiscal, id=ref_id, user=request.user)
+def consultar_nota_view(request, nota_id): # <--- AJUSTADO PARA nota_id
+    # Busca a nota no banco pelo ID (chave primária)
+    nota = get_object_or_404(NotaFiscal, id=nota_id, user=request.user)
     
     # Ambiente Focus (Homologação ou Produção)
     BASE_URL = settings.FOCUS_API_URL
     
-    # Seleciona o token correto baseado na URL
     if "homologacao" in BASE_URL:
         API_TOKEN = settings.NFE_TOKEN_HOMOLOGACAO
     else:
         API_TOKEN = settings.NFE_TOKEN_PRODUCAO
 
-    # URL de consulta (NFe ou NFSe)
-    # A Focus tem endpoints diferentes. Se for NFSe: v2/nfse/{ref}
-    # Se for NFe: v2/nfe/{ref}
-    
-    # Como saber se é NFSe ou NFe? 
-    # Podemos inferir pelo produto da venda ou salvar o tipo na NotaFiscal.
-    # Por simplificação, vamos tentar NFSe primeiro (SaaS), se der 404 tenta NFe.
-    # OU melhor: verificar se tem itens de serviço na venda.
-    
+    # Verifica se é Serviço ou Produto
     primeiro_item = nota.venda.itens.first()
     eh_servico = primeiro_item and primeiro_item.produto.tipo == 'SERVICO'
     
+    # Define a referência para busca na API
+    # Como na emissão usamos ?ref={nova_nota.id}, aqui usamos o ID da nota como referência
+    ref_focus = str(nota.id) 
+
     if eh_servico:
-        URL_CONSULTA = f"{BASE_URL}/v2/nfse/{ref_id}" # ref da nota
+        URL_CONSULTA = f"{BASE_URL}/v2/nfse/{ref_focus}"
     else:
-        URL_CONSULTA = f"{BASE_URL}/v2/nfe/{ref_id}"
+        URL_CONSULTA = f"{BASE_URL}/v2/nfe/{ref_focus}"
 
     try:
         response = requests.get(URL_CONSULTA, auth=(API_TOKEN, ""))
@@ -326,6 +324,7 @@ def consultar_nota_view(request, ref_id):
                 nota.numero_nf = dados.get('numero')
                 nota.serie = dados.get('serie')
                 nota.chave_acesso = dados.get('codigo_verificacao', dados.get('chave_nfe'))
+                # Ajuste para pegar a URL correta dependendo do retorno (NFSe as vezes vem em 'url')
                 nota.url_pdf = dados.get('url_danfe') or dados.get('url')
                 nota.url_xml = dados.get('url_xml')
                 nota.save()
@@ -333,37 +332,39 @@ def consultar_nota_view(request, ref_id):
                 
             elif status_api in ['erro_autorizacao', 'rejeitado', 'cancelado']:
                 
-                # Tratamento de erro robusto
+                # Tratamento de erro
                 lista_erros = dados.get('erros', [])
                 msg = ""
                 codigo_erro = ""
                 
                 if lista_erros and isinstance(lista_erros, list):
                     msg = " | ".join([f"{e.get('mensagem')}" for e in lista_erros])
-                    # Pega o primeiro código de erro para verificação
                     if len(lista_erros) > 0:
                         codigo_erro = lista_erros[0].get('codigo')
                 else:
                     msg = dados.get('status_sefaz_mensagem', dados.get('mensagem', 'Erro desconhecido'))
 
-                # --- BYPASS DE ERRO E45 EM HOMOLOGAÇÃO ---
+                # --- BYPASS DE ERRO E45 EM HOMOLOGAÇÃO (MANTIDO) ---
                 if settings.DEBUG and codigo_erro == 'E45':
                     print("=== BYPASS E45 ATIVADO ===")
                     nota.status = 'EMITIDA'
                     nota.numero_nf = 'SIMULACAO'
                     nota.serie = '1'
                     nota.chave_acesso = 'SIMULACAO_E45_BYPASS'
-                    nota.url_pdf = '#' # Link vazio pois não gerou PDF real
+                    nota.url_pdf = '#' 
                     nota.mensagem_erro = "Nota simulada (Erro E45 ignorado em Homologação)"
                     nota.save()
-                    messages.success(request, f"SUCESSO SIMULADO: O erro E45 (Falta de cadastro na GINFES) foi ignorado para fins de teste.")
-                # -----------------------------------------
+                    messages.success(request, f"SUCESSO SIMULADO: O erro E45 foi ignorado.")
+                # ---------------------------------------------------
                 else:
                     nota.status = 'ERRO'
                     nota.mensagem_erro = msg
                     nota.save()
                     messages.error(request, f"Nota com erro: {msg}")
             
+            elif status_api == 'processando_autorizacao':
+                messages.info(request, "A nota ainda está em processamento. Tente novamente em alguns segundos.")
+
             else:
                 messages.info(request, f"Status na API: {status_api}")
         
@@ -374,7 +375,6 @@ def consultar_nota_view(request, ref_id):
         messages.error(request, f"Erro interno ao consultar: {e}")
 
     return redirect('lista_notas_fiscais')
-
 
 @login_required
 def excluir_nota_view(request, nota_id):

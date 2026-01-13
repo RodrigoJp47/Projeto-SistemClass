@@ -113,6 +113,15 @@
                         <td class="actions-cell">
                             {% if nota.url_pdf %}
                                 <a href="{{ nota.url_pdf }}" class="action-btn" target="_blank">Ver PDF</a>
+                                {% if nota.cliente.telefone %}
+                                    <a href="https://wa.me/55{{ nota.cliente.telefone|cut:'('|cut:')'|cut:'-'|cut:' ' }}?text=Olá {{ nota.cliente.nome }}! Segue o link da sua Nota Fiscal: {{ nota.url_pdf }}" 
+                                    class="action-btn" 
+                                    target="_blank"
+                                    style="background-color: #25D366; color: white; margin-left: 5px;"
+                                    title="Enviar via WhatsApp">
+                                    Zap
+                                    </a>
+                                {% endif %}
                             {% endif %}
 
                             {% if nota.url_xml %}
