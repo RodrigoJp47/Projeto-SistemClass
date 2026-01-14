@@ -20,3 +20,10 @@ staticfiles/
 media/
 
 descriçao.txt
+
+# Certificados Digitais e Chaves (NUNCA ENVIAR)
+certs/
+*.key
+*.crt
+*.pem
+*.pfx
