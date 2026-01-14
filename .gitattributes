@@ -1,0 +1,12 @@
+# Ignora arquivos HTML, CSS e JS das estatísticas de linguagem
+*.html linguist-vendored
+*.css linguist-vendored
+*.js linguist-vendored
+
+# Ignora pastas específicas de front-end
+static/* linguist-vendored
+templates/* linguist-vendored
+staticfiles/* linguist-vendored
+
+# Força arquivos Python a serem detectados (opcional, mas bom garantir)
+*.py linguist-detectable=true
