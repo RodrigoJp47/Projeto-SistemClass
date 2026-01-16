@@ -1945,9 +1945,41 @@ def importar_ofx_view(request):
                 bank_account = ofx_import.bank_account
                 
                 # --- INÍCIO DA LÓGICA DE RECONCILIAÇÃO ---
+
+                # --- INÍCIO DA LÓGICA DE RECONCILIAÇÃO (CORRIGIDA) ---
                 
-                payable_category, _ = Category.objects.get_or_create(name="Despesas Administrativas")
-                receivable_category, _ = Category.objects.get_or_create(name="Receitas sobre Vendas")
+                # Solução para o erro "returned more than one Category":
+                # Usamos .filter().first() em vez de get() para evitar quebra se houver duplicatas.
+                # Também adicionamos o filtro user=request.user para garantir segurança dos dados.
+
+                # 1. Define categoria padrão para PAGAR
+                payable_category = Category.objects.filter(
+                    user=request.user, 
+                    name="Despesas Administrativas"
+                ).first()
+                
+                if not payable_category:
+                    payable_category = Category.objects.create(
+                        user=request.user, 
+                        name="Despesas Administrativas", 
+                        category_type='PAYABLE'
+                    )
+
+                # 2. Define categoria padrão para RECEBER
+                receivable_category = Category.objects.filter(
+                    user=request.user, 
+                    name="Receitas sobre Vendas"
+                ).first()
+                
+                if not receivable_category:
+                    receivable_category = Category.objects.create(
+                        user=request.user, 
+                        name="Receitas sobre Vendas", 
+                        category_type='RECEIVABLE'
+                    )
+                
+                # payable_category, _ = Category.objects.get_or_create(name="Despesas Administrativas")
+                # receivable_category, _ = Category.objects.get_or_create(name="Receitas sobre Vendas")
                 
                 # 1. NOVOS CONTADORES
                 new_transactions_count = 0
