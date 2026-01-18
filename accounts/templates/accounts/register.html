@@ -82,5 +82,25 @@
             </div>
     </div>
 
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // Busca o campo pelo ID que definimos no forms.py
+            var cnpjInput = document.getElementById('id_cnpj');
+
+            if (cnpjInput) {
+                cnpjInput.addEventListener('input', function (e) {
+                    // Remove tudo que não é número
+                    var x = e.target.value.replace(/\D/g, '').match(/(\d{0,2})(\d{0,3})(\d{0,3})(\d{0,4})(\d{0,2})/);
+                    
+                    // Reaplica a formatação (xx.xxx.xxx/xxxx-xx)
+                    e.target.value = !x[2] ? x[1] : x[1] + '.' + x[2] + '.' + x[3] + '/' + x[4] + (x[5] ? '-' + x[5] : '');
+                });
+                
+                // Garante que não passe de 18 caracteres (limite visual)
+                cnpjInput.setAttribute('maxlength', '18');
+            }
+        });
+    </script>
+
 </body>
 </html>

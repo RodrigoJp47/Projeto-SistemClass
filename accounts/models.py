@@ -370,7 +370,7 @@ class CompanyProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='company_profile')
     nome_empresa = models.CharField(max_length=255, verbose_name="Nome da Empresa")
     nome_fantasia = models.CharField(max_length=255, blank=True, null=True, verbose_name="Nome Fantasia")
-    cnpj = models.CharField(max_length=18, blank=True, null=True, verbose_name="CNPJ")
+    cnpj = models.CharField(max_length=18, unique=True, null=True, blank=False, verbose_name="CNPJ")
     email_contato = models.EmailField(max_length=255, blank=True, null=True, verbose_name="E-mail de Contato")
     telefone_contato = models.CharField(max_length=20, blank=True, null=True, verbose_name="Telefone de Contato")
     endereco = models.CharField(max_length=255, blank=True, null=True, verbose_name="Logradouro")
@@ -643,6 +643,38 @@ class Contract(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDENTE', verbose_name="Status")
     document = models.FileField(upload_to='contracts/%Y/%m/%d/', null=True, blank=True, verbose_name="Documento (PDF)")
     created_at = models.DateTimeField(auto_now_add=True)
+
+    # --- NOVOS CAMPOS SOLICITADOS ---
+    reajuste_percentual = models.DecimalField(
+        max_digits=5, 
+        decimal_places=2, 
+        default=0.00, 
+        verbose_name="Reajuste (%)"
+    )
+    
+    TIPO_FREQUENCIA = (
+        ('MENSAL', 'Mensal'),
+        ('UNICO', 'Único'),
+    )
+    frequencia_pagamento = models.CharField(
+        max_length=10, 
+        choices=TIPO_FREQUENCIA, 
+        default='MENSAL',
+        verbose_name="Frequência"
+    )
+    
+    quantidade_parcelas = models.PositiveIntegerField(
+        default=1, 
+        verbose_name="Qtd. Parcelas / Meses"
+    )
+    
+    dia_vencimento = models.PositiveIntegerField(
+        default=10, # Ex: Dia 10 de cada mês
+        verbose_name="Dia da Cobrança"
+    )
+
+    # Flag para saber se já geramos o financeiro para não duplicar se ele editar depois
+    financeiro_gerado = models.BooleanField(default=False, verbose_name="Financeiro Gerado?")
 
     class Meta:
         verbose_name = "Contrato"

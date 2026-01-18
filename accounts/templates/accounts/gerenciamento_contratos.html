@@ -1,4 +1,4 @@
-{% load static %}
+{% comment %} {% load static %}
 {% load humanize %}
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -45,33 +45,88 @@
                         </div>
                         <div class="form-group-inline" style="flex: 1;">
                             {{ form.client.label_tag }}
-                            {{ form.client }}
+                            <div style="display: flex; gap: 8px;">
+                                {{ form.client }} <button type="button" id="btn-novo-cliente" class="btn btn-success" 
+                                        style="padding: 0 15px; height: 38px; margin-top: 0;">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="client-details-box" style="padding: 10px; border-radius: 5px; margin-bottom: 15px; border: 1px dashed var(--border-color, #ccc);">
+                        <div class="form-row" style="margin-bottom: 10px;">
+                            <div class="form-group-inline" style="flex: 1;">
+                                <label>CPF/CNPJ</label>
+                                <input type="text" id="detail_cpf_cnpj" class="form-field field-readonly" readonly disabled>
+                            </div>
+                            <div class="form-group-inline" style="flex: 1.5;">
+                                <label>E-mail</label>
+                                <input type="text" id="detail_email" class="form-field field-readonly" readonly disabled>
+                            </div>
+                            <div class="form-group-inline" style="flex: 1;">
+                                <label>Telefone</label>
+                                <input type="text" id="detail_telefone" class="form-field field-readonly" readonly disabled>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row" style="margin-bottom: 0;">
+                            <div class="form-group-inline" style="flex: 1;">
+                                <label>Endereço Completo</label>
+                                <input type="text" id="detail_endereco" class="form-field field-readonly" readonly disabled>
+                            </div>
                         </div>
                     </div>
                     <div class="form-row">
                         <div class="form-group-inline">
                             {{ form.start_date.label_tag }}
-                            {{ form.start_date }}
+                            <input type="date" name="start_date" id="id_start_date" class="form-field"
+                                {% if form.instance.start_date %}value="{{ form.instance.start_date|date:'Y-m-d' }}"{% endif %}
+                                {% if form.start_date.field.required %}required{% endif %}>
                         </div>
                         <div class="form-group-inline">
                             {{ form.end_date.label_tag }}
-                            {{ form.end_date }}
+                            <input type="date" name="end_date" id="id_end_date" class="form-field"
+                                {% if form.instance.end_date %}value="{{ form.instance.end_date|date:'Y-m-d' }}"{% endif %}
+                                {% if form.end_date.field.required %}required{% endif %}>
                         </div>
                     </div>
                     <div class="form-row">
-                        <div class="form-group-inline">
+                        <div class="form-group-inline" style="flex: 1;">
                             {{ form.value.label_tag }}
                             <input type="text" name="value" id="id_value" 
                                 value="{% if form.is_bound %}{{ form.value.value }}{% elif form.instance.value %}{{ form.instance.value|floatformat:2|intcomma }}{% endif %}" 
-                                {% if form.value.field.required %}required{% endif %}>
+                                {% if form.value.field.required %}required{% endif %} class="form-field">
                         </div>
-                        <div class="form-group-inline">
+
+                        <div class="form-group-inline" style="flex: 1;">
+                            {{ form.frequencia_pagamento.label_tag }}
+                            {{ form.frequencia_pagamento }}
+                        </div>
+
+                        <div class="form-group-inline" style="flex: 0.8;">
+                            {{ form.quantidade_parcelas.label_tag }}
+                            {{ form.quantidade_parcelas }}
+                        </div>
+
+                        <div class="form-group-inline" style="flex: 0.8;">
+                            {{ form.dia_vencimento.label_tag }}
+                            {{ form.dia_vencimento }}
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group-inline" style="flex: 1;">
                             {{ form.status.label_tag }}
                             {{ form.status }}
                         </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group-inline">
+
+                        <div class="form-group-inline" style="flex: 1;">
+                            {{ form.reajuste_percentual.label_tag }}
+                            {{ form.reajuste_percentual }}
+                        </div>
+                        
+                        <div class="form-group-inline" style="flex: 2;">
                             {{ form.document.label_tag }}
                             {{ form.document }}
                         </div>
@@ -168,9 +223,17 @@
                                             <button type="button" class="btn btn-secondary btn-sm" onclick="openAttachModal({{ contract.id }})">Anexar</button>
                                         {% endif %}
                                     </td>
+                                    
                                     <td class="action-buttons">
-                                        <a href="?edit={{ contract.id }}" class="btn btn-sm btn-primary">Editar</a>
-                                        <button type="button" class="btn btn-sm btn-danger" onclick="openDeleteModal({{ contract.id }}, '{{ contract.title|escapejs }}')">Excluir</button>
+                                        {% if contract.status != 'CANCELADO' %}
+                                        <button type="button" class="btn btn-sm btn-success" title="Renovar e Reajustar" 
+                                                onclick="openRenewModal({{ contract.id }}, '{{ contract.title|escapejs }}', '{{ contract.reajuste_percentual|default:0 }}')">
+                                            <i class="fas fa-sync-alt"></i>
+                                        </button>
+                                        {% endif %}
+                                        
+                                        <a href="?edit={{ contract.id }}" class="btn btn-sm btn-primary" title="Editar"><i class="fas fa-edit"></i></a>
+                                        <button type="button" class="btn btn-sm btn-danger" title="Excluir" onclick="openDeleteModal({{ contract.id }}, '{{ contract.title|escapejs }}')"><i class="fas fa-trash"></i></button>
                                     </td>
                                 </tr>
                                 {% empty %}
@@ -249,6 +312,110 @@
             </form>
         </div>
     </div>
+    <div id="cliente-modal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <span class="close-btn" onclick="closeClienteModal()">&times;</span>
+            <h3>Cadastrar Novo Cliente</h3>
+            <form id="cliente-rapido-form">
+                {% csrf_token %}
+                
+                <div class="form-row">
+                    <div class="form-group-inline" style="flex: 1;">
+                        <label for="id_nome_modal">Nome / Razão Social</label>
+                        <input type="text" name="nome" required id="id_nome_modal" class="form-field">
+                    </div>
+                    <div class="form-group-inline" style="flex: 1;">
+                        <label for="id_cpf_cnpj_modal">CPF/CNPJ</label>
+                        <input type="text" name="cpf_cnpj" required id="id_cpf_cnpj_modal" class="form-field">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group-inline" style="flex: 1.5;">
+                        <label for="id_email_modal">E-mail</label>
+                        <input type="email" name="email" id="id_email_modal" class="form-field">
+                    </div>
+                    <div class="form-group-inline" style="flex: 1;">
+                        <label for="id_telefone_modal">Telefone</label>
+                        <input type="text" name="telefone" id="id_telefone_modal" class="form-field">
+                    </div>
+                </div>
+
+                <hr style="margin: 15px 0; border-color: #444;">
+                <h4 style="margin-bottom: 10px; font-size: 0.9em; color: #aaa;">Endereço</h4>
+
+                <div class="form-group-inline">
+                    <label for="id_cep_modal">CEP</label>
+                    <div style="display: flex; gap: 5px;">
+                        <input type="text" name="cep" id="id_cep_modal" class="form-field" placeholder="00000-000" maxlength="9">
+                        <button type="button" id="buscar-cep-modal-btn" class="btn btn-secondary" style="padding: 0 10px;">🔍</button>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group-inline" style="flex: 3;">
+                        <label for="id_logradouro_modal">Logradouro</label>
+                        <input type="text" name="logradouro" id="id_logradouro_modal" class="form-field">
+                    </div>
+                    <div class="form-group-inline" style="flex: 1;">
+                        <label for="id_numero_modal">Número</label>
+                        <input type="text" name="numero" id="id_numero_modal" class="form-field">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group-inline">
+                        <label for="id_bairro_modal">Bairro</label>
+                        <input type="text" name="bairro" id="id_bairro_modal" class="form-field">
+                    </div>
+                    <div class="form-group-inline">
+                        <label for="id_cidade_modal">Cidade</label>
+                        <input type="text" name="cidade" id="id_cidade_modal" class="form-field">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group-inline">
+                        <label for="id_uf_modal">UF</label>
+                        <input type="text" name="uf" id="id_uf_modal" class="form-field" maxlength="2" style="text-transform: uppercase;">
+                    </div>
+                    <div class="form-group-inline">
+                        <label for="id_codigo_municipio_modal">Cód. IBGE</label>
+                        <input type="text" name="codigo_municipio" id="id_codigo_municipio_modal" class="form-field">
+                    </div>
+                </div>
+
+                <div class="button-container" style="margin-top: 20px;">
+                    <button type="submit" class="btn btn-success" style="width: 100%;">Salvar Cliente</button>
+                </div>
+            </form>
+        </div>
+        <div id="renew-modal" class="modal">
+            <div class="modal-content">
+                <span class="close-btn" onclick="closeRenewModal()">&times;</span>
+                <h4>Renovar Contrato</h4>
+                <p>Deseja renovar o contrato "<strong id="renew-contract-name"></strong>"?</p>
+                
+                <div style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 5px; margin: 10px 0;">
+                    <p style="margin: 0; font-size: 0.9em;">Isso criará um <strong>novo contrato</strong> iniciando ao fim do atual.</p>
+                    <p style="margin: 5px 0 0 0; color: #0f0;">
+                        Reajuste aplicado: <strong id="renew-percent-display"></strong>%
+                    </p>
+                </div>
+
+                <form method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="action_renew" value="true">
+                    <input type="hidden" name="renew_contract_id" id="renew-contract-id">
+                    
+                    <div class="button-container" style="justify-content: flex-end;">
+                        <button type="button" class="btn btn-secondary" onclick="closeRenewModal()">Cancelar</button>
+                        <button type="submit" class="btn btn-success">Confirmar Renovação</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 
     <script src="{% static 'js/theme.js' %}"></script>
     <script>
@@ -280,13 +447,30 @@
             const attachModal = document.getElementById('attach-modal');
             if (attachModal) attachModal.style.display = 'none';
         }
+        // ▼▼▼ MOVA AS FUNÇÕES DE RENOVAÇÃO PARA CÁ (GLOBAL) ▼▼▼
+        function openRenewModal(id, name, percent) {
+            const modal = document.getElementById('renew-modal');
+            if (!modal) return;
+            document.getElementById('renew-contract-id').value = id;
+            document.getElementById('renew-contract-name').textContent = name;
+            document.getElementById('renew-percent-display').textContent = percent;
+            modal.style.display = 'block';
+        }
+
+        function closeRenewModal() {
+            const modal = document.getElementById('renew-modal');
+            if (modal) modal.style.display = 'none';
+        }
+        // ▲▲▲ FIM DO AJUSTE ▲▲▲
 
         // Fechar modal clicando fora
         window.onclick = function(event) {
             const deleteModal = document.getElementById('delete-modal');
             const attachModal = document.getElementById('attach-modal');
+            const renewModal = document.getElementById('renew-modal');
             if (event.target == deleteModal) closeDeleteModal();
             if (event.target == attachModal) closeAttachModal();
+            if (event.target == renewModal) closeRenewModal();
         }
 
         // ==========================================================
@@ -358,6 +542,800 @@
                 });
             }
             // --- FIM DO FIX 2 ---
+           // ==========================================================
+            // LÓGICA DE CLIENTES (Dropdown, Detalhes e Cadastro Rápido)
+            // ==========================================================
+
+            const clienteSelect = document.getElementById('id_client');
+            const detailCpf = document.getElementById('detail_cpf_cnpj');
+            const detailEmail = document.getElementById('detail_email');
+            const detailTelefone = document.getElementById('detail_telefone');
+            const detailEndereco = document.getElementById('detail_endereco'); // <--- NOVO CAMPO
+
+            // 1. Cria o "banco de dados" local com os clientes existentes
+            const clientsData = {};
+            
+            {% for client in form.client.field.queryset %}
+            clientsData["{{ client.id }}"] = {
+                "cpf": "{{ client.cpf_cnpj|default:''|escapejs }}",
+                "email": "{{ client.email|default:''|escapejs }}",
+                "telefone": "{{ client.telefone|default:''|escapejs }}",
+                "endereco": "{{ client.endereco|default:''|escapejs }}" // <--- NOVO DADO
+            };
+            {% endfor %}
+
+            // Função que preenche os campos na tela
+            function updateClientDetails(clientId) {
+                // Limpa primeiro
+                detailCpf.value = '';
+                detailEmail.value = '';
+                detailTelefone.value = '';
+                detailEndereco.value = ''; // Limpa endereço
+
+                if (clientId && clientsData[clientId]) {
+                    const data = clientsData[clientId];
+                    detailCpf.value = data.cpf || '';
+                    detailEmail.value = data.email || '';
+                    detailTelefone.value = data.telefone || '';
+                    detailEndereco.value = data.endereco || ''; // Preenche endereço
+                }
+            }
+
+            // Evento: Quando mudar o cliente no select
+            if (clienteSelect) {
+                clienteSelect.addEventListener('change', function() {
+                    updateClientDetails(this.value);
+                });
+                // Executa uma vez ao carregar
+                updateClientDetails(clienteSelect.value);
+            }
+
+            // --- CADASTRO RÁPIDO (MODAL) ---
+            const clienteModal = document.getElementById('cliente-modal');
+            const btnNovoCliente = document.getElementById('btn-novo-cliente');
+            const formClienteRapido = document.getElementById('cliente-rapido-form');
+
+            if (btnNovoCliente) btnNovoCliente.addEventListener('click', () => clienteModal.style.display = 'block');
+            window.closeClienteModal = () => clienteModal.style.display = 'none';
+            window.addEventListener('click', (e) => { if(e.target == clienteModal) clienteModal.style.display = 'none'; });
+
+            // Busca CEP no Modal
+            const btnBuscarCep = document.getElementById('buscar-cep-modal-btn');
+            if (btnBuscarCep) {
+                btnBuscarCep.addEventListener('click', function() {
+                    const cep = document.getElementById('id_cep_modal').value.replace(/\D/g, '');
+                    if (cep.length !== 8) { alert("CEP inválido"); return; }
+                    fetch(`https://viacep.com.br/ws/${cep}/json/`).then(r=>r.json()).then(d=>{
+                        if(!d.erro){
+                            document.getElementById('id_logradouro_modal').value = d.logradouro;
+                            document.getElementById('id_bairro_modal').value = d.bairro;
+                            document.getElementById('id_cidade_modal').value = d.localidade;
+                            document.getElementById('id_uf_modal').value = d.uf;
+                            document.getElementById('id_codigo_municipio_modal').value = d.ibge;
+                            document.getElementById('id_numero_modal').focus();
+                        } else alert("CEP não encontrado!");
+                    });
+                });
+            }
+
+            // --- SALVAR CLIENTE E ATUALIZAR FORMULÁRIO ---
+            if (formClienteRapido) {
+                formClienteRapido.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const formData = new FormData(this);
+
+                    fetch("{% url 'cadastrar_cliente_rapido' %}", {
+                        method: 'POST',
+                        body: formData,
+                        headers: {'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value}
+                    })
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            // 1. Adiciona a nova opção no Select
+                            const newOption = new Option(data.cliente.nome, data.cliente.id, true, true);
+                            clienteSelect.appendChild(newOption);
+                            clienteSelect.value = data.cliente.id; 
+
+                            // 2. Atualiza a memória local com o NOVO ENDEREÇO
+                            clientsData[String(data.cliente.id)] = {
+                                "cpf": data.cliente.cpf_cnpj || '',
+                                "email": data.cliente.email || '',
+                                "telefone": data.cliente.telefone || '',
+                                "endereco": data.cliente.endereco || '' // <--- SALVA O ENDEREÇO NOVO
+                            };
+
+                            // 3. Atualiza a tela
+                            updateClientDetails(data.cliente.id);
+
+                            alert('Cliente cadastrado com sucesso!');
+                            closeClienteModal();
+                            formClienteRapido.reset();
+                        } else {
+                            alert('Erro ao salvar: ' + JSON.stringify(data.errors));
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Erro:', error);
+                        alert('Erro de comunicação.');
+                    });
+                });
+            }
+            // Funções do Modal de Renovação
+        
+        });    
+    </script>
+</body>
+</html> {% endcomment %}
+
+{% load static %}
+{% load humanize %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão de Contratos</title> 
+    <link rel="stylesheet" href="{% static 'css/global.css' %}">
+    <link rel="stylesheet" href="{% static 'css/themes.css' %}">
+    <link rel="stylesheet" href="{% static 'css/sidebar.css' %}">
+    <link rel="stylesheet" href="{% static 'css/layout-responsive.css' %}"> 
+    <link rel="stylesheet" href="{% static 'css/contratos.css' %}"> 
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+</head>
+
+<body class="contratos-page"> 
+    
+    {% include 'accounts/_sidebar.html' %} 
+    
+    <div class="main-content"> 
+        {% include 'accounts/partials/bpo_banner.html' %}
+        <button id="menu-toggle">&#9776;</button> 
+        <div class="content-container">
+
+            <h1>Gestão de Contratos</h1> 
+            
+            {% if messages %}
+                <div class="messages">
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <div class="form-container card">
+                <h3 class="card-header">{% if form.instance.id %}Editar Contrato{% else %}Novo Contrato{% endif %}</h3>
+                <form method="POST" enctype="multipart/form-data" class="card-body" id="main-contract-form">
+                    {% csrf_token %}
+                    {% if form.instance.id %}
+                        <input type="hidden" name="contract_id" value="{{ form.instance.id }}">
+                    {% endif %}
+
+                    <div class="form-row">
+                        <div class="form-group-inline" style="flex: 2;">
+                            {{ form.title.label_tag }}
+                            {{ form.title }}
+                        </div>
+                        <div class="form-group-inline" style="flex: 1;">
+                            {{ form.client.label_tag }}
+                            <div style="display: flex; gap: 8px;">
+                                {{ form.client }} 
+                                <button type="button" id="btn-novo-cliente" class="btn btn-success" 
+                                        style="padding: 0 15px; height: 38px; margin-top: 0;">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="client-details-box" style="padding: 10px; border-radius: 5px; margin-bottom: 15px; border: 1px dashed var(--border-color, #ccc);">
+                        <div class="form-row" style="margin-bottom: 10px;">
+                            <div class="form-group-inline" style="flex: 1;">
+                                <label>CPF/CNPJ</label>
+                                <input type="text" id="detail_cpf_cnpj" class="form-field field-readonly" readonly disabled>
+                            </div>
+                            <div class="form-group-inline" style="flex: 1.5;">
+                                <label>E-mail</label>
+                                <input type="text" id="detail_email" class="form-field field-readonly" readonly disabled>
+                            </div>
+                            <div class="form-group-inline" style="flex: 1;">
+                                <label>Telefone</label>
+                                <input type="text" id="detail_telefone" class="form-field field-readonly" readonly disabled>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row" style="margin-bottom: 0;">
+                            <div class="form-group-inline" style="flex: 1;">
+                                <label>Endereço Completo</label>
+                                <input type="text" id="detail_endereco" class="form-field field-readonly" readonly disabled>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group-inline">
+                            {{ form.start_date.label_tag }}
+                            <input type="date" name="start_date" id="id_start_date" class="form-field"
+                                {% if form.instance.start_date %}value="{{ form.instance.start_date|date:'Y-m-d' }}"{% endif %}
+                                {% if form.start_date.field.required %}required{% endif %}>
+                        </div>
+                        <div class="form-group-inline">
+                            {{ form.end_date.label_tag }}
+                            <input type="date" name="end_date" id="id_end_date" class="form-field"
+                                {% if form.instance.end_date %}value="{{ form.instance.end_date|date:'Y-m-d' }}"{% endif %}
+                                {% if form.end_date.field.required %}required{% endif %}>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group-inline" style="flex: 1;">
+                            {{ form.value.label_tag }}
+                            <input type="text" name="value" id="id_value" 
+                                value="{% if form.is_bound %}{{ form.value.value }}{% elif form.instance.value %}{{ form.instance.value|floatformat:2|intcomma }}{% endif %}" 
+                                {% if form.value.field.required %}required{% endif %} class="form-field">
+                        </div>
+
+                        <div class="form-group-inline" style="flex: 1;">
+                            {{ form.frequencia_pagamento.label_tag }}
+                            {{ form.frequencia_pagamento }}
+                        </div>
+
+                        <div class="form-group-inline" style="flex: 0.8;">
+                            {{ form.quantidade_parcelas.label_tag }}
+                            {{ form.quantidade_parcelas }}
+                        </div>
+
+                        <div class="form-group-inline" style="flex: 0.8;">
+                            {{ form.dia_vencimento.label_tag }}
+                            {{ form.dia_vencimento }}
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group-inline" style="flex: 1;">
+                            {{ form.status.label_tag }}
+                            {{ form.status }}
+                        </div>
+
+                        <div class="form-group-inline" style="flex: 1;">
+                            {{ form.reajuste_percentual.label_tag }}
+                            {{ form.reajuste_percentual }}
+                        </div>
+                        
+                        <div class="form-group-inline" style="flex: 2;">
+                            {{ form.document.label_tag }}
+                            {{ form.document }}
+                        </div>
+                    </div>
+
+                    {% if form.errors %}
+                        <div class="alert alert-danger" style="margin-top: 15px;">
+                            <strong>Erro ao salvar:</strong>
+                            <ul style="margin: 0; padding-left: 20px;">
+                            {% for field, errors in form.errors.items %}
+                                <li>{{ field|capfirst }}: {{ errors|join:", " }}</li>
+                            {% endfor %}
+                            </ul>
+                        </div>
+                    {% endif %}
+
+                    <div class="button-container" style="margin-top: 15px;">
+                        <button type="submit" class="btn btn-primary">Salvar Contrato</button>
+                        {% if form.instance.id %}
+                        <a href="{% url 'gerenciamento_contratos' %}" class="btn btn-secondary">Cancelar Edição</a>
+                        {% endif %}
+                    </div>
+                </form>
+            </div>
+
+            <div class="filter-container card">
+                <form method="GET" class="card-body">
+                    <div class="form-row">
+                        <div class="form-group-inline" style="flex: 2;"> 
+                            <label for="search_term">Buscar por Título/Cliente:</label>
+                            <input type="text" name="search_term" id="search_term" value="{{ search_term|default:'' }}" class="form-field" placeholder="Digite o título ou nome do cliente...">
+                        </div>
+                        <div class="form-group-inline">
+                            <label for="start_date">Data Início (De):</label>
+                            <input type="date" name="start_date" id="start_date" value="{{ start_date|default:'' }}" class="form-field">
+                        </div>
+                        <div class="form-group-inline">
+                            <label for="end_date">Data Fim (Até):</label>
+                            <input type="date" name="end_date" id="end_date" value="{{ end_date|default:'' }}" class="form-field">
+                        </div>
+                        <div class="form-group-inline">
+                            <label for="status">Status:</label>
+                            <select name="status" id="status" class="form-field">
+                                <option value="all" {% if filter_status == 'all' %}selected{% endif %}>Todos</option>
+                                {% for value, display in status_choices %}
+                                    <option value="{{ value }}" {% if filter_status == value %}selected{% endif %}>{{ display }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group-inline" style="align-self: flex-end;">
+                            <button type="submit" class="btn btn-primary">Filtrar</button>
+                            <a href="{% url 'gerenciamento_contratos' %}" class="btn btn-secondary">Limpar</a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <div class="table-container card">
+                <form method="POST" id="bulk-delete-form">
+                    {% csrf_token %}
+                    <div class="card-header table-controls">
+                        <h3>Contratos Cadastrados</h3>
+                        <button type="submit" name="delete_selected_contracts" class="btn btn-danger btn-sm" onclick="return confirm('Tem certeza que deseja excluir os contratos selecionados?');">Excluir Selecionados</button>
+                    </div>
+                    <div class="table-scroll-wrapper"> 
+                        <table class="styled-table">
+                            <thead>
+                                <tr>
+                                    <th><input type="checkbox" id="select-all-contracts" title="Selecionar todos"></th>
+                                    <th>Título</th>
+                                    <th>Cliente</th>
+                                    <th>Início</th>
+                                    <th>Término</th>
+                                    <th>Valor</th>
+                                    <th>Status</th>
+                                    <th>Documento</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for contract in contracts %}
+                                <tr class="{% if contract.status == 'CANCELADO' %}row-disabled{% elif contract.status == 'PENDENTE' %}row-warning{% endif %}">
+                                    <td><input type="checkbox" name="contract_ids" value="{{ contract.id }}" class="contract-checkbox"></td>
+                                    <td>{{ contract.title }}</td>
+                                    <td>{{ contract.client.nome }}</td>
+                                    <td>{{ contract.start_date|date:"d/m/Y" }}</td>
+                                    <td>{{ contract.end_date|date:"d/m/Y"|default:"--" }}</td>
+                                    <td>R$ {{ contract.value|intcomma }}</td>
+                                    <td>
+                                        <span class="status-badge status-{{ contract.status|lower }}">{{ contract.get_status_display }}</span>
+                                    </td>
+                                    <td>
+                                        {% if contract.document %}
+                                            <a href="{{ contract.document.url }}" target="_blank" class="btn btn-secondary btn-sm" title="Ver documento">Ver</a>
+                                        {% else %}
+                                            <button type="button" class="btn btn-secondary btn-sm" onclick="openAttachModal({{ contract.id }})">Anexar</button>
+                                        {% endif %}
+                                    </td>
+                                    
+                                    <td class="action-buttons">
+                                        {% if contract.status != 'CANCELADO' %}
+                                        <button type="button" class="btn btn-sm btn-success" title="Renovar e Reajustar" 
+                                                onclick="openRenewModal({{ contract.id }}, '{{ contract.title|escapejs }}', '{{ contract.reajuste_percentual|default:0 }}')">
+                                            <i class="fas fa-sync-alt"></i>
+                                        </button>
+                                        {% endif %}
+                                        
+                                        <a href="?edit={{ contract.id }}" class="btn btn-sm btn-primary" title="Editar"><i class="fas fa-edit"></i></a>
+                                        <button type="button" class="btn btn-sm btn-danger" title="Excluir" onclick="openDeleteModal({{ contract.id }}, '{{ contract.title|escapejs }}')"><i class="fas fa-trash"></i></button>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="9" style="text-align: center; padding: 20px;">
+                                        Nenhum contrato encontrado para os filtros selecionados.
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="5" style="text-align: right; font-weight: bold;">Total do Período:</td>
+                                    <td colspan="4" style="font-weight: bold;">R$ {{ total_value|floatformat:2|intcomma }}</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div> 
+                </form>
+
+                {% if contracts.has_other_pages %}
+                    <div class="pagination" style="text-align: center; margin-top: 20px; padding-bottom: 15px;">
+                        <span class="step-links">
+                            {% if contracts.has_previous %}
+                                <a href="?page=1&status={{ filter_status }}&start_date={{ start_date|default:'' }}&end_date={{ end_date|default:'' }}" class="btn btn-secondary btn-sm" title="Primeira página">&laquo;</a>
+                                <a href="?page={{ contracts.previous_page_number }}&status={{ filter_status }}&start_date={{ start_date|default:'' }}&end_date={{ end_date|default:'' }}" class="btn btn-secondary btn-sm" title="Página anterior">Anterior</a>
+                            {% else %}
+                                <span class="btn btn-secondary btn-sm disabled">&laquo;</span>
+                                <span class="btn btn-secondary btn-sm disabled">Anterior</span>
+                            {% endif %}
+
+                            <span class="current-page" style="padding: 0 15px; font-size: 0.9rem; vertical-align: middle;">
+                                Página {{ contracts.number }} de {{ contracts.paginator.num_pages }}
+                            </span>
+
+                            {% if contracts.has_next %}
+                                <a href="?page={{ contracts.next_page_number }}&status={{ filter_status }}&start_date={{ start_date|default:'' }}&end_date={{ end_date|default:'' }}" class="btn btn-secondary btn-sm" title="Próxima página">Próxima</a>
+                                <a href="?page={{ contracts.paginator.num_pages }}&status={{ filter_status }}&start_date={{ start_date|default:'' }}&end_date={{ end_date|default:'' }}" class="btn btn-secondary btn-sm" title="Última página">&raquo;</a>
+                            {% else %}
+                                <span class="btn btn-secondary btn-sm disabled">Próxima</span>
+                                <span class="btn btn-secondary btn-sm disabled">&raquo;</span>
+                            {% endif %}
+                        </span>
+                    </div>
+                {% endif %}
+            </div> 
+        </div> 
+    </div> 
+
+    <div id="delete-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeDeleteModal()">&times;</span>
+            <h4>Confirmar Exclusão</h4>
+            <p>Tem certeza que deseja excluir o contrato "<strong id="delete-contract-name"></strong>"?</p>
+            <form method="POST" id="delete-modal-form">
+                {% csrf_token %}
+                <input type="hidden" name="action_delete_contract" id="delete-contract-id">
+                <div class="button-container" style="justify-content: flex-end;">
+                    <button type="button" class="btn btn-secondary" onclick="closeDeleteModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-danger">Excluir</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="attach-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeAttachModal()">&times;</span>
+            <h4>Anexar Documento</h4>
+            <p>Selecione o arquivo PDF para o contrato.</p>
+            <form method="POST" enctype="multipart/form-data" id="attach-modal-form">
+                {% csrf_token %}
+                <input type="hidden" name="action_attach" value="true">
+                <input type="hidden" name="attach_contract_id" id="attach-contract-id">
+                <input type="file" name="file" class="form-field" accept="application/pdf" required style="width: 100%; margin-bottom: 15px;">
+                <div class="button-container" style="justify-content: flex-end;">
+                    <button type="button" class="btn btn-secondary" onclick="closeAttachModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar Anexo</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="cliente-modal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <span class="close-btn" onclick="closeClienteModal()">&times;</span>
+            <h3>Cadastrar Novo Cliente</h3>
+            <form id="cliente-rapido-form">
+                {% csrf_token %}
+                
+                <div class="form-row">
+                    <div class="form-group-inline" style="flex: 1;">
+                        <label for="id_nome_modal">Nome / Razão Social</label>
+                        <input type="text" name="nome" required id="id_nome_modal" class="form-field">
+                    </div>
+                    <div class="form-group-inline" style="flex: 1;">
+                        <label for="id_cpf_cnpj_modal">CPF/CNPJ</label>
+                        <input type="text" name="cpf_cnpj" required id="id_cpf_cnpj_modal" class="form-field">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group-inline" style="flex: 1.5;">
+                        <label for="id_email_modal">E-mail</label>
+                        <input type="email" name="email" id="id_email_modal" class="form-field">
+                    </div>
+                    <div class="form-group-inline" style="flex: 1;">
+                        <label for="id_telefone_modal">Telefone</label>
+                        <input type="text" name="telefone" id="id_telefone_modal" class="form-field">
+                    </div>
+                </div>
+
+                <hr style="margin: 15px 0; border-color: #444;">
+                <h4 style="margin-bottom: 10px; font-size: 0.9em; color: #aaa;">Endereço</h4>
+
+                <div class="form-group-inline">
+                    <label for="id_cep_modal">CEP</label>
+                    <div style="display: flex; gap: 5px;">
+                        <input type="text" name="cep" id="id_cep_modal" class="form-field" placeholder="00000-000" maxlength="9">
+                        <button type="button" id="buscar-cep-modal-btn" class="btn btn-secondary" style="padding: 0 10px;">🔍</button>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group-inline" style="flex: 3;">
+                        <label for="id_logradouro_modal">Logradouro</label>
+                        <input type="text" name="logradouro" id="id_logradouro_modal" class="form-field">
+                    </div>
+                    <div class="form-group-inline" style="flex: 1;">
+                        <label for="id_numero_modal">Número</label>
+                        <input type="text" name="numero" id="id_numero_modal" class="form-field">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group-inline">
+                        <label for="id_bairro_modal">Bairro</label>
+                        <input type="text" name="bairro" id="id_bairro_modal" class="form-field">
+                    </div>
+                    <div class="form-group-inline">
+                        <label for="id_cidade_modal">Cidade</label>
+                        <input type="text" name="cidade" id="id_cidade_modal" class="form-field">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group-inline">
+                        <label for="id_uf_modal">UF</label>
+                        <input type="text" name="uf" id="id_uf_modal" class="form-field" maxlength="2" style="text-transform: uppercase;">
+                    </div>
+                    <div class="form-group-inline">
+                        <label for="id_codigo_municipio_modal">Cód. IBGE</label>
+                        <input type="text" name="codigo_municipio" id="id_codigo_municipio_modal" class="form-field">
+                    </div>
+                </div>
+
+                <div class="button-container" style="margin-top: 20px;">
+                    <button type="submit" class="btn btn-success" style="width: 100%;">Salvar Cliente</button>
+                </div>
+            </form>
+        </div>
+    </div> 
+    <div id="renew-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeRenewModal()">&times;</span>
+            <h4>Renovar Contrato</h4>
+            <p>Deseja renovar o contrato "<strong id="renew-contract-name"></strong>"?</p>
+            
+            <div class="reajuste-box"> <p style="margin: 0; font-size: 0.9em;">Isso criará um <strong>novo contrato</strong> iniciando ao fim do atual.</p>
+                <p class="text-reajuste">
+                    Reajuste aplicado: <strong id="renew-percent-display"></strong>%
+                </p>
+            </div>
+            <form method="POST">
+                {% csrf_token %}
+                <input type="hidden" name="action_renew" value="true">
+                <input type="hidden" name="renew_contract_id" id="renew-contract-id">
+                
+                <div class="button-container" style="justify-content: flex-end;">
+                    <button type="button" class="btn btn-secondary" onclick="closeRenewModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-success">Confirmar Renovação</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="{% static 'js/theme.js' %}"></script>
+    <script>
+        // ==========================================================
+        // FUNÇÕES GLOBAIS DOS MODAIS
+        // ==========================================================
+        
+        function openDeleteModal(id, name) {
+            const deleteModal = document.getElementById('delete-modal');
+            if (!deleteModal) return;
+            document.getElementById('delete-contract-id').value = id;
+            document.getElementById('delete-contract-name').textContent = name;
+            deleteModal.style.display = 'block';
+        }
+        function closeDeleteModal() {
+            const deleteModal = document.getElementById('delete-modal');
+            if (deleteModal) deleteModal.style.display = 'none';
+        }
+
+        function openAttachModal(id) {
+            const attachModal = document.getElementById('attach-modal');
+            if (!attachModal) return;
+            document.getElementById('attach-contract-id').value = id;
+            attachModal.style.display = 'block';
+        }
+        function closeAttachModal() {
+            const attachModal = document.getElementById('attach-modal');
+            if (attachModal) attachModal.style.display = 'none';
+        }
+
+        function openRenewModal(id, name, percent) {
+            const modal = document.getElementById('renew-modal');
+            if (!modal) return;
+            document.getElementById('renew-contract-id').value = id;
+            document.getElementById('renew-contract-name').textContent = name;
+            document.getElementById('renew-percent-display').textContent = percent;
+            modal.style.display = 'block';
+        }
+
+        function closeRenewModal() {
+            const modal = document.getElementById('renew-modal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        // Fechar modal clicando fora
+        window.onclick = function(event) {
+            const deleteModal = document.getElementById('delete-modal');
+            const attachModal = document.getElementById('attach-modal');
+            const renewModal = document.getElementById('renew-modal');
+            const clienteModal = document.getElementById('cliente-modal');
+            
+            if (event.target == deleteModal) closeDeleteModal();
+            if (event.target == attachModal) closeAttachModal();
+            if (event.target == renewModal) closeRenewModal();
+            if (event.target == clienteModal) closeClienteModal();
+        }
+
+        // ==========================================================
+        // SCRIPT PRINCIPAL
+        // ==========================================================
+        document.addEventListener('DOMContentLoaded', function() {
+
+            // MENU MOBILE
+            const menuToggleButton = document.getElementById('menu-toggle');
+            const sidebar = document.querySelector('.sidebar');
+            if (menuToggleButton && sidebar) {
+                menuToggleButton.addEventListener('click', function() {
+                    sidebar.classList.toggle('mobile-open');
+                });
+            }
+
+            // SUBMENUS
+            function setupSubmenuToggle(toggleId, submenuId) {
+                const toggleButton = document.getElementById(toggleId);
+                const submenu = document.getElementById(submenuId);
+                if (toggleButton && submenu) {
+                    toggleButton.addEventListener('click', function(event) {
+                        event.preventDefault();
+                        submenu.style.display = submenu.style.display === 'block' ? 'none' : 'block';
+                    });
+                }
+            }
+            setupSubmenuToggle('financeiro-toggle', 'financeiro-submenu');
+            setupSubmenuToggle('comercial-toggle', 'comercial-submenu');
+            setupSubmenuToggle('configuracoes-toggle', 'configuracoes-submenu');
+
+            const activeLink = document.querySelector('.sidebar a.active');
+            if (activeLink) {
+                const parentSubmenu = activeLink.closest('.submenu');
+                if (parentSubmenu) parentSubmenu.style.display = 'block';
+            }
+            
+            // Checkbox "Selecionar Todos"
+            const selectAllCheckbox = document.getElementById('select-all-contracts');
+            if (selectAllCheckbox) {
+                selectAllCheckbox.addEventListener('change', function(e) {
+                    const checkboxes = document.querySelectorAll('.contract-checkbox');
+                    checkboxes.forEach(cb => cb.checked = e.target.checked);
+                });
+            }
+
+            // Limpeza de valor monetário no submit
+            const mainContractForm = document.getElementById('main-contract-form');
+            const valueInput = document.getElementById('id_value'); 
+            
+            if (mainContractForm && valueInput) {
+                mainContractForm.addEventListener('submit', function() {
+                    let formValue = valueInput.value;
+                    if (formValue.includes(',')) {
+                        formValue = formValue.replace(/\./g, '');
+                        formValue = formValue.replace(',', '.');
+                    }
+                    valueInput.value = formValue;
+                });
+            }
+
+            // ==========================================================
+            // LÓGICA DE CLIENTES (Dropdown, Detalhes e Cadastro Rápido)
+            // ==========================================================
+
+            const clienteSelect = document.getElementById('id_client');
+            const detailCpf = document.getElementById('detail_cpf_cnpj');
+            const detailEmail = document.getElementById('detail_email');
+            const detailTelefone = document.getElementById('detail_telefone');
+            const detailEndereco = document.getElementById('detail_endereco');
+
+            // 1. Cria o "banco de dados" local com os clientes
+            // FIX: Concatenação dos campos de endereço feita AQUI para garantir que apareça
+            const clientsData = {};
+            
+            {% for client in form.client.field.queryset %}
+            clientsData["{{ client.id }}"] = {
+                "cpf": "{{ client.cpf_cnpj|default:''|escapejs }}",
+                "email": "{{ client.email|default:''|escapejs }}",
+                "telefone": "{{ client.telefone|default:''|escapejs }}",
+                // Aqui montamos o endereço completo com os campos individuais
+                "endereco": "{{ client.logradouro|default:''|escapejs }}, {{ client.numero|default:''|escapejs }} - {{ client.bairro|default:''|escapejs }} - {{ client.cidade|default:''|escapejs }}/{{ client.uf|default:''|escapejs }}"
+            };
+            {% endfor %}
+
+            // Função que preenche os campos na tela
+            function updateClientDetails(clientId) {
+                // Limpa primeiro
+                detailCpf.value = '';
+                detailEmail.value = '';
+                detailTelefone.value = '';
+                detailEndereco.value = ''; 
+
+                if (clientId && clientsData[clientId]) {
+                    const data = clientsData[clientId];
+                    detailCpf.value = data.cpf || '';
+                    detailEmail.value = data.email || '';
+                    detailTelefone.value = data.telefone || '';
+                    // Como montamos a string lá em cima, agora ela existe aqui
+                    detailEndereco.value = data.endereco || ''; 
+                }
+            }
+
+            // Evento: Quando mudar o cliente no select
+            if (clienteSelect) {
+                clienteSelect.addEventListener('change', function() {
+                    updateClientDetails(this.value);
+                });
+                // Executa uma vez ao carregar para preencher se for Edição
+                updateClientDetails(clienteSelect.value);
+            }
+
+            // --- CADASTRO RÁPIDO (MODAL) ---
+            const clienteModal = document.getElementById('cliente-modal');
+            const btnNovoCliente = document.getElementById('btn-novo-cliente');
+            const formClienteRapido = document.getElementById('cliente-rapido-form');
+
+            if (btnNovoCliente) btnNovoCliente.addEventListener('click', () => clienteModal.style.display = 'block');
+            window.closeClienteModal = () => clienteModal.style.display = 'none';
+
+            // Busca CEP no Modal
+            const btnBuscarCep = document.getElementById('buscar-cep-modal-btn');
+            if (btnBuscarCep) {
+                btnBuscarCep.addEventListener('click', function() {
+                    const cep = document.getElementById('id_cep_modal').value.replace(/\D/g, '');
+                    if (cep.length !== 8) { alert("CEP inválido"); return; }
+                    fetch(`https://viacep.com.br/ws/${cep}/json/`).then(r=>r.json()).then(d=>{
+                        if(!d.erro){
+                            document.getElementById('id_logradouro_modal').value = d.logradouro;
+                            document.getElementById('id_bairro_modal').value = d.bairro;
+                            document.getElementById('id_cidade_modal').value = d.localidade;
+                            document.getElementById('id_uf_modal').value = d.uf;
+                            document.getElementById('id_codigo_municipio_modal').value = d.ibge;
+                            document.getElementById('id_numero_modal').focus();
+                        } else alert("CEP não encontrado!");
+                    });
+                });
+            }
+
+            // --- SALVAR CLIENTE E ATUALIZAR FORMULÁRIO ---
+            if (formClienteRapido) {
+                formClienteRapido.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const formData = new FormData(this);
+
+                    fetch("{% url 'cadastrar_cliente_rapido' %}", {
+                        method: 'POST',
+                        body: formData,
+                        headers: {'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value}
+                    })
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            // 1. Adiciona a nova opção no Select
+                            const newOption = new Option(data.cliente.nome, data.cliente.id, true, true);
+                            clienteSelect.appendChild(newOption);
+                            clienteSelect.value = data.cliente.id; 
+
+                            // 2. Atualiza a memória local com o NOVO ENDEREÇO
+                            clientsData[String(data.cliente.id)] = {
+                                "cpf": data.cliente.cpf_cnpj || '',
+                                "email": data.cliente.email || '',
+                                "telefone": data.cliente.telefone || '',
+                                "endereco": data.cliente.endereco || '' 
+                            };
+
+                            // 3. Atualiza a tela
+                            updateClientDetails(data.cliente.id);
+
+                            alert('Cliente cadastrado com sucesso!');
+                            closeClienteModal();
+                            formClienteRapido.reset();
+                        } else {
+                            alert('Erro ao salvar: ' + JSON.stringify(data.errors));
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Erro:', error);
+                        alert('Erro de comunicação.');
+                    });
+                });
+            }
         });    
     </script>
 </body>

@@ -358,11 +358,58 @@ class MetaFaturamentoForm(forms.ModelForm):
         return None
 # --- FIM DA VERSÃO CORRIGIDA ---
 
+# Em accounts/forms.py (Substitua a classe CustomUserCreationForm inteira)
+
 class CustomUserCreationForm(UserCreationForm):
+    # Definimos o campo explicitamente para ser obrigatório e ter o ID correto para o JavaScript
+    cnpj = forms.CharField(
+        label="CNPJ",
+        required=True,
+        max_length=18,
+        widget=forms.TextInput(attrs={
+            'class': 'form-field', 
+            'placeholder': '00.000.000/0000-00',
+            'id': 'id_cnpj', # Este ID conecta com o JavaScript que te mandei antes
+            'autocomplete': 'off'
+        })
+    )
+    email = forms.EmailField(
+        label="E-mail", 
+        required=True, 
+        widget=forms.EmailInput(attrs={'class': 'form-field'})
+    )
+
     class Meta(UserCreationForm.Meta):
-        # Aqui podemos adicionar mais campos no futuro se quisermos,
-        # como 'email', por exemplo. Por enquanto, só o username é o padrão.
-        fields = UserCreationForm.Meta.fields + ('email',)
+        # A ordem aqui define a ordem que aparece na tela
+        fields = UserCreationForm.Meta.fields + ('email', 'cnpj')
+
+    def clean_cnpj(self):
+        """Valida se o CNPJ já está em uso por outra empresa"""
+        cnpj = self.cleaned_data.get('cnpj')
+        if cnpj:
+            # Verifica na tabela CompanyProfile se já existe este CNPJ
+            if CompanyProfile.objects.filter(cnpj=cnpj).exists():
+                raise forms.ValidationError("Este CNPJ já está cadastrado em nossa base.")
+        return cnpj
+
+    def save(self, commit=True):
+        """Salva o Usuário e cria automaticamente o Perfil da Empresa"""
+        user = super().save(commit=False)
+        user.email = self.cleaned_data['email']
+        
+        if commit:
+            user.save()
+            # AQUI ESTÁ O SEGRED: Criamos o perfil da empresa vinculado ao usuário
+            # Se o perfil já tiver sido criado por algum Signal, usamos get_or_create
+            profile, created = CompanyProfile.objects.get_or_create(user=user)
+            
+            # Atualizamos os dados do perfil com o CNPJ do formulário
+            profile.cnpj = self.cleaned_data['cnpj']
+            profile.nome_empresa = f"Empresa {user.username}" # Define um nome provisório
+            profile.email_contato = user.email
+            profile.save()
+            
+        return user
 
 from .models import Orcamento # Adicione Orcamento às importações
 
@@ -411,7 +458,7 @@ class ContractForm(forms.ModelForm):
     class Meta:
         model = Contract
         # Exclui 'user' e 'created_at' que são automáticos
-        fields = ['title', 'client', 'start_date', 'end_date', 'value', 'status', 'document']
+        fields = ['title', 'client', 'start_date', 'end_date', 'value', 'status', 'document', 'reajuste_percentual', 'frequencia_pagamento', 'quantidade_parcelas', 'dia_vencimento']
         
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-field'}),
@@ -421,6 +468,10 @@ class ContractForm(forms.ModelForm):
             'value': forms.TextInput(attrs={'class': 'form-field', 'placeholder': 'Ex: 1.500,50'}),
             'status': forms.Select(attrs={'class': 'form-field'}),
             'document': forms.FileInput(attrs={'accept': 'application/pdf', 'class': 'form-field'}),
+            'reajuste_percentual': forms.TextInput(attrs={'class': 'form-field', 'placeholder': '0.00%'}),
+            'frequencia_pagamento': forms.Select(attrs={'class': 'form-field'}),
+            'quantidade_parcelas': forms.NumberInput(attrs={'class': 'form-field', 'min': '1'}),
+            'dia_vencimento': forms.NumberInput(attrs={'class': 'form-field', 'min': '1', 'max': '31', 'placeholder': 'Dia'}),
         }
         
         labels = {
@@ -431,6 +482,10 @@ class ContractForm(forms.ModelForm):
             'value': 'Valor',
             'status': 'Status',
             'document': 'Anexar Documento (PDF)',
+            'reajuste_percentual': 'Reajuste (%)',
+            'frequencia_pagamento': 'Frequência',
+            'quantidade_parcelas': 'Duração (Meses)',
+            'dia_vencimento': 'Dia Cobrança',
         }
 
     def __init__(self, *args, **kwargs):
@@ -491,10 +546,25 @@ class EmployeeCreationForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # 🔹 Garante que todos os campos venham limpos e sem autocomplete
+        
+        # 1. Para todos os campos gerais, desligamos o autocomplete
         for name, field in self.fields.items():
             field.initial = None
             field.widget.attrs['autocomplete'] = 'off'
+
+        # 2. TRUQUE DO E-MAIL (Estratégia "Nuclear")
+        # O campo inicia como 'somente leitura' para o navegador não preencher.
+        # Quando você clica nele (onfocus), ele libera para digitar.
+        self.fields['email'].widget.attrs.update({
+            'autocomplete': 'new-password', # Diz ao navegador que não é login antigo
+            'readonly': 'readonly',         # Bloqueia preenchimento automático
+            'onfocus': "this.removeAttribute('readonly');" # Desbloqueia ao clicar
+        })
+
+        # 3. TRUQUE DA SENHA
+        # 'new-password' força o navegador a entender que é uma NOVA senha, não a sua salva.
+        self.fields['password'].widget.attrs['autocomplete'] = 'new-password'
+        self.fields['password_confirm'].widget.attrs['autocomplete'] = 'new-password'
 
     class Meta:
         model = User

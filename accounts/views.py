@@ -9,7 +9,7 @@ import os
 import re
 import xml.etree.ElementTree as ET
 from collections import OrderedDict, defaultdict
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from decimal import Decimal
 from io import StringIO
 from urllib.parse import urlparse
@@ -20,7 +20,8 @@ import stripe
 
 from django.views.decorators.csrf import csrf_exempt # Vamos usar depois no webhook
 
-
+from datetime import datetime # Importante para combinar data e hora
+from dateutil.relativedelta import relativedelta
 # --- 2. Bibliotecas de Terceiros (Pip) ---
 import openpyxl
 import pandas as pd
@@ -6626,6 +6627,8 @@ def gerenciamento_contratos_view(request):
             messages.success(request, f'Contrato "{contract.title}" excluído com sucesso.')
             return redirect(redirect_url)
 
+            
+
         elif 'delete_selected_contracts' in request.POST:
             contract_ids = request.POST.getlist('contract_ids')
             if contract_ids:
@@ -6639,6 +6642,74 @@ def gerenciamento_contratos_view(request):
             contract.document = request.FILES['file']
             contract.save()
             messages.success(request, 'Documento anexado ao contrato com sucesso.')
+            return redirect(redirect_url)
+        
+        elif 'action_renew' in request.POST:
+            import calendar # Importação necessária para lidar com os meses corretamente
+            
+            contract_id = request.POST.get('renew_contract_id')
+            contrato_antigo = get_object_or_404(Contract, id=contract_id, user=request.user)
+            
+            # A. Calcula o Novo Valor com Reajuste
+            percentual = contrato_antigo.reajuste_percentual or 0
+            novo_valor = contrato_antigo.value + (contrato_antigo.value * (percentual / 100))
+            
+            # B. Lógica Inteligente de Datas
+            # Verifica se é um contrato mensal para usar a lógica de parcelas
+            frequencia_str = str(contrato_antigo.frequencia_pagamento).lower()
+            eh_mensal = any(x in frequencia_str for x in ['mensal', '30'])
+            
+            if eh_mensal and contrato_antigo.quantidade_parcelas:
+                # Se for mensal, calculamos o novo início somando as parcelas à data de início original.
+                # Ex: Início 01/02 + 4 parcelas = Novo Início 01/06.
+                # Isso evita a duplicação do mês 5, pois ignora a data fim "curta" de 30/04.
+                
+                meses_para_adicionar = int(contrato_antigo.quantidade_parcelas)
+                novo_mes = (contrato_antigo.start_date.month - 1 + meses_para_adicionar) % 12 + 1
+                adicional_ano = (contrato_antigo.start_date.month - 1 + meses_para_adicionar) // 12
+                novo_ano = contrato_antigo.start_date.year + adicional_ano
+                
+                # Garante que o dia existe no novo mês (ex: evita 31 de fevereiro)
+                ultimo_dia_mes = calendar.monthrange(novo_ano, novo_mes)[1]
+                novo_dia = min(contrato_antigo.start_date.day, ultimo_dia_mes)
+                
+                nova_data_inicio = contrato_antigo.start_date.replace(year=novo_ano, month=novo_mes, day=novo_dia)
+            
+            elif contrato_antigo.end_date:
+                # Fallback para a lógica simples (Data Fim + 1 dia) se não for mensal
+                nova_data_inicio = contrato_antigo.end_date + timedelta(days=1)
+            else:
+                nova_data_inicio = timezone.now().date()
+
+            # Calcula a nova data fim mantendo a mesma DURAÇÃO (em dias) do contrato anterior
+            duracao = contrato_antigo.end_date - contrato_antigo.start_date
+            nova_data_fim = nova_data_inicio + duracao
+            
+            # C. Cria o NOVO Contrato (Renovado)
+            novo_contrato = Contract.objects.create(
+                user=request.user,
+                title=f"{contrato_antigo.title} (Renovado {timezone.now().year})",
+                client=contrato_antigo.client,
+                start_date=nova_data_inicio,
+                end_date=nova_data_fim,
+                value=novo_valor, 
+                status='ATIVO',   
+                reajuste_percentual=contrato_antigo.reajuste_percentual,
+                frequencia_pagamento=contrato_antigo.frequencia_pagamento,
+                quantidade_parcelas=contrato_antigo.quantidade_parcelas,
+                dia_vencimento=contrato_antigo.dia_vencimento,
+                document=None, 
+                financeiro_gerado=False 
+            )
+            
+            # D. Gera o Financeiro e Vendas
+            try:
+                with transaction.atomic():
+                    gerar_financeiro_contrato(novo_contrato, request.user)
+                messages.success(request, f'Contrato renovado com sucesso! Início em {nova_data_inicio.strftime("%d/%m/%Y")}')
+            except Exception as e:
+                messages.warning(request, f'Contrato renovado, mas erro no financeiro: {e}')
+                
             return redirect(redirect_url)
 
         # --- Processamento do Formulário Principal (Criar/Editar) ---
@@ -6655,9 +6726,23 @@ def gerenciamento_contratos_view(request):
 
             if form.is_valid(): # Se o formulário FOR válido
                 form.instance.user = request.user
-                form.save()
-                messages.success(request, 'Contrato salvo com sucesso.')
-                return redirect('gerenciamento_contratos') # Redireciona após salvar com sucesso
+                contrato_salvo = form.save() # <--- Capture o objeto salvo numa variável
+
+                # ▼▼▼▼▼ INÍCIO DA ADIÇÃO (Lógica Financeira) ▼▼▼▼▼
+                try:
+                    # Só gera se o status for ATIVO e ainda NÃO tiver sido gerado
+                    if contrato_salvo.status == 'ATIVO' and not contrato_salvo.financeiro_gerado:
+                        with transaction.atomic(): # Garante que ou faz tudo ou não faz nada
+                            gerar_financeiro_contrato(contrato_salvo, request.user)
+                        messages.success(request, 'Contrato salvo e financeiro/vendas gerados com sucesso!')
+                    else:
+                        messages.success(request, 'Contrato salvo com sucesso.')
+                except Exception as e:
+                    # Se der erro no financeiro, o contrato salva, mas avisa o erro
+                    messages.warning(request, f'Contrato salvo, mas erro ao gerar financeiro: {e}')
+                # ▲▲▲▲▲ FIM DA ADIÇÃO ▲▲▲▲▲
+
+                return redirect('gerenciamento_contratos')
             else: # Se o formulário FOR INVÁLIDO
                 # **SUBSTITUIR**: Loga o erro e define a mensagem, MAS NÃO RODA a lógica GET aqui
                 logger.error(f"Erro no formulário de Contrato: {form.errors.as_json()}")
@@ -7651,7 +7736,134 @@ def editar_funcionario_view(request, pk):
 
 
 
+# --- Adicione estes imports no TOPO do accounts/views.py ---
+from dateutil.relativedelta import relativedelta # Pode precisar instalar: pip install python-dateutil
+from django.db import transaction
+from .models import (
+    ReceivableAccount, Category, BankAccount, 
+    Venda, ItemVenda, PagamentoVenda, ProdutoServico, 
+    Contract
+)
 
+# --- Adicione esta função auxiliar (Pode ser no final do arquivo) ---
 
+# No accounts/views.py
+
+def gerar_financeiro_contrato(contrato, user):
+    """
+    Gera automaticamente Contas a Receber e Vendas (para NF-e) 
+    baseado nas regras do contrato.
+    """
+    if contrato.financeiro_gerado:
+        return
+
+    # 1. Configuração de Datas
+    data_base = contrato.start_date
+    dia_vencimento = contrato.dia_vencimento
+    qtd_parcelas = contrato.quantidade_parcelas if contrato.frequencia_pagamento == 'MENSAL' else 1
+    
+    # 2. CORREÇÃO DA CATEGORIA: Busca ou cria "Receitas de Vendas"
+    # Tenta achar exatamente pelo nome limpo
+    categoria_padrao = Category.objects.filter(user=user, name="Receitas de Vendas", category_type='RECEIVABLE').first()
+    
+    # Se não existir, cria ela
+    if not categoria_padrao:
+        categoria_padrao = Category.objects.create(
+            user=user,
+            name="Receitas de Vendas",
+            category_type='RECEIVABLE'
+        )
+    
+    # 3. Produto/Serviço Padrão
+    produto_servico, _ = ProdutoServico.objects.get_or_create(
+        user=user,
+        nome="Serviço de Contrato (Automático)",
+        defaults={
+            'tipo': 'SERVICO',
+            'preco_venda': contrato.value,
+            'preco_custo': 0,
+            'descricao': 'Gerado automaticamente pelo módulo de Contratos'
+        }
+    )
+
+    registros_receber = []
+    
+    # 4. Loop das Parcelas
+    for i in range(qtd_parcelas):
+        # --- CÁLCULO DA DATA (Mantém o dia fixo do vencimento) ---
+        # Avança o mês base
+        data_mes_seguinte = data_base + relativedelta(months=i)
+        
+        # Tenta forçar o dia de vencimento escolhido (ex: dia 07)
+        try:
+            data_vencimento = data_mes_seguinte.replace(day=dia_vencimento)
+        except ValueError:
+            # Se o dia não existe no mês (ex: dia 31 em Fevereiro), pega o último dia do mês
+            data_vencimento = data_mes_seguinte + relativedelta(day=31)
+
+        descricao_parcela = f"Ref. Contrato {contrato.title} - Parc. {i+1}/{qtd_parcelas}"
+
+        # A. CRIA CONTA A RECEBER
+        conta = ReceivableAccount(
+            user=user,
+            name=f"{contrato.client.nome} - {i+1}/{qtd_parcelas}",
+            description=descricao_parcela,
+            due_date=data_vencimento,
+            amount=contrato.value,
+            category=categoria_padrao, # Agora usa a categoria corrigida
+            dre_area='BRUTA', 
+            payment_method='BOLETO', 
+            occurrence='AVULSO',
+            is_received=False
+        )
+        registros_receber.append(conta)
+
+        # B. CRIA A VENDA (Para emissão de NF-e)
+        cidade_cli = contrato.client.cidade or "Não Informada"
+        uf_cli = contrato.client.uf or "MG"
+        end_cli = contrato.client.endereco or ""
+
+        # Cria a venda
+        venda = Venda.objects.create(
+            user=user,
+            cliente=contrato.client,
+            vendedor=None,
+            status='FINALIZADA',
+            valor_total_bruto=contrato.value,
+            valor_total_liquido=contrato.value,
+            desconto_geral=0,
+            cidade=cidade_cli,
+            estado=uf_cli,
+            endereco=end_cli
+        )
+
+        # --- CORREÇÃO DA DATA DA VENDA ---
+        # Por padrão, o Django grava "agora". Usamos .update para forçar a data futura (data_vencimento).
+        # Definimos um horário comercial padrão (ex: 09:00 da manhã) para ficar organizado.
+        data_hora_venda = datetime.combine(data_vencimento, datetime.min.time().replace(hour=9))
+        Venda.objects.filter(pk=venda.pk).update(data_venda=data_hora_venda)
+
+        # Cria o Item da Venda
+        ItemVenda.objects.create(
+            venda=venda,
+            produto=produto_servico,
+            quantidade=1,
+            preco_unitario=contrato.value,
+            desconto_item=0
+        )
+        
+        # Cria o Pagamento da Venda
+        PagamentoVenda.objects.create(
+            venda=venda,
+            forma_pagamento='BOLETO',
+            valor=contrato.value,
+            parcelas=1
+        )
+
+    # Salva todas as contas a receber
+    ReceivableAccount.objects.bulk_create(registros_receber)
+
+    contrato.financeiro_gerado = True
+    contrato.save()
 
 
