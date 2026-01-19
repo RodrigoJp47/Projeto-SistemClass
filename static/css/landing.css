@@ -731,6 +731,92 @@ body {
     gap: 10px;
 }
 
+/* Estilos da Faixa de Segurança */
+.security-strip {
+    background-color: #020617; /* Fundo quase preto */
+    /* Cria aquele efeito de luz azulada no canto esquerdo igual ao print */
+    background-image: radial-gradient(circle at 0% 50%, rgba(29, 78, 216, 0.15), transparent 25%);
+    padding: 60px 0;
+    text-align: center;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.security-content {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.security-subtitle {
+    display: block;
+    color: #a3e635; /* O verde limão do print */
+    font-size: 0.875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+}
+
+.security-strip h2 {
+    color: #ffffff;
+    font-size: 1.75rem; /* Ajuste o tamanho conforme preferir */
+    font-weight: 700;
+    margin: 0;
+    line-height: 1.3;
+}
+
+/* --- INÍCIO DOS AJUSTES DE ESPAÇAMENTO (RESPIRO) --- */
+
+/* 1. Ajuste da Seção BPO (Título e Texto muito colados) */
+.bpo-content h2 {
+    margin-bottom: 20px !important; /* Aumenta o espaço entre o título e a descrição */
+}
+.bpo-content p {
+    line-height: 1.6 !important; /* Aumenta a altura da linha do texto para facilitar a leitura */
+    margin-bottom: 25px; /* Dá um espaço antes dos ícones/botão */
+}
+
+/* 2. Ajuste do FAQ (Perguntas e Respostas) */
+.faq-item h4 {
+    margin-bottom: 12px !important; /* Separa a pergunta da resposta */
+}
+.faq-item p {
+    line-height: 1.6; /* Deixa o texto da resposta mais "arejado" */
+}
+/* Dá um espaço maior entre uma pergunta e a próxima */
+.faq-item {
+    margin-bottom: 30px; 
+}
+
+/* 3. Ajuste do Rodapé (Footer) */
+/* Espaço no texto abaixo de "SistemClass" */
+.footer-brand p {
+    margin-top: 15px !important; 
+    line-height: 1.5;
+    max-width: 250px; /* Garante que o texto não fique muito esticado */
+}
+
+/* Espaço entre os links (Funcionalidades, Preços, etc) */
+.footer-links a {
+    display: block; /* Garante que cada link fique em uma linha */
+    margin-bottom: 12px !important; /* O respiro entre um link e outro */
+}
+
+/* Espaço entre o E-mail e o WhatsApp */
+.footer-contact p {
+    margin-bottom: 12px !important; 
+}
+
+/* --- FIM DOS AJUSTES --- */
+
+/* Ajuste para mobile para não ficar grande demais */
+@media (max-width: 768px) {
+    .security-strip h2 {
+        font-size: 1.4rem;
+        padding: 0 15px;
+    }
+}
+
 /* Em telas largas, divide a lista em 2 colunas se houver espaço, mas 1 coluna é mais seguro para leitura */
 @media (min-width: 1200px) {
     .feature-details ul {
