@@ -4,7 +4,7 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.forms import ReadOnlyPasswordHashField
 from django.contrib.auth.forms import PasswordChangeForm
 from .models import (
-    PayableAccount, ReceivableAccount, Category, BankAccount, OFXImport,
+    PayableAccount, ReceivableAccount, Category, BankAccount, OFXImport, CentroCusto,
     Vendedor, ProdutoServico, Cliente, Contract, CompanyProfile, CompanyDocument 
 )
 import datetime
@@ -65,16 +65,19 @@ class OFXImportForm(forms.ModelForm):
 
 class PayableAccountForm(forms.ModelForm):
     new_category = forms.CharField(max_length=100, required=False, label="Nova Categoria")
+    new_centro_custo = forms.CharField(max_length=100, required=False, label="Novo Centro de Custo")
 
     class Meta:
         model = PayableAccount
-        fields = ['name', 'description', 'due_date', 'amount', 'category', 'new_category', 'dre_area', 'payment_method', 'occurrence', 'recurrence_count', 'cost_type', 'file', 'bank_account']
+        fields = ['name', 'description', 'due_date', 'amount', 'category', 'new_category', 'centro_custo', 'new_centro_custo', 'dre_area', 'payment_method', 'occurrence', 'recurrence_count', 'cost_type', 'file', 'bank_account']
         widgets = {
             'due_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-field'}),
             'description': forms.Textarea(attrs={'rows': 4, 'class': 'form-field'}),
             'amount': forms.TextInput(attrs={'class': 'form-field inline-field', 'placeholder': 'Ex: 10.589,58'}),
             'category': forms.Select(attrs={'class': 'form-field inline-field'}),
             'new_category': forms.TextInput(attrs={'class': 'form-field inline-field'}),
+            'centro_custo': forms.Select(attrs={'class': 'form-field inline-field'}),
+            'new_centro_custo': forms.TextInput(attrs={'class': 'form-field inline-field'}),  
             'occurrence': forms.Select(attrs={'class': 'form-field inline-field'}),
             'recurrence_count': forms.NumberInput(attrs={'class': 'form-field inline-field', 'min': 1}),
             'cost_type': forms.Select(attrs={'class': 'form-field inline-field'}),
@@ -88,6 +91,7 @@ class PayableAccountForm(forms.ModelForm):
             'due_date': 'Data de Vencimento',
             'amount': 'Valor',
             'category': 'Categoria',
+            'centro_custo': 'Centro de Custo',
             'new_category': 'Nova Categoria',
             'dre_area': 'Área-DRE',
             'payment_method': 'Forma de Pagamento',
@@ -114,15 +118,19 @@ class PayableAccountForm(forms.ModelForm):
             # ▼▼▼ ESTA É A NOVA LINHA ADICIONADA ▼▼▼
             # ...E filtramos a lista de CONTAS BANCÁRIAS para este usuário.
             self.fields['bank_account'].queryset = BankAccount.objects.filter(user=user)
+
+            self.fields['centro_custo'].queryset = CentroCusto.objects.filter(user=user)
             
         else: 
             # Se nenhum usuário for passado, não mostramos nenhuma categoria ou banco.
             self.fields['category'].queryset = Category.objects.none()
             self.fields['bank_account'].queryset = BankAccount.objects.none() # <-- NOVA LINHA ADICIONADA
+            self.fields['centro_custo'].queryset = CentroCusto.objects.none()
 
         # O resto do seu método (configurações de campos) continua igual.
         self.fields['dre_area'].required = False
         self.fields['category'].required = False
+        self.fields['centro_custo'].required = False
         self.fields['recurrence_count'].required = False
         self.fields['recurrence_count'].widget.attrs['min'] = 1
         self.fields['file'].required = False

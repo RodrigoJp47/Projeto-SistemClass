@@ -72,7 +72,7 @@ from .forms import (
 )
 from .models import (
     PayableAccount, ReceivableAccount, Category, DRE_AREAS, BankAccount,
-    OFXImport, MetaFaturamento, Subscription, Contract, Cliente,
+    OFXImport, CentroCusto, MetaFaturamento, Subscription, Contract, Cliente,
     BPOClientLink, CompanyUserLink, create_subscription_for_new_user,
     CompanyProfile, CompanyDocument, Venda, ItemVenda, ProdutoServico,
     Vendedor, PagamentoVenda, PAYMENT_METHODS, Cidade,
@@ -2264,6 +2264,7 @@ def contas_pagar(request):
                     'vencimento': 'due_date', 'data do pagamento': 'due_date', 'data do vencimento': 'due_date',
                     'valor': 'amount', 'pagamento': 'amount',
                     'categoria': 'category',
+                    'centro de custo': 'centro_custo', 'centro custo': 'centro_custo',
                     'conta bancária': 'bank_account', 'banco': 'bank_account',
                     'forma de pagamento': 'payment_method',
                     'custo': 'cost_type',
@@ -2344,6 +2345,14 @@ def contas_pagar(request):
                                 # Se não tem no Excel e nem no Smart, cria/usa uma padrão
                                 category, _ = Category.objects.get_or_create(name='Despesas Gerais', category_type='PAYABLE', user=request.user)
 
+                            # --- ADICIONE ESTE BLOCO NOVO PARA O CENTRO DE CUSTO ---
+                            centro_custo = None
+                            if pd.notna(row.get('centro_custo')):
+                                cc_name_excel = str(row.get('centro_custo')).strip()
+                                # Busca o centro de custo existente ou cria um novo automaticamente se vier no Excel
+                                centro_custo, _ = CentroCusto.objects.get_or_create(nome=cc_name_excel, user=request.user)
+                            # -------------------------------------------------------    
+
                             # C. Define a Área DRE Final
                             # Prioridade: Inteligência > Padrão ('OPERACIONAL')
                             # (Nota: Dificilmente vem DRE no Excel, então confiamos no Smart)
@@ -2368,6 +2377,7 @@ def contas_pagar(request):
                                 due_date=due_date, 
                                 amount=amount, 
                                 category=category, 
+                                centro_custo=centro_custo,
                                 bank_account=bank_account, # Banco Inteligente ou do Excel
                                 dre_area=dre_final,        # DRE Inteligente ou Padrão
                                 payment_method=payment_method,
@@ -2519,6 +2529,18 @@ def contas_pagar(request):
                         user=request.user  # <-- Linha adicionada
                     )
                     form.instance.category = category
+
+                # --- ADICIONE ESTE BLOCO NOVO AQUI ---
+                new_cc_name = form.cleaned_data.get('new_centro_custo')
+                if new_cc_name:
+                    # Cria o novo centro de custo vinculado ao usuário
+                    cc_obj, _ = CentroCusto.objects.get_or_create(
+                        nome=new_cc_name,
+                        user=request.user
+                    )
+                    # Força o formulário a usar esse novo objeto
+                    form.instance.centro_custo = cc_obj
+                # -------------------------------------    
                 
                 form.instance.user = request.user
                 account = form.save()
@@ -3671,10 +3693,22 @@ def dashboards(request):
 
     retirada_socios_labels = [item['name'] or 'Sócio não identificado' for item in retirada_socios_query]
     retirada_socios_data = [float(item['total']) for item in retirada_socios_query]
+    # ▼▼▼ COLE ESTE BLOCO AQUI (LÓGICA DO CENTRO DE CUSTO) ▼▼▼
+    
+    # 3. Gráfico e Tabela de Gastos por Centro de Custo
+    gastos_centro_custo = PayableAccount.objects.filter(
+        user=request.user,
+        is_paid=True,
+        due_date__range=[start_date, end_date],
+        centro_custo__isnull=False
+    ).values('centro_custo__nome').annotate(total=Sum('amount')).order_by('-total')
 
-    # --- FIM DOS NOVOS CÁLCULOS ---
+    cc_labels = [item['centro_custo__nome'] for item in gastos_centro_custo]
+    cc_data = [float(item['total']) for item in gastos_centro_custo]
 
-    # Em views.py, dentro da view dashboards, antes da definição do 'context'
+    # ▼▼▼ NOVO: CALCULA A SOMA TOTAL ▼▼▼
+    total_cc_geral = sum(item['total'] for item in gastos_centro_custo)
+    # ▲▲▲ FIM DO NOVO CÁLCULO ▲▲▲
 
     # --- INÍCIO: CÁLCULOS PARA OS NOVOS CARDS DE KPI ---
 
@@ -3905,6 +3939,12 @@ def dashboards(request):
         'retirada_socios_labels_json': json.dumps(retirada_socios_labels),
         'retirada_socios_data_json': json.dumps(retirada_socios_data),
         'regime': regime,
+        # ▼▼▼ ADICIONE ESTAS 3 LINHAS AQUI ▼▼▼
+        'cc_list': gastos_centro_custo,          # Para a tabela (loop for)
+        'cc_labels_json': json.dumps(cc_labels), # Para o gráfico JS
+        'cc_data_json': json.dumps(cc_data),     # Para o gráfico JS
+        'total_cc_geral': total_cc_geral,
+        # ▲▲▲ FIM DA ADIÇÃO ▲▲▲
 
         # KPIs
         'dre': dre_results, 'insights_labels': json.dumps(insights_labels_kpis), 'insights_charts_data': json.dumps(insights_charts_data_kpis),

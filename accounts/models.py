@@ -65,6 +65,22 @@ class Category(models.Model):
     def __str__(self):
         # Mostra o tipo junto ao nome para clareza (Ex: "Alimentação (Pagar)")
         return f"{self.name} ({self.get_category_type_display()})"
+    
+
+class CentroCusto(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    nome = models.CharField(max_length=100)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'nome')
+        verbose_name = "Centro de Custo"
+        verbose_name_plural = "Centros de Custo"
+        ordering = ['nome']
+
+    def __str__(self):
+        return self.nome
+
 
 class BankAccount(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -95,6 +111,7 @@ class PayableAccount(models.Model):
     due_date = models.DateField()
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True)
+    centro_custo = models.ForeignKey(CentroCusto, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Centro de Custo")
     dre_area = models.CharField(max_length=50, choices=DRE_AREAS)
     payment_method = models.CharField(max_length=20, choices=PAYMENT_METHODS)
     occurrence = models.CharField(max_length=20, choices=OCCURRENCE_TYPES)

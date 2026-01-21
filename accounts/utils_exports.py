@@ -19,9 +19,9 @@ def gerar_excel_generic(queryset, tipo_relatorio):
     # Define cabeçalhos baseados no tipo
     # Adicionadas as colunas novas aqui também para manter consistência
     if tipo_relatorio == 'pagar':
-        headers = ['Nome/Fornecedor', 'Descrição', 'Vencimento', 'Valor (R$)', 'Status', 'Categoria', 'Banco', 'Forma Pag.']
+        headers = ['Nome', 'Descrição', 'Vencimento', 'Valor', 'Status', 'Categoria','Centro de Custo', 'Banco', 'Forma Pag.']
     else: # receber
-        headers = ['Nome/Cliente', 'Descrição', 'Vencimento', 'Valor (R$)', 'Status', 'Categoria', 'Banco', 'Forma Pag.']
+        headers = ['Nome', 'Descrição', 'Vencimento', 'Valor', 'Status', 'Categoria','Centro de Custo', 'Banco', 'Forma Pag.']
 
     ws.append(headers)
     
@@ -38,6 +38,7 @@ def gerar_excel_generic(queryset, tipo_relatorio):
 
         banco = str(conta.bank_account) if conta.bank_account else "-"
         categoria = str(conta.category.name) if conta.category else "-"
+        c_custo = str(conta.centro_custo.nome) if hasattr(conta, 'centro_custo') and conta.centro_custo else "-"
         # Pega a forma de pagamento legível (ex: "Boleto" em vez de "BOLETO")
         forma_pag = conta.get_payment_method_display() if hasattr(conta, 'get_payment_method_display') else conta.payment_method
 
@@ -48,6 +49,7 @@ def gerar_excel_generic(queryset, tipo_relatorio):
             conta.amount,
             status_text,
             categoria,
+            c_custo,
             banco,
             forma_pag
         ]
@@ -82,7 +84,7 @@ def gerar_pdf_generic(queryset, tipo_relatorio):
 
     # --- ATUALIZAÇÃO DAS COLUNAS ---
     # Adicionados: Descrição, Banco, Forma Pag.
-    headers = ['Nome', 'Descrição', 'Vencimento', 'Valor', 'Status', 'Categoria', 'Banco', 'Forma']
+    headers = ['Nome', 'Descrição', 'Vencimento', 'Valor', 'Status', 'Categoria', 'C. Custo', 'Banco', 'Forma']
     data = [headers]
 
     total = 0
@@ -94,6 +96,7 @@ def gerar_pdf_generic(queryset, tipo_relatorio):
             status_text = "Recebido" if conta.is_received else "Aberto"
         
         categoria = str(conta.category.name) if conta.category else "-"
+        c_custo = str(conta.centro_custo.nome) if hasattr(conta, 'centro_custo') and conta.centro_custo else "-"
         banco = str(conta.bank_account) if conta.bank_account else "-"
         forma_pag = conta.get_payment_method_display() if hasattr(conta, 'get_payment_method_display') else conta.payment_method
 
@@ -101,6 +104,7 @@ def gerar_pdf_generic(queryset, tipo_relatorio):
         nome_curto = conta.name[:20] + '...' if len(conta.name) > 20 else conta.name
         desc_curta = conta.description[:25] + '...' if len(conta.description) > 25 else conta.description
         cat_curta = categoria[:15]
+        cc_curto = c_custo[:15]
         banco_curto = banco[:15]
 
         data.append([
@@ -110,6 +114,7 @@ def gerar_pdf_generic(queryset, tipo_relatorio):
             f"R$ {conta.amount:,.2f}",
             status_text,
             cat_curta,
+            cc_curto,
             banco_curto,
             forma_pag
         ])
@@ -120,9 +125,7 @@ def gerar_pdf_generic(queryset, tipo_relatorio):
     data.append(['', '', 'TOTAL:', f"R$ {total:,.2f}", '', '', '', ''])
 
     # --- AJUSTE DE LARGURA DAS COLUNAS ---
-    # Total disponível em A4 Paisagem é aprox 800 pontos.
-    # 130(Nome) + 160(Desc) + 70(Venc) + 80(Valor) + 50(Status) + 90(Cat) + 90(Banco) + 70(Forma) = 740
-    col_widths = [130, 160, 70, 80, 50, 90, 90, 70]
+    col_widths = [110, 130, 60, 75, 45, 80, 80, 80, 60]
 
     table = Table(data, colWidths=col_widths)
     

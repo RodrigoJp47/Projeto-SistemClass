@@ -65,6 +65,13 @@
                         
                         <option value="NAO_CONSTAR" {% if form.dre_area.value == "NAO_CONSTAR" %}selected{% endif %}>Não constar DRE</option>
                     </select>
+                <div style="margin-top: 10px; margin-bottom: 10px; border-top: 1px dashed #ccc; padding-top: 10px;">
+                    <label for="id_centro_custo">Centro de Custo:</label>
+                    {{ form.centro_custo }}
+                    
+                    <label for="id_new_centro_custo" style="margin-left: 10px;">Novo Centro de Custo:</label>
+                    {{ form.new_centro_custo }}
+                </div>    
                 {{ form.payment_method.label_tag }} {{ form.payment_method }}
                 {{ form.occurrence.label_tag }} {{ form.occurrence }}
                 {{ form.recurrence_count.label_tag }} {{ form.recurrence_count }}
@@ -159,6 +166,7 @@
                             <th>Vencimento</th>
                             <th>Valor</th>
                             <th>Categoria</th>
+                            <th>Centro de Custo</th>
                             <th>Conta Bancária</th>
                             <th>Área-DRE</th>
                             <th>Forma Pag.</th>
@@ -178,6 +186,7 @@
                             <td data-label="Vencimento">{{ account.due_date|date:"d/m/Y" }}</td>
                             <td data-label="Valor">R$ {{ account.amount|intcomma }}</td>
                             <td data-label="Categoria">{{ account.category.name|default:"-" }}</td>
+                            <td data-label="Centro de Custo">{{ account.centro_custo.nome|default:"-" }}</td>
                             <td data-label="Conta Bancária">{{ account.bank_account|default:"-" }}</td>
                             <td data-label="Área-DRE">{{ account.get_dre_area_display }}</td>
                             <td data-label="Forma Pag.">{{ account.get_payment_method_display }}</td>
