@@ -106,6 +106,13 @@ body.bpo-dashboard-page {
     padding: 0.75rem;
     vertical-align: middle; /* Alinha conteúdo no meio verticalmente */
     border-top: 1px solid #dee2e6; /* Linha separadora */
+    font-size: 14px;
+}
+/* Aumenta apenas a primeira coluna (Nome do Cliente) */
+.bpo-dashboard-page .table td:first-child {
+    font-size: 14px; /* Um pouco maior que o resto */
+    font-weight: 500;  /* Um pouco mais "grosso" para leitura fácil */
+    color: #ffffff;    /* Garante branco puro para destaque */
 }
 .bpo-dashboard-page .table td.text-center { /* Classe para centralizar */
     text-align: center;
