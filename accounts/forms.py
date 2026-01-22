@@ -743,14 +743,49 @@ class AsaasCredentialsForm(forms.ModelForm):
 # accounts/forms.py
 
 class BPOAddClientForm(forms.ModelForm):
-    # Campos simples para criar o usuário do cliente
-    first_name = forms.CharField(label="Nome do Cliente/Empresa", max_length=150)
-    email = forms.EmailField(label="E-mail de Login", required=True)
-    password = forms.CharField(label="Senha Inicial", widget=forms.PasswordInput)
+    # 1. Definimos os campos explicitamente para adicionar os Widgets (configurações visuais)
+    first_name = forms.CharField(
+        label="Nome do Cliente/Empresa", 
+        max_length=150,
+        widget=forms.TextInput(attrs={
+            'class': 'form-field', # Mantém seu estilo CSS
+            'placeholder': 'Nome da Empresa ou Cliente'
+        })
+    )
+
+    email = forms.EmailField(
+        label="E-mail de Login", 
+        required=True,
+        widget=forms.EmailInput(attrs={
+            'class': 'form-field',
+            'autocomplete': 'off', # Tenta desligar o autocompletar padrão
+            'placeholder': 'exemplo@email.com'
+        })
+    )
+
+    password = forms.CharField(
+        label="Senha Inicial", 
+        widget=forms.PasswordInput(attrs={
+            'class': 'form-field',
+            'autocomplete': 'new-password', # O MAIS IMPORTANTE: Diz ao navegador "isso é uma senha nova, não use a minha salva"
+            'placeholder': 'Digite a senha inicial'
+        })
+    )
 
     class Meta:
         model = User
         fields = ('first_name', 'email', 'password')
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # TRUQUE EXTRA (Nuclear): Se o navegador for teimoso (como o Chrome), 
+        # isso força o campo a ficar "somente leitura" até você clicar nele.
+        # Isso impede 100% que o navegador preencha o e-mail sozinho ao carregar a página.
+        self.fields['email'].widget.attrs.update({
+            'readonly': 'readonly',
+            'onfocus': "this.removeAttribute('readonly');"
+        })
 
     def clean_email(self):
         email = self.cleaned_data.get('email')
