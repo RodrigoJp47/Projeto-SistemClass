@@ -5450,14 +5450,21 @@ def bpo_dashboard_view(request):
     # 4. PREPARA A LISTA PARA EXIBIR NA TABELA
     clients_data = []
     for link in client_links:
-        # Pega o nome da empresa do perfil ou usa o username
-        nome_exibicao = link.client.username
-        if hasattr(link.client, 'company_profile'):
-            nome_exibicao = link.client.company_profile.nome_empresa or link.client.username
+        # --- CORREÇÃO AQUI ---
+        # 1. Tenta pegar o nome que foi salvo no cadastro (first_name)
+        nome_exibicao = link.client.first_name
+        
+        # 2. Se por acaso o first_name estiver vazio, tenta o profile (se existir)
+        if not nome_exibicao and hasattr(link.client, 'company_profile'):
+             nome_exibicao = link.client.company_profile.nome_empresa
+        
+        # 3. Se ainda assim estiver vazio, usa o email/username
+        if not nome_exibicao:
+            nome_exibicao = link.client.username
 
         clients_data.append({
             'user_id': link.client.id,
-            'username': nome_exibicao,
+            'username': nome_exibicao, # Agora a chave 'username' vai carregar o nome correto "Escritório TM"
             'email': link.client.email,
             'subscription_status': link.client.subscription.status if hasattr(link.client, 'subscription') else 'N/A'
         })
