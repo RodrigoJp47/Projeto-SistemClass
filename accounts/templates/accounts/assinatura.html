@@ -164,94 +164,103 @@
         <div class="pricing-grid">
 
             <div class="plan-card">
-                <h3>Plano Gestão Financeira</h3>
-                <p class="plan-description">Controle total do fluxo de caixa e organização para prestadores de serviço.</p>
+                <h3>Start Financeiro</h3>
+                <p class="plan-description">Controle de caixa e organização essencial.</p>
                 
                 <div class="price-tag">
                     <span class="price">R$ 139,00</span>
                     <span class="period">/mês</span>
                 </div>
                 
-                <p class="user-limit">Ideal para <strong>Organizar a Casa</strong></p>
+                <p class="user-limit">Ideal para <strong>Pequenos Negócios</strong></p>
 
                 <ul class="features-list">
-                    <li><i class="fas fa-users"></i> <strong>Até 2 Usuários</strong> inclusos</li> 
+                    <li><i class="fas fa-users"></i> <strong>Até 2 Usuários</strong></li> 
                     <li><i class="fas fa-check"></i> Contas a Pagar e Receber</li>
                     <li><i class="fas fa-check"></i> Importação OFX & Conciliação</li>
-                    <li><i class="fas fa-check"></i> Dashboards Financeiros & DRE</li>
-                    <li><i class="fas fa-check"></i> Orçamento Anual & Tarefas</li>
-                    <li class="unavailable"><i class="fas fa-times"></i> Módulo Comercial (Vendas/PDV)</li>
-                    <li class="unavailable"><i class="fas fa-times"></i> Emissão de Notas Fiscais</li>
+                    <li><i class="fas fa-check"></i> Dashboards Financeiros</li>
+                    <li class="unavailable"><i class="fas fa-times"></i> Vendas e Estoque</li>
+                    <li class="unavailable"><i class="fas fa-times"></i> Notas Fiscais</li>
                 </ul>
 
                 <form action="{% url 'create_checkout_session' 'financeiro' %}" method="POST">
                     {% csrf_token %}
-                    {% if subscription.status == 'active' and subscription.has_commercial_module == False %}
-                        <button type="button" class="btn-stripe" style="background-color: #555; cursor: default;">Plano Atual</button>
+                    {% if subscription.status == 'active' and not subscription.has_commercial_module %}
+                        <button type="button" class="btn-stripe" style="background-color: #555; cursor: default;">Seu Plano Atual</button>
                     {% else %}
                         <button type="submit" class="btn-stripe">
-                            <i class="fas fa-credit-card"></i>
-                            <span>Assinar Financeiro</span>
+                            <i class="fas fa-credit-card"></i> Assinar Financeiro
                         </button>
                     {% endif %}
                 </form>
-                <div style="margin-top: 15px; border-top: 1px solid var(--border-color, #eee); padding-top: 10px;">
-                    <p style="font-size: 0.85em; color: var(--text-color); opacity: 0.8; margin-bottom: 5px;">
-                        Prefere pagar via <strong>Pix</strong> ou <strong>Boleto</strong>?
-                    </p>
-                    <a href="https://wa.me/5531993413530?text=Olá!%20Gostaria%20de%20assinar%20via%20Pix/Boleto." 
-                    target="_blank" 
-                    style="color: #25D366; font-weight: bold; text-decoration: none; font-size: 0.9em; display: inline-flex; align-items: center; gap: 5px;">
-                        <i class="fab fa-whatsapp"></i> Falar com Consultor
-                    </a>
-                </div>
             </div>
 
-            <div class="plan-card popular">
-                <div class="popular-badge">Recomendado</div>
-                <h3>Plano Gestão Total <br><small style="font-size: 0.6em; font-weight: normal;">(Full Commerce)</small></h3>
-                <p class="plan-description">A solução definitiva. Financeiro + Comercial integrado para expansão.</p>
+            <div class="plan-card">
+                <h3>Pro Comercial</h3>
+                <p class="plan-description">Financeiro + Vendas e Estoque integrados.</p>
                 
                 <div class="price-tag">
                     <span class="price">R$ 189,00</span>
                     <span class="period">/mês</span>
                 </div>
                 
-                <p class="user-limit">Ideal para <strong>Comércio e Expansão</strong></p>
+                <p class="user-limit">Ideal para <strong>Lojas e Comércio</strong></p>
 
                 <ul class="features-list">
-                    <li><i class="fas fa-users"></i> <strong>Até 5 Usuários</strong> inclusos</li>
-                    <li><i class="fas fa-check"></i> <strong>Tudo do Gestão Financeira +</strong></li>
+                    <li><i class="fas fa-users"></i> <strong>Até 5 Usuários</strong></li>
+                    <li><i class="fas fa-check"></i> <strong>Tudo do Financeiro +</strong></li>
                     <li><i class="fas fa-check"></i> Frente de Caixa (PDV)</li>
-                    <li><i class="fas fa-check"></i> Emissão de Notas (NFe/NFSe)</li>
-                    <li><i class="fas fa-check"></i> Gestão de Contratos & Metas</li>
-                    <li><i class="fas fa-check"></i> Precificação Inteligente</li>
-                    <li><i class="fas fa-check"></i> Painel de Vendas Completo</li>
+                    <li><i class="fas fa-check"></i> Orçamentos e Pedidos</li>
+                    <li><i class="fas fa-check"></i> Controle de Estoque</li>
+                    <li class="unavailable"><i class="fas fa-times"></i> Notas Fiscais</li>
                 </ul>
                 
-                <form action="{% url 'create_checkout_session' 'completo' %}" method="POST">
+                <form action="{% url 'create_checkout_session' 'comercial' %}" method="POST">
                     {% csrf_token %}
-                    {% if subscription.status == 'active' and subscription.has_commercial_module == True %}
-                        <button type="button" class="btn-stripe" style="background-color: #555; cursor: default;">Plano Atual</button>
+                    {% if subscription.status == 'active' and subscription.has_commercial_module and not subscription.has_fiscal_module %}
+                         <button type="button" class="btn-stripe" style="background-color: #555; cursor: default;">Seu Plano Atual</button>
                     {% else %}
                         <button type="submit" class="btn-stripe">
-                            <i class="fas fa-rocket"></i>
-                            <span>Assinar Completo</span> </button>
+                            <i class="fas fa-store"></i> Assinar Comercial
+                        </button>
                     {% endif %}
                 </form>
-                <div style="margin-top: 15px; border-top: 1px solid var(--border-color, #eee); padding-top: 10px;">
-                    <p style="font-size: 0.85em; color: var(--text-color); opacity: 0.8; margin-bottom: 5px;">
-                        Prefere pagar via <strong>Pix</strong> ou <strong>Boleto</strong>?
-                    </p>
-                    <a href="https://wa.me/5531993413530?text=Olá!%20Gostaria%20de%20assinar%20via%20Pix/Boleto." 
-                    target="_blank" 
-                    style="color: #25D366; font-weight: bold; text-decoration: none; font-size: 0.9em; display: inline-flex; align-items: center; gap: 5px;">
-                        <i class="fab fa-whatsapp"></i> Falar com Consultor
-                    </a>
-                </div>
             </div>
 
-        </div> 
+            <div class="plan-card popular">
+                <div class="popular-badge">Recomendado</div>
+                <h3>Elite Fiscal</h3>
+                <p class="plan-description">Gestão completa com emissão de NFe e NFSe.</p>
+                
+                <div class="price-tag">
+                    <span class="price">R$ 249,00</span>
+                    <span class="period">/mês</span>
+                </div>
+                
+                <p class="user-limit">Ideal para <strong>Empresas em Crescimento</strong></p>
+
+                <ul class="features-list">
+                    <li><i class="fas fa-users"></i> <strong>Até 10 Usuários</strong></li>
+                    <li><i class="fas fa-check"></i> <strong>Tudo do Comercial +</strong></li>
+                    <li><i class="fas fa-check"></i> Emissão de NFe (Produtos)</li>
+                    <li><i class="fas fa-check"></i> Emissão de NFS-e (Serviços)</li>
+                    <li><i class="fas fa-check"></i> Gestão de Contratos</li>
+                    <li><i class="fas fa-check"></i> Certificado Digital A1</li>
+                </ul>
+                
+                <form action="{% url 'create_checkout_session' 'fiscal' %}" method="POST">
+                    {% csrf_token %}
+                    {% if subscription.status == 'active' and subscription.has_fiscal_module %}
+                        <button type="button" class="btn-stripe" style="background-color: #555; cursor: default;">Seu Plano Atual</button>
+                    {% else %}
+                        <button type="submit" class="btn-stripe">
+                            <i class="fas fa-rocket"></i> Assinar Fiscal
+                        </button>
+                    {% endif %}
+                </form>
+            </div>
+
+        </div>
         
 
         <div class="bpo-section" style="margin-top: 50px; text-align: center; background-color: var(--card-bg-color); border: 1px solid var(--border-color, transparent); padding: 40px; border-radius: 10px;">

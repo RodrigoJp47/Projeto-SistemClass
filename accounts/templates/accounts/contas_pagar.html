@@ -38,6 +38,14 @@
                 {% if form.instance.id %}
                 <input type="hidden" name="account_id" value="{{ form.instance.id|unlocalize }}">
                 {% endif %}
+                <div style="margin-bottom: 15px; padding: 10px; background-color: #2c3e50; border-radius: 5px; border-left: 4px solid #3498db;">
+                    <strong style="color: white; display: block; margin-bottom: 5px;">🤖 Automação:</strong>
+                    <label for="boleto-upload" class="btn btn-primary" style="cursor: pointer; background-color: #3498db; border: none;">
+                        <i class="fas fa-file-pdf"></i> Carregar Boleto (PDF) e Preencher
+                    </label>
+                    <input type="file" id="boleto-upload" accept="application/pdf" style="display: none;">
+                    <span id="boleto-loading" style="color: #ccc; margin-left: 10px; display: none;">Lendo arquivo... aguarde...</span>
+                </div>
                 {{ form.name.label_tag }} {{ form.name }}
                 {{ form.description.label_tag }} {{ form.description }}
                 <label for="id_due_date">Data de vencimento:</label>
@@ -164,34 +172,36 @@
                             <th>Nome</th>
                             <th>Descrição</th>
                             <th>Vencimento</th>
+                            <th>Data Pagamento</th>
                             <th>Valor</th>
                             <th>Categoria</th>
                             <th>Centro de Custo</th>
                             <th>Conta Bancária</th>
-                            <th>Área-DRE</th>
                             <th>Forma Pag.</th>
-                            <th>Ocorrência</th>
-                            <th>Custo</th>
                             <th>Status</th>
                             <th style="text-align: center;">Ações</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for account in accounts %}
-                        <tr>
+                        <tr {% if account.payment_date %}style="background-color: rgba(46, 204, 113, 0.1);" title="Conta Paga"{% endif %}>
                             <td data-label="Selecionar"><input type="checkbox" name="account_ids"
                                     value="{{ account.id|unlocalize }}" class="select-item"></td>
                             <td data-label="Nome">{{ account.name }}</td>
                             <td data-label="Descrição">{{ account.description }}</td>
                             <td data-label="Vencimento">{{ account.due_date|date:"d/m/Y" }}</td>
+                            <td data-label="Data Pagamento">
+                                {% if account.payment_date %}
+                                    {{ account.payment_date|date:"d/m/Y" }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
                             <td data-label="Valor">R$ {{ account.amount|intcomma }}</td>
                             <td data-label="Categoria">{{ account.category.name|default:"-" }}</td>
                             <td data-label="Centro de Custo">{{ account.centro_custo.nome|default:"-" }}</td>
                             <td data-label="Conta Bancária">{{ account.bank_account|default:"-" }}</td>
-                            <td data-label="Área-DRE">{{ account.get_dre_area_display }}</td>
                             <td data-label="Forma Pag.">{{ account.get_payment_method_display }}</td>
-                            <td data-label="Ocorrência">{{ account.get_occurrence_display }}</td>
-                            <td data-label="Custo">{{ account.cost_type|title }}</td>
                             <td data-label="Status">
                                 {% if account.is_paid %}
                                 {% if account.ofx_import %}
@@ -241,13 +251,13 @@
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="13" style="text-align: center;">Nenhuma conta encontrada.</td>
+                            <td colspan="11" style="text-align: center;">Nenhuma conta encontrada.</td>
                         </tr>
                         {% endfor %}
                         <tr class="total-row">
                             <td colspan="4" style="text-align: right; font-weight: bold;">TOTAL DO PERÍODO:</td>
                             <td style="font-weight: bold; white-space: nowrap;">R$ {{ total_amount|floatformat:2|intcomma }}</td>
-                            <td colspan="8"></td> {# Célula vazia para preencher as colunas restantes #}
+                            <td colspan="6"></td> {# Célula vazia para preencher as colunas restantes #}
                         </tr>
                     </tbody>
                 </table>
@@ -272,6 +282,117 @@
     </div>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            // --- SCRIPT DE LEITURA DE BOLETO E ANEXO AUTOMÁTICO ---
+        const boletoInput = document.getElementById('boleto-upload');
+        const boletoLoading = document.getElementById('boleto-loading');
+        
+        // IDs dos campos do formulário
+        const fieldAmount = document.getElementById('id_amount');
+        const fieldDate = document.getElementById('id_due_date');
+        const fieldName = document.getElementById('id_name');
+        const fieldDesc = document.getElementById('id_description');
+        const fieldFile = document.getElementById('id_file'); 
+        
+        // Novos campos para automação
+        const fieldPayment = document.getElementById('id_payment_method');
+        const fieldOccurrence = document.getElementById('id_occurrence');
+        const fieldBank = document.getElementById('id_bank_account');
+
+        if (boletoInput) {
+            boletoInput.addEventListener('change', function() {
+                if (this.files.length > 0) {
+                    
+                    // 1. Transfere o arquivo para o formulário
+                    const dataTransfer = new DataTransfer();
+                    dataTransfer.items.add(this.files[0]);
+                    if(fieldFile) {
+                        fieldFile.files = dataTransfer.files;
+                    }
+
+                    // 2. Prepara envio
+                    const file = this.files[0];
+                    const formData = new FormData();
+                    formData.append('boleto_file', file);
+                    formData.append('action', 'read_boleto');
+                    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+                    formData.append('csrfmiddlewaretoken', csrfToken);
+
+                    boletoLoading.style.display = 'inline';
+                    boletoLoading.innerText = 'Lendo PDF...';
+                    this.disabled = true;
+
+                    fetch(window.location.href, {
+                        method: 'POST',
+                        body: formData,
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    })
+                    .then(response => response.json())
+                    .then(result => {
+                        if (result.status === 'success') {
+                            const dados = result.data;
+                            
+                            // --- PREENCHIMENTO DOS CAMPOS LIDOS ---
+                            if (dados.valor && fieldAmount) {
+                                fieldAmount.value = dados.valor.toLocaleString('pt-BR', {minimumFractionDigits: 2});
+                            }
+                            if (dados.vencimento && fieldDate) {
+                                fieldDate.value = dados.vencimento;
+                            }
+                            if (dados.fornecedor && fieldName) {
+                                fieldName.value = dados.fornecedor;
+                            }
+                            let descExtra = "";
+                            if (dados.descricao) descExtra += dados.descricao + ". ";
+                            if (dados.codigo_barras) descExtra += "\nCód: " + dados.codigo_barras;
+                            if (descExtra && fieldDesc) {
+                                fieldDesc.value = descExtra;
+                            }
+
+                            // --- AUTOMAÇÃO DOS CAMPOS PADRÃO (SEU PEDIDO) ---
+                            
+                            // 1. Define "Boleto"
+                            if (fieldPayment) {
+                                // Tenta achar a opção pelo valor 'BOLETO'
+                                for(let i=0; i<fieldPayment.options.length; i++){
+                                    if(fieldPayment.options[i].value === 'BOLETO') {
+                                        fieldPayment.selectedIndex = i;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            // 2. Define "Avulso"
+                            if (fieldOccurrence) {
+                                for(let i=0; i<fieldOccurrence.options.length; i++){
+                                    if(fieldOccurrence.options[i].value === 'AVULSO') {
+                                        fieldOccurrence.selectedIndex = i;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            // 3. Define a Primeira Conta Bancária disponível
+                            if (fieldBank && fieldBank.options.length > 1) {
+                                // O índice 0 geralmente é "--------" (vazio), então pegamos o 1
+                                fieldBank.selectedIndex = 1; 
+                            }
+
+                            alert('Leitura concluída! Campos preenchidos e padrões selecionados.');
+                        } else {
+                            alert('O arquivo foi anexado, mas não foi possível ler os dados automaticamente.');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Erro:', error);
+                        alert('Erro ao processar. O arquivo foi anexado.');
+                    })
+                    .finally(() => {
+                        boletoLoading.style.display = 'none';
+                        this.disabled = false;
+                    });
+                }
+            });
+        }
             // Lógica do menu hambúrguer para mobile
             const menuToggleButton = document.getElementById('menu-toggle');
             const sidebar = document.querySelector('.sidebar');

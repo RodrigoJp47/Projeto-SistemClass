@@ -806,7 +806,40 @@ body {
 .footer-contact p {
     margin-bottom: 12px !important; 
 }
+#precos .container {
+        max-width: 1300px !important; /* Dá mais espaço lateral */
+        width: 95%;
+    }
 
+    /* Configuração da Grade de Preços */
+    .pricing-grid-landing {
+        display: flex;
+        justify-content: center;
+        align-items: stretch; /* Faz todos terem a mesma altura */
+        gap: 20px;
+        flex-wrap: wrap; /* Permite quebrar em celular, mas vamos controlar no Desktop */
+    }
+
+    .plan-card-landing {
+        flex: 1; /* Faz os cards dividirem o espaço igualmente */
+        min-width: 300px; /* Tamanho mínimo legível */
+        max-width: 380px; /* Tamanho máximo para não ficar gigante */
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+
+
+@media (min-width: 992px) {
+        .pricing-grid-landing {
+            flex-wrap: nowrap !important; /* FORÇA a ficar na mesma linha */
+        }
+        
+        /* Ajuste fino para caber os 3 */
+        .plan-card-landing {
+            min-width: 280px; /* Permite encolher um pouquinho se a tela for menor */
+        }
+    }    
 /* --- FIM DOS AJUSTES --- */
 
 /* Ajuste para mobile para não ficar grande demais */

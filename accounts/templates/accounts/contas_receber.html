@@ -142,29 +142,33 @@
                             <th>Nome</th>
                             <th>Descrição</th>
                             <th>Data de Vencimento</th>
+                            <th>Data Recebimento</th>
                             <th>Valor</th>
                             <th>Categoria</th>
                             <th>Conta Bancária</th>
-                            <th>Área-DRE</th>
                             <th>Forma de Pagamento</th>
-                            <th>Ocorrência</th>
                             <th>Status</th>
                             <th>Ações</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for account in accounts %}
-                            <tr>
+                            <tr {% if account.payment_date %}style="background-color: rgba(46, 204, 113, 0.1);" title="Conta Recebida"{% endif %}>
                                 <td data-label="Selecionar"><input type="checkbox" name="account_ids" value="{{ account.id|unlocalize }}" class="select-item"></td>
                                 <td data-label="Nome">{{ account.name }}</td>
                                 <td data-label="Descrição">{{ account.description }}</td>
                                 <td data-label="Vencimento">{{ account.due_date|date:"d/m/Y" }}</td>
+                                <td data-label="Data Recebimento">
+                                    {% if account.payment_date %}
+                                        {{ account.payment_date|date:"d/m/Y" }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
                                 <td data-label="Valor">R$ {{ account.amount|intcomma }}</td>
                                 <td data-label="Categoria">{{ account.category.name|default:"-" }}</td>
                                 <td data-label="Conta Bancária">{{ account.bank_account|default:"-" }}</td>
-                                <td data-label="Área-DRE">{{ account.get_dre_area_display }}</td>
                                 <td data-label="Forma de Pag.">{{ account.get_payment_method_display }}</td>
-                                <td data-label="Ocorrência">{{ account.get_occurrence_display }}</td>
                                 <td data-label="Status">
                                     {% if account.is_received %}
                                         {% if account.ofx_import %}
@@ -209,13 +213,13 @@
                             </tr>
                         {% empty %}
                             <tr>
-                                <td colspan="12" style="text-align: center;">Nenhuma conta encontrada.</td>
+                                <td colspan="11" style="text-align: center;">Nenhuma conta encontrada.</td>
                             </tr>
                         {% endfor %}
                         <tr class="total-row">
                             <td colspan="4" style="text-align: right; font-weight: bold;">TOTAL DO PERÍODO:</td>
                             <td style="font-weight: bold; white-space: nowrap;">R$ {{ total_amount|floatformat:2|intcomma }}</td>
-                            <td colspan="7"></td> {# Célula vazia para preencher as 6 colunas restantes #}
+                            <td colspan="6"></td> {# Célula vazia para preencher as 6 colunas restantes #}
                         </tr>
                     </tbody>
                 </table>

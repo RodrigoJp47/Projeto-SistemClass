@@ -99,7 +99,8 @@ from .utils_nibo import sincronizar_nibo_completo
 from .forms import TinyCredentialsForm
 from .models import TinyCredentials
 from .utils_tiny import sincronizar_tiny_completo
-
+from django.http import JsonResponse
+from .utils_boleto import extrair_dados_boleto
 
 from .utils_inter import buscar_extrato_inter
 from .forms import InterCredentialsForm
@@ -2247,7 +2248,29 @@ def contas_pagar(request):
         # Cria a URL de redirecionamento com os filtros
         redirect_url = f"{request.path}?{redirect_query_string}"
         # --- FIM DA LÓGICA DE REDIRECIONAMENTO ---
+        # ▼▼▼ SUBSTITUA O BLOCO 'read_boleto' POR ESTE ▼▼▼
+        if request.POST.get('action') == 'read_boleto':
+            try:
+                pdf_file = request.FILES.get('boleto_file')
+                if not pdf_file:
+                    return JsonResponse({'status': 'error', 'message': 'Nenhum arquivo enviado.'})
+                
+                # Chama a função utilitária (agora blindada)
+                dados_extraidos = extrair_dados_boleto(pdf_file)
+                
+                # Verifica se a função retornou erro interno
+                if dados_extraidos.get('erro'):
+                    return JsonResponse({'status': 'error', 'message': dados_extraidos['erro']})
 
+                # Sucesso
+                return JsonResponse({'status': 'success', 'data': dados_extraidos})
+            
+            except Exception as e:
+                # ISSO EVITA O TRAVAMENTO INFINITO
+                # Se acontecer qualquer erro não previsto (ex: biblioteca faltando), retorna erro JSON
+                print(f"Erro crítico ao ler boleto: {e}") # Mostra no terminal
+                return JsonResponse({'status': 'error', 'message': f'Erro interno no servidor: {str(e)}'})
+        # ▲▲▲ FIM DO BLOCO ▲▲▲
         # ▼▼▼ SUBSTITUA O BLOCO 'import_excel' INTEIRO POR ESTE NOVO BLOCO MELHORADO ▼▼▼
         if request.POST.get('action') == 'import_excel':
             excel_file = request.FILES.get('excel_file')
@@ -6651,7 +6674,7 @@ logger = logging.getLogger(__name__)
 # ▼▼▼ SUBSTITUA sua função existente por este bloco de código ▼▼▼
 @login_required
 @subscription_required
-@module_access_required('commercial')
+@module_access_required('fiscal')
 @check_employee_permission('can_access_contratos')
 def gerenciamento_contratos_view(request):
     edit_id = request.GET.get('edit')
@@ -7476,7 +7499,7 @@ from datetime import timedelta
 
 
 @csrf_exempt
-def stripe_webhook(request):  # Mantivemos o nome antigo para bater com seu urls.py
+def stripe_webhook(request):
     payload = request.body
     sig_header = request.META.get('HTTP_STRIPE_SIGNATURE')
     event = None
@@ -7496,13 +7519,13 @@ def stripe_webhook(request):  # Mantivemos o nome antigo para bater com seu urls
         
         # Recupera dados
         user_id = session.get('metadata', {}).get('user_id')
-        plan_type = session.get('metadata', {}).get('plan_type') # Importante para sua lógica de permissão
+        plan_type = session.get('metadata', {}).get('plan_type') # 'financeiro', 'comercial' ou 'fiscal'
         stripe_subscription_id = session.get('subscription')
 
         if user_id:
             try:
                 user = User.objects.get(id=user_id)
-                sub = user.subscription # Pega a assinatura que estava em 'trial'
+                sub = user.subscription 
                 
                 # 1. Atualiza IDs e Status
                 sub.stripe_subscription_id = stripe_subscription_id
@@ -7513,24 +7536,34 @@ def stripe_webhook(request):  # Mantivemos o nome antigo para bater com seu urls
                 current_period_end = stripe_sub['current_period_end']
                 sub.valid_until = datetime.fromtimestamp(current_period_end).date()
 
-                # 3. Lógica de Permissões (Trazida do seu código antigo #1)
-                # Isso garante que os módulos sejam liberados corretamente
+                # 3. Lógica de Permissões (ATUALIZADA PARA 3 PLANOS)
+                print(f"Processando plano tipo: {plan_type}") # Log para debug
+
                 if plan_type == 'financeiro':
                     sub.has_financial_module = True
                     sub.has_commercial_module = False
+                    sub.has_fiscal_module = False
                     sub.employee_limit = 2
-                elif plan_type == 'completo':
+
+                elif plan_type == 'comercial': # Antigo 'completo' (R$ 189)
                     sub.has_financial_module = True
                     sub.has_commercial_module = True
-                    sub.employee_limit = 5
-                
+                    sub.has_fiscal_module = False # Comercial não emite nota
+                    sub.employee_limit = 4
+
+                elif plan_type == 'fiscal': # NOVO (R$ 249)
+                    sub.has_financial_module = True
+                    sub.has_commercial_module = True
+                    sub.has_fiscal_module = True  # Libera NFe/NFSe
+                    sub.employee_limit = 6
+
                 sub.save()
-                print(f"✅ SUCESSO: Usuário {user.username} saiu do Trial para {plan_type}!")
+                print(f"✅ SUCESSO: Usuário {user.username} ativado no plano {plan_type}!")
                 
             except User.DoesNotExist:
                 print(f"❌ ERRO: Usuário ID {user_id} não encontrado.")
             except Exception as e:
-                print(f"❌ ERRO CRÍTICO: {str(e)}")
+                print(f"❌ ERRO CRÍTICO NO WEBHOOK: {str(e)}")
 
     # --- EVENTO 2: RENOVAÇÃO MENSAL ---
     elif event['type'] == 'invoice.payment_succeeded':
@@ -7539,12 +7572,9 @@ def stripe_webhook(request):  # Mantivemos o nome antigo para bater com seu urls
 
         if stripe_subscription_id:
             try:
-                # Busca pelo ID do Stripe (que salvamos no passo anterior)
                 sub = Subscription.objects.get(stripe_subscription_id=stripe_subscription_id)
-                
                 sub.status = 'active'
                 
-                # Atualiza a validade
                 lines = invoice.get('lines', {}).get('data', [])
                 if lines:
                     period_end = lines[0]['period']['end']

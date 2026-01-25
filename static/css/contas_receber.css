@@ -128,18 +128,18 @@ th {
 /* LARGURA DAS COLUNAS (CONTAS A RECEBER) - AJUSTADAS         */
 /* ========================================================== */
 
+/* LARGURA DAS COLUNAS (CONTAS A RECEBER) - 11 COLUNAS */
 .table-container th:nth-child(1) { width: 3%; }   /* Checkbox */
-.table-container th:nth-child(2) { width: 11%; }  /* Nome */
-.table-container th:nth-child(3) { width: 12%; }  /* Descrição */
-.table-container th:nth-child(4) { width: 10%; }  /* Data Venc (mais espaço) */
-.table-container th:nth-child(5) { width: 9%; }   /* Valor */
-.table-container th:nth-child(6) { width: 10%; }  /* Categoria */
-.table-container th:nth-child(7) { width: 8%; }   /* Conta Bancária */
-.table-container th:nth-child(8) { width: 8%; }   /* Área-DRE */
-.table-container th:nth-child(9) { width: 9%; }   /* Forma Pag (mais espaço) */
-.table-container th:nth-child(10) { width: 8%; }  /* Ocorrência */
-.table-container th:nth-child(11) { width: 6%; }  /* Status */
-.table-container th:nth-child(12) { width: 6%; }  /* Ações */
+.table-container th:nth-child(2) { width: 14%; }  /* Nome */
+.table-container th:nth-child(3) { width: 15%; }  /* Descrição */
+.table-container th:nth-child(4) { width: 10%; }  /* Data Vencimento */
+.table-container th:nth-child(5) { width: 10%; }  /* Data Recebimento (NOVA) */
+.table-container th:nth-child(6) { width: 10%; }  /* Valor */
+.table-container th:nth-child(7) { width: 10%; }  /* Categoria */
+.table-container th:nth-child(8) { width: 8%; }   /* Conta Bancária */
+.table-container th:nth-child(9) { width: 8%; }   /* Forma Pagamento */
+.table-container th:nth-child(10){ width: 6%; }   /* Status */
+.table-container th:nth-child(11){ width: 6%; }   /* Ações */
 
 td.action-menu {
     position: relative;

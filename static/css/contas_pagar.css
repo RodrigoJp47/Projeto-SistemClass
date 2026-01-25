@@ -136,21 +136,19 @@ th {
 }
 
 
-/* Definição das larguras das colunas (ATUALIZADO PARA 14 COLUNAS) */
-.table-container th:nth-child(1) { width: 2%; }   /* Checkbox */
-.table-container th:nth-child(2) { width: 9%; }   /* Nome */
-.table-container th:nth-child(3) { width: 9%; }  /* Descrição */
-.table-container th:nth-child(4) { width: 9%; }   /* Vencimento */
-.table-container th:nth-child(5) { width: 7%; }   /* Valor */
-.table-container th:nth-child(6) { width: 8%; }   /* Categoria */
-.table-container th:nth-child(7) { width: 8%; }   /* Centro de Custo (NOVO!) */
-.table-container th:nth-child(8) { width: 8%; }   /* Conta Bancária */
-.table-container th:nth-child(9) { width: 8%; }   /* Área-DRE */
-.table-container th:nth-child(10){ width: 6%; }   /* Forma Pag. */
-.table-container th:nth-child(11){ width: 8%; }   /* Ocorrência */
-.table-container th:nth-child(12){ width: 6%; }   /* Custo */
-.table-container th:nth-child(13){ width: 6%; }   /* Status */
-.table-container th:nth-child(14){ width: 6%; }   /* Ações (AGORA TEM A REGRA 14) */
+/* LARGURA DAS COLUNAS (CONTAS A PAGAR) - ATUALIZADO PARA 12 COLUNAS */
+.table-container th:nth-child(1) { width: 3%; }   /* Checkbox */
+.table-container th:nth-child(2) { width: 13%; }  /* Nome */
+.table-container th:nth-child(3) { width: 13%; }  /* Descrição */
+.table-container th:nth-child(4) { width: 10%; }  /* Vencimento */
+.table-container th:nth-child(5) { width: 10%; }  /* Data Pagamento */
+.table-container th:nth-child(6) { width: 9%; }   /* Valor */
+.table-container th:nth-child(7) { width: 10%; }  /* Categoria */
+.table-container th:nth-child(8) { width: 10%; }  /* Centro de Custo */
+.table-container th:nth-child(9) { width: 8%; }   /* Conta Bancária */
+.table-container th:nth-child(10){ width: 8%; }   /* Forma Pag. */
+.table-container th:nth-child(11){ width: 6%; }   /* Status */
+.table-container th:nth-child(12){ width: 6%; }   /* Ações */
 
 /* --- Estilos do menu de ações individual --- */
 td.actions-cell {

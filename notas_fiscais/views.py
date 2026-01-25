@@ -19,7 +19,7 @@ from .forms import EmissaoNotaFiscalForm
 
 @login_required
 @subscription_required
-@module_access_required('commercial')
+@module_access_required('fiscal')
 @check_employee_permission('can_access_notas_fiscais')
 def lista_notas_fiscais_view(request):
     # (request.user aqui é o DONO da licença, graças ao seu middleware)
@@ -54,7 +54,7 @@ def lista_notas_fiscais_view(request):
 
 @login_required
 @subscription_required
-@module_access_required('commercial')
+@module_access_required('fiscal')
 @check_employee_permission('can_access_notas_fiscais')
 def emitir_nota_view(request, venda_id):
     venda = get_object_or_404(Venda, id=venda_id, user=request.user)
@@ -280,7 +280,7 @@ def emitir_nota_view(request, venda_id):
 
 @login_required
 @subscription_required
-@module_access_required('commercial')
+@module_access_required('fiscal')
 @check_employee_permission('can_access_notas_fiscais')
 def consultar_nota_view(request, nota_id): # <--- AJUSTADO PARA nota_id
     # Busca a nota no banco pelo ID (chave primária)

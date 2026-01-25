@@ -131,18 +131,17 @@ def owner_required(view_func):
 
 def module_access_required(module_name):
     """
-    Verifica se a empresa contratou o módulo (Financeiro ou Comercial).
+    Verifica se a empresa contratou o módulo específico.
     """
     def decorator(view_func):
         @wraps(view_func)
         def _wrapped_view(request, *args, **kwargs):
+            # 1. Libera Superusuário
             if request.user.is_superuser:
                 return view_func(request, *args, **kwargs)
 
-            # Tenta pegar a assinatura já validada
+            # 2. Busca a assinatura (Tenta no request, no link ou no user)
             subscription = getattr(request, 'active_subscription', None)
-
-            # Fallback se o decorator subscription_required não tiver rodado antes
             if not subscription:
                 link = getattr(request, 'company_link', None)
                 if link:
@@ -153,21 +152,31 @@ def module_access_required(module_name):
             if not subscription:
                  return redirect('login')
 
+            # === AQUI ESTÁ A ATUALIZAÇÃO ===
+            
+            # Nível 1: Financeiro
             if module_name == 'financial':
                 if subscription.has_financial_module:
                     return view_func(request, *args, **kwargs)
-                else:
-                    messages.error(request, 'Sua licença não inclui o Módulo Financeiro.')
-                    return redirect('home')
             
+            # Nível 2: Comercial (Quem tem Fiscal TAMBÉM tem Comercial)
             elif module_name == 'commercial':
                 if subscription.has_commercial_module:
                     return view_func(request, *args, **kwargs)
-                else:
-                    messages.error(request, 'Sua licença não inclui o Módulo Comercial.')
-                    return redirect('home')
 
-            return view_func(request, *args, **kwargs)
+            # Nível 3: Fiscal (Exclusivo do Plano Elite R$ 249)
+            elif module_name == 'fiscal':
+                if subscription.has_fiscal_module:
+                    return view_func(request, *args, **kwargs)
+                else:
+                    messages.error(request, 'Atualize para o plano Elite Fiscal para emitir Notas Fiscais.')
+                    return redirect('assinatura')
+            
+            # ===============================
+
+            # Se chegou aqui, não tem permissão
+            messages.error(request, f'Sua licença não inclui o acesso a {module_name}.')
+            return redirect('home')
 
         return _wrapped_view
     return decorator

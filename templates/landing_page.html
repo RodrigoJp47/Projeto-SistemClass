@@ -202,16 +202,17 @@
                 <p>Escolha o plano ideal para o momento da sua empresa.</p>
             </div>
 
-            <div class="pricing-grid-landing">
+            <div class="pricing-grid-landing" style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;">
+                
                 <div class="plan-card-landing">
                     <div class="plan-header">
-                        <h3>Gestão Financeira</h3>
+                        <h3>Start Financeiro</h3>
                         <div class="price">
                             <span class="currency">R$</span>
                             <span class="amount">139</span>
                             <span class="period">/mês</span>
                         </div>
-                        <p>Para quem precisa organizar a casa.</p>
+                        <p>Organização total para prestadores de serviços.</p>
                     </div>
                     <div class="plan-body">
                         <ul>
@@ -220,46 +221,62 @@
                             <li><i class="fas fa-check"></i> Conciliação Bancária (OFX)</li>
                             <li><i class="fas fa-check"></i> Dashboards Financeiros</li>
                             <li><i class="fas fa-check"></i> DRE Gerencial</li>
-                            <li><i class="fas fa-check"></i> Orçamento Anual</li>
-                            <li><i class="fas fa-check"></i> Gestão de Tarefas</li>
-                            <li><i class="fas fa-check"></i> Análise de Fornecedores</li>
-                            <li><i class="fas fa-check"></i> Análise de Clientes</li>
-                            <li class="unavailable"><i class="fas fa-times"></i> Módulo Comercial (Vendas/PDV)</li>
+                            <li class="unavailable"><i class="fas fa-times"></i> Módulo Comercial (Vendas)</li>
                             <li class="unavailable"><i class="fas fa-times"></i> Emissão de Notas Fiscais</li>
-                            <li class="unavailable"><i class="fas fa-times"></i> Gestão de Contratos</li>
+                        </ul>
+                        <a href="{% url 'register' %}" class="btn-plan">Começar Agora</a>
+                    </div>
+                </div>
+
+                <div class="plan-card-landing">
+                    <div class="plan-header">
+                        <h3>Pro Comercial</h3>
+                        <div class="price">
+                            <span class="currency">R$</span>
+                            <span class="amount">189</span>
+                            <span class="period">/mês</span>
+                        </div>
+                        <p>Vendas, PDV e Financeiro integrados.</p>
+                    </div>
+                    <div class="plan-body">
+                        <ul>
+                            <li><i class="fas fa-users"></i> Até <strong>4 Usuários</strong></li>
+                            <li><i class="fas fa-check"></i> <strong>Tudo do Start Financeiro</strong></li>
+                            <li><i class="fas fa-check"></i> Frente de Caixa (PDV)</li>
+                            <li><i class="fas fa-check"></i> Painel de Vendas e Metas</li>
+                            <li><i class="fas fa-check"></i> Orçamentos e Pedidos</li>
+                            <li><i class="fas fa-check"></i> Controle de Estoque</li>
+                            <li class="unavailable"><i class="fas fa-times"></i> Emissão de Notas Fiscais</li>
                         </ul>
                         <a href="{% url 'register' %}" class="btn-plan">Começar Agora</a>
                     </div>
                 </div>
 
                 <div class="plan-card-landing popular">
-                    <div class="popular-badge">Mais Escolhido</div>
+                    <div class="popular-badge">Mais Completo</div>
                     <div class="plan-header">
-                        <h3>Gestão Total</h3>
+                        <h3>Elite Fiscal</h3>
                         <div class="price">
                             <span class="currency">R$</span>
-                            <span class="amount">189</span>
+                            <span class="amount">249</span>
                             <span class="period">/mês</span>
                         </div>
-                        <p>Solução definitiva para crescer.</p>
+                        <p>ERP completo com emissão de NFe e NFSe.</p>
                     </div>
                     <div class="plan-body">
                         <ul>
-                            <li><i class="fas fa-users"></i> Até <strong>5 Usuários</strong></li>
-                            <li><i class="fas fa-check"></i> <strong>Tudo do Plano Financeiro</strong></li>
-                            <li><i class="fas fa-check"></i> Frente de Caixa (PDV)</li>
-                            <li><i class="fas fa-check"></i> Painel de Vendas e Metas</li>
-                            <li><i class="fas fa-check"></i> Emissão de NFe e NFS-e</li>
+                            <li><i class="fas fa-users"></i> Até <strong>6 Usuários</strong></li>
+                            <li><i class="fas fa-check"></i> <strong>Tudo do Pro Comercial</strong></li>
+                            <li><i class="fas fa-check"></i> Emissão de NFe (Produtos)</li>
+                            <li><i class="fas fa-check"></i> Emissão de NFS-e (Serviços)</li>
                             <li><i class="fas fa-check"></i> Gestão de Contratos</li>
-                            <li><i class="fas fa-check"></i> Orçamentos e Pedidos</li>
-                            <li><i class="fas fa-check"></i> Precificação Inteligente</li>
-                            <li><i class="fas fa-check"></i> Controle de Estoque</li>
-                            <li><i class="fas fa-check"></i> Comissões</li>
-                            <li><i class="fas fa-check"></i> Cadastros Completos</li>
+                            <li><i class="fas fa-check"></i> Certificado Digital A1</li>
+                            <li><i class="fas fa-check"></i> Cálculo Automático de Impostos</li>
                         </ul>
                         <a href="{% url 'register' %}" class="btn-plan btn-primary">Começar Agora</a>
                     </div>
                 </div>
+
             </div>
         </div>
     </section>

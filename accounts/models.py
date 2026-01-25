@@ -370,6 +370,7 @@ class Subscription(models.Model):
     # ▼▼▼ ADICIONE ESTAS DUAS LINHAS ▼▼▼
     has_financial_module = models.BooleanField(default=True, verbose_name="Possui Módulo Financeiro?")
     has_commercial_module = models.BooleanField(default=True, verbose_name="Possui Módulo Comercial?")
+    has_fiscal_module = models.BooleanField(default=False, verbose_name="Possui Módulo Fiscal (NFe/NFSe)?")
     # ▲▲▲ FIM DA ADIÇÃO ▲▲▲
     client_limit = models.PositiveIntegerField(default=1, verbose_name="Limite de Clientes/CNPJs")
 
