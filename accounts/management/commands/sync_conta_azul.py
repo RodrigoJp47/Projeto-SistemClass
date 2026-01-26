@@ -583,7 +583,15 @@ class Command(BaseCommand):
                                         'occurrence': 'AVULSO',
                                         'payment_method': 'BOLETO'
                                     }
+                                    
                                 )
+                                # LOG VISUAL (LINHAS AMARELAS)
+                                acao = "Criada" if created else "Atualizada"
+                                # Se a variável do nome for 'cliente_nome' use ela, se for 'nome' troque abaixo
+                                nome_exibicao = locals().get('cliente_nome') or locals().get('nome') or 'Cliente'
+                                valor_exibicao = locals().get('valor') or locals().get('vlr') or 0
+                                
+                                self.stdout.write(self.style.WARNING(f"    -> {acao}: {nome_exibicao} | R$ {valor_exibicao}"))
                                 
                                 # 5. Smart Update
                                 if not created and obj.category.name == 'Receitas de Vendas' and cat_s:
@@ -702,6 +710,13 @@ class Command(BaseCommand):
                                         'payment_method': 'BOLETO'
                                     }
                                 )
+                                # LOG VISUAL (LINHAS AMARELAS)
+                                acao = "Criada" if created else "Atualizada"
+                                # Se a variável do nome for 'fornecedor_nome' use ela, se for 'nome' troque abaixo
+                                nome_exibicao = locals().get('fornecedor_nome') or locals().get('nome') or 'Fornecedor'
+                                valor_exibicao = locals().get('valor') or locals().get('vlr') or 0
+
+                                self.stdout.write(self.style.WARNING(f"    -> {acao}: {nome_exibicao} | R$ {valor_exibicao}"))
 
                                 # 5. Smart Update
                                 if not created and obj.category.name == 'Despesas Operacionais (-)' and cat_s:
