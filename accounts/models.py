@@ -826,9 +826,11 @@ class ClassificacaoAutomatica(models.Model):
     dre_area = models.CharField(max_length=50, choices=DRE_AREAS)
     tipo = models.CharField(max_length=20, choices=TIPO_CHOICES)
     bank_account = models.ForeignKey('BankAccount', on_delete=models.SET_NULL, null=True, blank=True)
+    
+    # --- LINHA ADICIONADA: Apontando para 'CentroCusto' ---
+    centro_custo = models.ForeignKey('CentroCusto', on_delete=models.SET_NULL, null=True, blank=True)
 
     class Meta:
-        # Garante que não haja regras duplicadas para o mesmo termo e tipo
         unique_together = ('user', 'termo', 'tipo')
         verbose_name = "Regra de Classificação"
         verbose_name_plural = "Regras de Classificação"

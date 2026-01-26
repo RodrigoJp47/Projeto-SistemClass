@@ -45,13 +45,14 @@ def tiny_request(endpoint, token, params=None):
 
 def prever_classificacao_local(user, descricao, tipo):
     if not descricao:
-        return None, None, None
+        return None, None, None, None # Retorne 4 valores
     regras = ClassificacaoAutomatica.objects.filter(user=user, tipo=tipo)
     descricao_lower = descricao.lower()
     for regra in regras:
         if regra.termo.lower() in descricao_lower:
-            return regra.categoria, regra.dre_area, regra.bank_account
-    return None, None, None
+            # Adicione o quarto valor (ex: None ou regra.cost_center se existir)
+            return regra.categoria, regra.dre_area, regra.bank_account, None 
+    return None, None, None, None # Retorne 4 valores
 
 def processar_contas_pagar_tiny(user, token):
     novos = 0
@@ -146,7 +147,7 @@ def processar_contas_pagar_tiny(user, token):
                         conta_existente.save()
                         atualizados += 1
                     else:
-                        cat_prevista, dre_prevista, bank_previsto = prever_classificacao_local(user, descricao, 'PAYABLE')
+                        cat_prevista, dre_prevista, bank_previsto, _ = prever_classificacao_local(user, descricao, 'PAYABLE')
 
                         PayableAccount.objects.create(
                             user=user,
@@ -261,7 +262,7 @@ def processar_contas_receber_tiny(user, token):
                         conta_existente.save()
                         atualizados += 1
                     else:
-                        cat_prevista, dre_prevista, bank_previsto = prever_classificacao_local(user, cliente_nome, 'RECEIVABLE')
+                        cat_prevista, dre_prevista, bank_previsto, _ = prever_classificacao_local(user, cliente_nome, 'RECEIVABLE')
 
                         ReceivableAccount.objects.create(
                             user=user,

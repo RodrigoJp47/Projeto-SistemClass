@@ -724,12 +724,18 @@ def nibo_request(endpoint, method, creds, params=None):
 # (Copie o restante do arquivo anterior se necessário, ou mantenha o que já tem)
 
 def prever_classificacao_local(user, descricao, tipo):
+    """
+    Réplica local da lógica de previsão.
+    Retorna 4 valores: (Categoria, DRE, Banco, Centro de Custo).
+    """
     regras = ClassificacaoAutomatica.objects.filter(user=user, tipo=tipo)
     descricao_lower = descricao.lower()
     for regra in regras:
         if regra.termo.lower() in descricao_lower:
-            return regra.categoria, regra.dre_area, regra.bank_account
-    return None, None, None
+            # Retorna os 4 valores necessários para o desempacotamento
+            return regra.categoria, regra.dre_area, regra.bank_account, None
+    # Retorno padrão de fallback com 4 valores
+    return None, None, None, None
 
 def processar_contas_pagar_nibo(user, creds):
     novos = 0
@@ -790,7 +796,8 @@ def processar_contas_pagar_nibo(user, creds):
                 conta_existente.save()
                 atualizados += 1
             else:
-                cat_prevista, dre_prevista, bank_previsto = prever_classificacao_local(user, descricao, 'PAYABLE')
+                # Adicionado o "_" para receber o 4º valor (Centro de Custo)
+                cat_prevista, dre_prevista, bank_previsto, _ = prever_classificacao_local(user, descricao, 'PAYABLE')
                 PayableAccount.objects.create(
                     user=user, external_id=id_nibo, name=descricao[:200],
                     description=f"{descricao} {observacao} (Nibo)", due_date=due_date, amount=valor,
@@ -862,7 +869,8 @@ def processar_contas_receber_nibo(user, creds):
                 conta_existente.save()
                 atualizados += 1
             else:
-                cat_prevista, dre_prevista, bank_previsto = prever_classificacao_local(user, descricao, 'RECEIVABLE')
+                # Adicionado o "_" para receber o 4º valor (Centro de Custo)
+                cat_prevista, dre_prevista, bank_previsto, _ = prever_classificacao_local(user, descricao, 'RECEIVABLE')
                 ReceivableAccount.objects.create(
                     user=user, external_id=id_nibo, name=descricao[:200],
                     description=f"{observacao} (Integrado Nibo)", due_date=due_date, amount=valor,

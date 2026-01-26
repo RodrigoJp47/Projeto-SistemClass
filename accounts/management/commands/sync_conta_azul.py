@@ -396,8 +396,9 @@ class Command(BaseCommand):
         
         for regra in regras:
             if regra.termo.lower() in descricao_lower:
-                return regra.categoria, regra.dre_area, regra.bank_account  
-        return None, None, None
+                # ADICIONADO: regra.centro_custo
+                return regra.categoria, regra.dre_area, regra.bank_account, regra.centro_custo  
+        return None, None, None, None # Retorna 4 Nones agora
 
     def handle(self, *args, **options):
         User = get_user_model()
@@ -478,7 +479,7 @@ class Command(BaseCommand):
                 return None
 
             # --- NOVA CONFIGURAÇÃO DE DATAS (Otimizada para 15 dias + Futuro) ---
-            dias_busca = 15
+            dias_busca = 90
             data_fim_dt = timezone.now().date()
             data_inicio_dt = data_fim_dt - timedelta(days=dias_busca)
             
@@ -547,15 +548,34 @@ class Command(BaseCommand):
 
                                 if is_received_ca:
                                     data_pagamento_str = None
+                                    
+                                    # 1. Tenta pegar das baixas (O ideal)
                                     baixas = conta.get('baixas', [])
                                     if baixas:
                                         data_pagamento_str = baixas[0].get('data_pagamento')
                                     
+                                    # 2. Tenta pegar da raiz ou compensação (Caso baixas venha vazio)
+                                    if not data_pagamento_str:
+                                        data_pagamento_str = conta.get('data_pagamento') or conta.get('data_compensacao')
+                                    
+                                    # Converte a string encontrada para data
                                     if data_pagamento_str:
-                                        data_pagamento = datetime.strptime(data_pagamento_str, '%Y-%m-%d').date()
-                                    else:
-                                        data_pagamento = timezone.now().date()
-                                        self.stdout.write(self.style.WARNING(f"      -> C.Receber ID {conta.get('id')} sem data pgto. Usando hoje."))
+                                        try:
+                                            data_pagamento = datetime.strptime(data_pagamento_str, '%Y-%m-%d').date()
+                                        except ValueError:
+                                            data_pagamento = None 
+                                    
+                                    # 3. FALLBACK FINAL: Se não achou data de baixa, usa o VENCIMENTO
+                                    if not data_pagamento:
+                                        venc_str = conta.get('data_vencimento')
+                                        if venc_str:
+                                            try:
+                                                data_pagamento = datetime.strptime(venc_str, '%Y-%m-%d').date()
+                                                self.stdout.write(self.style.WARNING(f"      -> C.Receber ID {conta.get('id')} sem data pgto. Usando Vencimento: {data_pagamento}."))
+                                            except:
+                                                data_pagamento = timezone.now().date()
+                                        else:
+                                            data_pagamento = timezone.now().date()
 
                                 cliente_data = conta.get('cliente')
                                 cliente_nome = cliente_data.get('nome', 'Cliente CA V2') if isinstance(cliente_data, dict) else 'Cliente CA V2'
@@ -573,7 +593,7 @@ class Command(BaseCommand):
                                     existe = False
 
                                 # 2. Previsão Inteligente
-                                cat_inteligente, dre_inteligente, banco_inteligente = self.prever_classificacao(user, cliente_nome, 'RECEIVABLE')
+                                cat_inteligente, dre_inteligente, banco_inteligente, cc_inteligente = self.prever_classificacao(user, cliente_nome, 'RECEIVABLE')
                                 categoria_padrao, _ = Category.objects.get_or_create(name='Receitas de Vendas', category_type='RECEIVABLE', user=user)
 
                                 # 3. Define Categoria/DRE/Banco
@@ -677,15 +697,34 @@ class Command(BaseCommand):
 
                                 if is_paid_ca:
                                     data_pagamento_str = None
+                                    
+                                    # 1. Tenta pegar das baixas
                                     baixas = conta.get('baixas', [])
                                     if baixas:
                                         data_pagamento_str = baixas[0].get('data_pagamento')
                                     
+                                    # 2. Tenta pegar da raiz ou compensação
+                                    if not data_pagamento_str:
+                                        data_pagamento_str = conta.get('data_pagamento') or conta.get('data_compensacao')
+                                    
+                                    # Converte a string encontrada
                                     if data_pagamento_str:
-                                        data_pagamento = datetime.strptime(data_pagamento_str, '%Y-%m-%d').date()
-                                    else:
-                                        data_pagamento = timezone.now().date()
-                                        self.stdout.write(self.style.WARNING(f"      -> C.Pagar ID {conta.get('id')} sem data pgto. Usando hoje."))
+                                        try:
+                                            data_pagamento = datetime.strptime(data_pagamento_str, '%Y-%m-%d').date()
+                                        except ValueError:
+                                            data_pagamento = None
+                                    
+                                    # 3. FALLBACK FINAL: Se não achou data de baixa, usa o VENCIMENTO
+                                    if not data_pagamento:
+                                        venc_str = conta.get('data_vencimento')
+                                        if venc_str:
+                                            try:
+                                                data_pagamento = datetime.strptime(venc_str, '%Y-%m-%d').date()
+                                                self.stdout.write(self.style.WARNING(f"      -> C.Pagar ID {conta.get('id')} sem data pgto. Usando Vencimento: {data_pagamento}."))
+                                            except:
+                                                data_pagamento = timezone.now().date()
+                                        else:
+                                            data_pagamento = timezone.now().date()
                                 
                                 fornecedor_data = conta.get('fornecedor')
                                 fornecedor_nome = fornecedor_data.get('nome', 'Fornecedor CA V2') if isinstance(fornecedor_data, dict) else 'Fornecedor CA V2'
@@ -703,7 +742,7 @@ class Command(BaseCommand):
                                     existe = False
 
                                 # 2. Previsão Inteligente
-                                cat_inteligente, dre_inteligente, banco_inteligente = self.prever_classificacao(user, fornecedor_nome, 'PAYABLE')
+                                cat_inteligente, dre_inteligente, banco_inteligente, cc_inteligente = self.prever_classificacao(user, fornecedor_nome, 'PAYABLE')
                                 categoria_padrao, _ = Category.objects.get_or_create(name='Despesas Operacionais (-)', category_type='PAYABLE', user=user)
 
                                 # 3. Define Categoria/DRE/Banco

@@ -92,15 +92,21 @@ def omie_request(endpoint, call, creds, params=None):
 def prever_classificacao_local(user, descricao, tipo):
     """
     Réplica local da lógica de previsão para evitar importação circular com views.py.
+    Retorna 4 valores: (Categoria, DRE, Banco, Centro de Custo).
     """
+    if not descricao:
+        return None, None, None, None
+
     regras = ClassificacaoAutomatica.objects.filter(user=user, tipo=tipo)
     descricao_lower = descricao.lower()
     
     for regra in regras:
         if regra.termo.lower() in descricao_lower:
-            return regra.categoria, regra.dre_area, regra.bank_account
+            # Retorna os 3 valores da regra + None para o Centro de Custo (4 valores)
+            return regra.categoria, regra.dre_area, regra.bank_account, None
             
-    return None, None, None
+    # Retorno padrão caso nenhuma regra seja encontrada (4 valores)
+    return None, None, None, None
 
 def processar_contas_pagar_omie(user, creds):
     """
@@ -181,7 +187,7 @@ def processar_contas_pagar_omie(user, creds):
                 else:
                     # >>> CENÁRIO: NOVO REGISTRO (Inteligente) <<<
                     # Tenta prever a classificação
-                    cat_prevista, dre_prevista, bank_previsto = prever_classificacao_local(user, descricao, 'PAYABLE')
+                    cat_prevista, dre_prevista, bank_previsto, _ = prever_classificacao_local(user, descricao, 'PAYABLE')
                     
                     PayableAccount.objects.create(
                         user=user,
@@ -273,7 +279,7 @@ def processar_contas_receber_omie(user, creds):
                     conta_existente.save()
                     atualizados += 1
                 else:
-                    cat_prevista, dre_prevista, bank_previsto = prever_classificacao_local(user, descricao, 'RECEIVABLE')
+                    cat_prevista, dre_prevista, bank_previsto, _ = prever_classificacao_local(user, descricao, 'RECEIVABLE')
                     
                     ReceivableAccount.objects.create(
                         user=user,

@@ -120,15 +120,14 @@ MESES_ABREVIADOS = {
 
 # Em accounts/views.py
 
-def aprender_classificacao(user, nome, categoria, dre_area, tipo, bank_account=None):
+# Adicione 'centro_custo=None' nos argumentos
+def aprender_classificacao(user, nome, categoria, dre_area, tipo, bank_account=None, centro_custo=None):
     """
-    Salva a regra de classificação APENAS SE ELA AINDA NÃO EXISTIR.
-    Isso protege o histórico contra edições pontuais (exceções).
+    Salva a regra incluindo o Centro de Custo.
     """
     from .models import ClassificacaoAutomatica 
 
     if nome and categoria and dre_area:
-        # AQUI ESTÁ A MUDANÇA: de update_or_create para get_or_create
         ClassificacaoAutomatica.objects.get_or_create(
             user=user,
             termo__iexact=nome.strip(),
@@ -137,16 +136,15 @@ def aprender_classificacao(user, nome, categoria, dre_area, tipo, bank_account=N
                 'termo': nome.strip(),
                 'categoria': categoria,
                 'dre_area': dre_area,
-                'bank_account': bank_account
+                'bank_account': bank_account,
+                'centro_custo': centro_custo  # <--- ADICIONAR AQUI
             }
         )
 
 def prever_classificacao(user, descricao, tipo):
     """
-    Tenta encontrar uma categoria, DRE e Banco baseada na descrição.
-    Retorna uma tupla (categoria, dre_area, bank_account) ou (None, None, None).
+    Retorna agora 4 valores: (categoria, dre, banco, centro_custo)
     """
-    # Importação dentro da função para evitar erro circular, se necessário
     from .models import ClassificacaoAutomatica 
 
     regras = ClassificacaoAutomatica.objects.filter(user=user, tipo=tipo)
@@ -154,10 +152,10 @@ def prever_classificacao(user, descricao, tipo):
     
     for regra in regras:
         if regra.termo.lower() in descricao_lower:
-            # RETORNA 3 VALORES AGORA
-            return regra.categoria, regra.dre_area, regra.bank_account
+            # ADICIONADO regra.centro_custo NO RETORNO
+            return regra.categoria, regra.dre_area, regra.bank_account, regra.centro_custo
             
-    return None, None, None # Retorna 3 Nones
+    return None, None, None, None # AGORA RETORNA 4 NONES
 
 @login_required
 @subscription_required
@@ -1545,7 +1543,7 @@ def importar_ofx_view(request):
                                 # count_importados += 1 # Opcional: pode criar um contador separado se quiser
                             else:
                                 # NÃO ACHOU: Cria novo (Seu código original)
-                                cat_prevista, dre_prevista, _ = prever_classificacao(request.user, descricao, 'PAYABLE')
+                                cat_prevista, dre_prevista, _, _ = prever_classificacao(request.user, descricao, 'PAYABLE')
                                 PayableAccount.objects.create(
                                     user=request.user,
                                     name=descricao[:100],
@@ -1593,7 +1591,7 @@ def importar_ofx_view(request):
                                 match.save()
                             else:
                                 # NÃO ACHOU: Cria novo (Seu código original)
-                                cat_prevista, dre_prevista, _ = prever_classificacao(request.user, descricao, 'RECEIVABLE')
+                                cat_prevista, dre_prevista, _, _ = prever_classificacao(request.user, descricao, 'RECEIVABLE')
                                 ReceivableAccount.objects.create(
                                     user=request.user,
                                     name=descricao[:100],
@@ -1682,7 +1680,7 @@ def importar_ofx_view(request):
 
                     if not existe:
                         # --- LÓGICA INTELIGENTE (IA) ---
-                        cat_prevista, dre_prevista, _ = prever_classificacao(request.user, descricao_origem, 'RECEIVABLE')
+                        cat_prevista, dre_prevista, _, _ = prever_classificacao(request.user, descricao_origem, 'RECEIVABLE')
                         
                         # Categorias Padrão caso a IA não encontre
                         categoria_padrao, _ = Category.objects.get_or_create(
@@ -1767,7 +1765,7 @@ def importar_ofx_view(request):
                         ).exists()
 
                         if not existe:
-                            cat_prevista, dre_prevista, _ = prever_classificacao(request.user, descricao_origem, 'RECEIVABLE')
+                            cat_prevista, dre_prevista, _, _ = prever_classificacao(request.user, descricao_origem, 'RECEIVABLE')
                             
                             categoria_padrao, _ = Category.objects.get_or_create(
                                 user=request.user, name='Receitas Asaas', category_type='RECEIVABLE'
@@ -1801,7 +1799,7 @@ def importar_ofx_view(request):
                         ).exists()
 
                         if not existe:
-                            cat_prevista, dre_prevista, _ = prever_classificacao(request.user, descricao_origem, 'PAYABLE')
+                            cat_prevista, dre_prevista, _, _ = prever_classificacao(request.user, descricao_origem, 'PAYABLE')
                             
                             categoria_padrao, _ = Category.objects.get_or_create(
                                 user=request.user, name='Taxas Bancárias', category_type='PAYABLE'
@@ -2073,7 +2071,7 @@ def importar_ofx_view(request):
                         if amount < 0:
                             # --- LÓGICA INTELIGENTE PARA PAGAR ---
                             # 1. Tenta prever com base no dicionário
-                            cat_prevista, dre_prevista, _ = prever_classificacao(request.user, name, 'PAYABLE')
+                            cat_prevista, dre_prevista, _, _ = prever_classificacao(request.user, name, 'PAYABLE')
                             
                             # 2. Define os valores finais (usa o previsto ou o padrão)
                             categoria_final = cat_prevista if cat_prevista else payable_category
@@ -2100,7 +2098,7 @@ def importar_ofx_view(request):
                             )
                         else:
                             # --- LÓGICA INTELIGENTE PARA RECEBER ---
-                            cat_prevista, dre_prevista, _ = prever_classificacao(request.user, name, 'RECEIVABLE')
+                            cat_prevista, dre_prevista, _, _ = prever_classificacao(request.user, name, 'RECEIVABLE')
                             
                             categoria_final = cat_prevista if cat_prevista else receivable_category
                             dre_final = dre_prevista if dre_prevista else 'BRUTA'
