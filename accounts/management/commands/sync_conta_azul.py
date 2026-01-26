@@ -120,8 +120,8 @@ class Command(BaseCommand):
 
             # --- CONFIGURAÇÃO DE DATAS ---
             # Voltamos ao padrão seguro: Busca por vencimento com janela larga
-            # Isso pega o que venceu recentemente E o que estava atrasado (dentro de 15 dias)
-            dias_busca = 15
+            # Isso pega o que venceu recentemente E o que estava atrasado (dentro de 5 dias)
+            dias_busca = 26
             data_fim_dt = timezone.now().date()
             data_inicio_dt = data_fim_dt - timedelta(days=dias_busca)
             
