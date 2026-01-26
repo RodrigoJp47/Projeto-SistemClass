@@ -2663,24 +2663,35 @@ def contas_pagar(request):
     total_amount = accounts_query.aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
 
     # 2. Aplica a paginação
-    paginator = Paginator(accounts_query, 10) # 10 itens por página
+    # 1. Captura a quantidade desejada. O padrão continua sendo 10 se nada for enviado.
+    per_page = request.GET.get('per_page', '10')
+
+    # 2. Aplica a paginação usando a variável dinâmica
+    # Convertemos para int() e usamos um try/except simples para segurança caso venha lixo na URL
+    try:
+        items_per_page = int(per_page)
+    except ValueError:
+        items_per_page = 10
+
+    paginator = Paginator(accounts_query, items_per_page) 
     page_number = request.GET.get('page')
     accounts_page_obj = paginator.get_page(page_number)
-    # ▲▲▲ FIM DO BLOCO 
-    user_banks = BankAccount.objects.filter(user=request.user).order_by('bank_name') # <-- NOVA LINHA
+    
+    user_banks = BankAccount.objects.filter(user=request.user).order_by('bank_name')
 
     form = PayableAccountForm(instance=instance, user=request.user)
 
     return render(request, 'accounts/contas_pagar.html', {
         'form': form,
-        'accounts': accounts_page_obj, # <-- ALTERADO para o objeto da página
+        'accounts': accounts_page_obj,
         'filter_status': filter_status,
         'start_date': start_date,
         'end_date': end_date,
-        'total_amount': total_amount, # <-- ADICIONADO o valor total
+        'total_amount': total_amount,
         'search_query': search_query,
         'user_banks': user_banks,        
         'bank_filter': bank_filter,
+        'per_page': per_page, # <--- ESSENCIAL: devolve para o HTML
     })
 
 
@@ -3086,28 +3097,34 @@ def contas_receber(request):
     # Calcula o total ANTES da paginação.
     total_amount = accounts_query.aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
 
-    # Aplica a paginação.
-    paginator = Paginator(accounts_query, 10)
+   
+    per_page = request.GET.get('per_page', '10')
+
+    # 2. Aplica a paginação dinâmica (com conversão segura)
+    items_per_page = int(per_page) if per_page.isdigit() else 10
+    paginator = Paginator(accounts_query, items_per_page) 
+    
     page_number = request.GET.get('page')
     accounts_page_obj = paginator.get_page(page_number)
 
-    user_banks = BankAccount.objects.filter(user=request.user).order_by('bank_name') # <-- NOVA LINHA
+    user_banks = BankAccount.objects.filter(user=request.user).order_by('bank_name')
 
-    # Monta o contexto final para o template.
+    # 3. Adiciona 'per_page' ao seu dicionário context
     context = {
         'form': form,
         'accounts': accounts_page_obj, 
         'filter_status': filter_status,
-        'start_date': start_date, # Agora as datas sempre terão um valor.
+        'start_date': start_date,
         'end_date': end_date,
         'total_amount': total_amount,
         'search_query': search_query,
-        'user_banks': user_banks,     # <-- NOVA LINHA
-        'bank_filter': bank_filter,   # <-- NOVA LINHA
+        'user_banks': user_banks,
+        'bank_filter': bank_filter,
+        'per_page': per_page, # <--- ADICIONADO AQUI
     }
     return render(request, 'accounts/contas_receber.html', context)
 
-# Em accounts/views.py, dentro da função dashboards
+
 
 @login_required
 @subscription_required

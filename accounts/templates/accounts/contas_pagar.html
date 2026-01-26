@@ -117,6 +117,13 @@
                 <label for="search_query">Pesquisar:</label>
                 <input type="text" name="search_query" id="search_query" value="{{ search_query|default_if_none:'' }}"
                     placeholder="Nome, descrição, categoria...">
+                <label for="per_page">Registros por página:</label>
+                <select name="per_page" id="per_page">
+                    <option value="10" {% if per_page == '10' %}selected{% endif %}>10</option>
+                    <option value="20" {% if per_page == '20' %}selected{% endif %}>20</option>
+                    <option value="50" {% if per_page == '50' %}selected{% endif %}>50</option>
+                    <option value="100" {% if per_page == '100' %}selected{% endif %}>100</option>
+                </select>    
                 <button type="submit" class="btn btn-primary">Filtrar</button>
             </form>
         </div>
@@ -265,15 +272,15 @@
                 <div class="pagination">
                     {% if accounts.has_other_pages %}
                         {% if accounts.has_previous %}
-                            <a href="?page=1&status={{ filter_status }}&bank={{ bank_filter }}&start_date={{ start_date|default:'' }}&end_date={{ end_date|default:'' }}&search_query={{ search_query|default:'' }}">&laquo; Primeira</a>
-                            <a href="?page={{ accounts.previous_page_number }}&status={{ filter_status }}&bank={{ bank_filter }}&start_date={{ start_date|default:'' }}&end_date={{ end_date|default:'' }}&search_query={{ search_query|default:'' }}">Anterior</a>
+                            <a href="?page=1&status={{ filter_status }}&bank={{ bank_filter }}&start_date={{ start_date|default:'' }}&end_date={{ end_date|default:'' }}&search_query={{ search_query|default:'' }}&per_page={{ per_page }}">&laquo; Primeira</a>
+                            <a href="?page={{ accounts.previous_page_number }}&status={{ filter_status }}&bank={{ bank_filter }}&start_date={{ start_date|default:'' }}&end_date={{ end_date|default:'' }}&search_query={{ search_query|default:'' }}&per_page={{ per_page }}">Anterior</a>
                         {% endif %}
                         <span class="current">
                             Página {{ accounts.number }} de {{ accounts.paginator.num_pages }}.
                         </span>
                         {% if accounts.has_next %}
-                            <a href="?page={{ accounts.next_page_number }}&status={{ filter_status }}&bank={{ bank_filter }}&start_date={{ start_date|default:'' }}&end_date={{ end_date|default:'' }}&search_query={{ search_query|default:'' }}">Próxima</a>
-                            <a href="?page={{ accounts.paginator.num_pages }}&status={{ filter_status }}&bank={{ bank_filter }}&start_date={{ start_date|default:'' }}&end_date={{ end_date|default:'' }}&search_query={{ search_query|default:'' }}">Última &raquo;</a>
+                            <a href="?page={{ accounts.next_page_number }}&status={{ filter_status }}&bank={{ bank_filter }}&start_date={{ start_date|default:'' }}&end_date={{ end_date|default:'' }}&search_query={{ search_query|default:'' }}&per_page={{ per_page }}">Próxima</a>
+                            <a href="?page={{ accounts.paginator.num_pages }}&status={{ filter_status }}&bank={{ bank_filter }}&start_date={{ start_date|default:'' }}&end_date={{ end_date|default:'' }}&search_query={{ search_query|default:'' }}&per_page={{ per_page }}">Última &raquo;</a>
                         {% endif %}
                     {% endif %}
                 </div>
@@ -283,116 +290,116 @@
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             // --- SCRIPT DE LEITURA DE BOLETO E ANEXO AUTOMÁTICO ---
-        const boletoInput = document.getElementById('boleto-upload');
-        const boletoLoading = document.getElementById('boleto-loading');
-        
-        // IDs dos campos do formulário
-        const fieldAmount = document.getElementById('id_amount');
-        const fieldDate = document.getElementById('id_due_date');
-        const fieldName = document.getElementById('id_name');
-        const fieldDesc = document.getElementById('id_description');
-        const fieldFile = document.getElementById('id_file'); 
-        
-        // Novos campos para automação
-        const fieldPayment = document.getElementById('id_payment_method');
-        const fieldOccurrence = document.getElementById('id_occurrence');
-        const fieldBank = document.getElementById('id_bank_account');
+            const boletoInput = document.getElementById('boleto-upload');
+            const boletoLoading = document.getElementById('boleto-loading');
+            
+            // IDs dos campos do formulário
+            const fieldAmount = document.getElementById('id_amount');
+            const fieldDate = document.getElementById('id_due_date');
+            const fieldName = document.getElementById('id_name');
+            const fieldDesc = document.getElementById('id_description');
+            const fieldFile = document.getElementById('id_file'); 
+            
+            // Novos campos para automação
+            const fieldPayment = document.getElementById('id_payment_method');
+            const fieldOccurrence = document.getElementById('id_occurrence');
+            const fieldBank = document.getElementById('id_bank_account');
 
-        if (boletoInput) {
-            boletoInput.addEventListener('change', function() {
-                if (this.files.length > 0) {
-                    
-                    // 1. Transfere o arquivo para o formulário
-                    const dataTransfer = new DataTransfer();
-                    dataTransfer.items.add(this.files[0]);
-                    if(fieldFile) {
-                        fieldFile.files = dataTransfer.files;
-                    }
-
-                    // 2. Prepara envio
-                    const file = this.files[0];
-                    const formData = new FormData();
-                    formData.append('boleto_file', file);
-                    formData.append('action', 'read_boleto');
-                    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-                    formData.append('csrfmiddlewaretoken', csrfToken);
-
-                    boletoLoading.style.display = 'inline';
-                    boletoLoading.innerText = 'Lendo PDF...';
-                    this.disabled = true;
-
-                    fetch(window.location.href, {
-                        method: 'POST',
-                        body: formData,
-                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
-                    })
-                    .then(response => response.json())
-                    .then(result => {
-                        if (result.status === 'success') {
-                            const dados = result.data;
-                            
-                            // --- PREENCHIMENTO DOS CAMPOS LIDOS ---
-                            if (dados.valor && fieldAmount) {
-                                fieldAmount.value = dados.valor.toLocaleString('pt-BR', {minimumFractionDigits: 2});
-                            }
-                            if (dados.vencimento && fieldDate) {
-                                fieldDate.value = dados.vencimento;
-                            }
-                            if (dados.fornecedor && fieldName) {
-                                fieldName.value = dados.fornecedor;
-                            }
-                            let descExtra = "";
-                            if (dados.descricao) descExtra += dados.descricao + ". ";
-                            if (dados.codigo_barras) descExtra += "\nCód: " + dados.codigo_barras;
-                            if (descExtra && fieldDesc) {
-                                fieldDesc.value = descExtra;
-                            }
-
-                            // --- AUTOMAÇÃO DOS CAMPOS PADRÃO (SEU PEDIDO) ---
-                            
-                            // 1. Define "Boleto"
-                            if (fieldPayment) {
-                                // Tenta achar a opção pelo valor 'BOLETO'
-                                for(let i=0; i<fieldPayment.options.length; i++){
-                                    if(fieldPayment.options[i].value === 'BOLETO') {
-                                        fieldPayment.selectedIndex = i;
-                                        break;
-                                    }
-                                }
-                            }
-
-                            // 2. Define "Avulso"
-                            if (fieldOccurrence) {
-                                for(let i=0; i<fieldOccurrence.options.length; i++){
-                                    if(fieldOccurrence.options[i].value === 'AVULSO') {
-                                        fieldOccurrence.selectedIndex = i;
-                                        break;
-                                    }
-                                }
-                            }
-
-                            // 3. Define a Primeira Conta Bancária disponível
-                            if (fieldBank && fieldBank.options.length > 1) {
-                                // O índice 0 geralmente é "--------" (vazio), então pegamos o 1
-                                fieldBank.selectedIndex = 1; 
-                            }
-
-                            alert('Leitura concluída! Campos preenchidos e padrões selecionados.');
-                        } else {
-                            alert('O arquivo foi anexado, mas não foi possível ler os dados automaticamente.');
+            if (boletoInput) {
+                boletoInput.addEventListener('change', function() {
+                    if (this.files.length > 0) {
+                        
+                        // 1. Transfere o arquivo para o formulário
+                        const dataTransfer = new DataTransfer();
+                        dataTransfer.items.add(this.files[0]);
+                        if(fieldFile) {
+                            fieldFile.files = dataTransfer.files;
                         }
-                    })
-                    .catch(error => {
-                        console.error('Erro:', error);
-                        alert('Erro ao processar. O arquivo foi anexado.');
-                    })
-                    .finally(() => {
-                        boletoLoading.style.display = 'none';
-                        this.disabled = false;
-                    });
-                }
-            });
-        }
+
+                        // 2. Prepara envio
+                        const file = this.files[0];
+                        const formData = new FormData();
+                        formData.append('boleto_file', file);
+                        formData.append('action', 'read_boleto');
+                        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+                        formData.append('csrfmiddlewaretoken', csrfToken);
+
+                        boletoLoading.style.display = 'inline';
+                        boletoLoading.innerText = 'Lendo PDF...';
+                        this.disabled = true;
+
+                        fetch(window.location.href, {
+                            method: 'POST',
+                            body: formData,
+                            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                        })
+                        .then(response => response.json())
+                        .then(result => {
+                            if (result.status === 'success') {
+                                const dados = result.data;
+                                
+                                // --- PREENCHIMENTO DOS CAMPOS LIDOS ---
+                                if (dados.valor && fieldAmount) {
+                                    fieldAmount.value = dados.valor.toLocaleString('pt-BR', {minimumFractionDigits: 2});
+                                }
+                                if (dados.vencimento && fieldDate) {
+                                    fieldDate.value = dados.vencimento;
+                                }
+                                if (dados.fornecedor && fieldName) {
+                                    fieldName.value = dados.fornecedor;
+                                }
+                                let descExtra = "";
+                                if (dados.descricao) descExtra += dados.descricao + ". ";
+                                if (dados.codigo_barras) descExtra += "\nCód: " + dados.codigo_barras;
+                                if (descExtra && fieldDesc) {
+                                    fieldDesc.value = descExtra;
+                                }
+
+                                // --- AUTOMAÇÃO DOS CAMPOS PADRÃO (SEU PEDIDO) ---
+                                
+                                // 1. Define "Boleto"
+                                if (fieldPayment) {
+                                    // Tenta achar a opção pelo valor 'BOLETO'
+                                    for(let i=0; i<fieldPayment.options.length; i++){
+                                        if(fieldPayment.options[i].value === 'BOLETO') {
+                                            fieldPayment.selectedIndex = i;
+                                            break;
+                                        }
+                                    }
+                                }
+
+                                // 2. Define "Avulso"
+                                if (fieldOccurrence) {
+                                    for(let i=0; i<fieldOccurrence.options.length; i++){
+                                        if(fieldOccurrence.options[i].value === 'AVULSO') {
+                                            fieldOccurrence.selectedIndex = i;
+                                            break;
+                                        }
+                                    }
+                                }
+
+                                // 3. Define a Primeira Conta Bancária disponível
+                                if (fieldBank && fieldBank.options.length > 1) {
+                                    // O índice 0 geralmente é "--------" (vazio), então pegamos o 1
+                                    fieldBank.selectedIndex = 1; 
+                                }
+
+                                alert('Leitura concluída! Campos preenchidos e padrões selecionados.');
+                            } else {
+                                alert('O arquivo foi anexado, mas não foi possível ler os dados automaticamente.');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Erro:', error);
+                            alert('Erro ao processar. O arquivo foi anexado.');
+                        })
+                        .finally(() => {
+                            boletoLoading.style.display = 'none';
+                            this.disabled = false;
+                        });
+                    }
+                });
+            }
             // Lógica do menu hambúrguer para mobile
             const menuToggleButton = document.getElementById('menu-toggle');
             const sidebar = document.querySelector('.sidebar');
@@ -511,6 +518,7 @@
                 });
             }
             // --- FIM DO BLOCO A SER ADICIONADO ---
+            
         });
 
         function triggerFileUpload(accountId) {
