@@ -517,6 +517,12 @@ class Command(BaseCommand):
                             try:
                                 status_ca = conta.get('status_traduzido')
                                 is_received = status_ca == 'RECEBIDO'
+                                # --- ADICIONE ESTE BLOCO DEBUG TEMPORÁRIO ---
+                                if is_received:
+                                    self.stdout.write(self.style.WARNING(f"--- DEBUG JSON CONTA {conta.get('id')} ---"))
+                                    self.stdout.write(str(conta)) # Vai imprimir tudo que a API mandou
+                                    self.stdout.write(self.style.WARNING("-----------------------------------"))
+                            
                                 data_pagamento = None
 
                                 if is_received:
