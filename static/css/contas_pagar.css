@@ -363,6 +363,143 @@ body.contas-pagar-page .sidebar {
 .tooltip-text li {
     margin-bottom: 8px;
 }
+
+/* --- CORREÇÃO DO CAMPO CATEGORIA --- */
+
+/* Estilo padrão (Geralmente Dark Mode no seu sistema) */
+.form-field-category {
+    background-color: #333 !important;
+    color: #fff !important;
+    border: 1px solid #444 !important;
+}
+
+/* Se o corpo da página NÃO tiver a classe de modo escuro (Tema Claro) */
+/* Nota: Ajuste '.dark-mode' se o seu sistema usar outro nome de classe */
+/* Corrigido para usar a classe do seu themes.css */
+body.theme-white .form-field-category {
+    background-color: #fff !important;
+    color: #333 !important;
+    border: 1px solid #ccc !important;
+}
+
+/* Regra para o tema escuro (padrão) */
+.form-field-category {
+    background-color: #333 !important;
+    color: #fff !important;
+    border: 1px solid #444 !important;
+}
+
+/* Garante que o texto dentro do Modal seja visível no Tema Claro */
+/* DEPOIS: Garante visibilidade de todos os textos no Modal Claro */
+body.theme-white #categoryModal .modal-content,
+body.theme-white #categoryModal h3,
+body.theme-white #categoryModal label,
+body.theme-white #categoryModal span,
+body.theme-white #category-list li span {
+    background-color: #ffffff !important;
+    color: #212529 !important; /* Cor escura do seu padrão theme-white */
+}
+
+/* Ajuste dos inputs dentro do modal no tema claro */
+body.theme-white #new-cat-input, 
+body.theme-white #modal-search {
+    background-color: #f9f9f9 !important;
+    color: #333 !important;
+    border: 1px solid #ccc !important;
+}
+
+
+
+body:not(.dark-mode) #category-list li {
+    border-bottom: 1px solid #eee !important;
+}
+
+body:not(.dark-mode) #new-cat-input, 
+body:not(.dark-mode) #modal-search {
+    background-color: #f9f9f9 !important;
+    color: #333 !important;
+    border: 1px solid #ccc !important;
+}
+.form-field-category, 
+.btn-manage-cat {
+    box-sizing: border-box !important;
+    height: 42px !important;
+    line-height: 42px !important; /* Adicionado para alinhar texto interno */
+    margin: 0 !important;         /* Remove margens que podem deslocar o botão */
+    display: inline-flex;         /* Mudado para inline-flex */
+    align-items: center;
+    justify-content: center;
+}
+/* --- TEMA ESCURO (PADRÃO) --- */
+#categoryModal > div {
+    background-color: #1e1e1e;
+    color: #ffffff;
+    border: 1px solid #444;
+}
+#category-list li span {
+    color: #ffffff !important;
+}
+
+/* --- TEMA CLARO (ESTRITAMENTE PARA theme-white) --- */
+body.theme-white #categoryModal > div {
+    background-color: #ffffff !important;
+    color: #212529 !important;
+    border: 1px solid #ced4da !important;
+}
+body.theme-white #categoryModal h3,
+body.theme-white #categoryModal label,
+body.theme-white #category-list li span {
+    color: #212529 !important; /* Força o texto escuro no fundo branco */
+}
+body.theme-white #new-cat-input, 
+body.theme-white #modal-search {
+    background-color: #f8f9fa !important;
+    color: #212529 !important;
+    border: 1px solid #ced4da !important;
+}
+
+/* ========================================================================== 
+   CORREÇÃO DEFINITIVA: ÁREA CENTRAL DO MODAL NO TEMA CLARO
+   ========================================================================== */
+
+body.theme-white #categoryModal > div {
+    background-color: #ffffff !important; /* Fundo do modal branco */
+    color: #212529 !important;           /* Texto geral escuro */
+    border: 1px solid #ced4da !important;
+}
+
+/* Ajuste da área da lista (o retângulo que está preto no print) */
+body.theme-white #categoryModal div[style*="max-height: 200px"] {
+    background-color: #f8f9fa !important; /* Cinza bem claro para a lista */
+    border: 1px solid #dee2e6 !important;
+}
+
+/* Ajuste dos itens da lista e dos nomes das categorias */
+body.theme-white #category-list {
+    background-color: transparent !important;
+}
+
+body.theme-white #category-list li {
+    border-bottom: 1px solid #dee2e6 !important;
+}
+
+body.theme-white #category-list li span {
+    color: #212529 !important; /* Garante que o nome da categoria fique escuro */
+}
+
+/* Ajuste do campo de pesquisa e input de nova categoria */
+body.theme-white #modal-search,
+body.theme-white #new-cat-input {
+    background-color: #ffffff !important;
+    color: #212529 !important;
+    border: 1px solid #ced4da !important;
+}
+
+/* Ajuste do placeholder (texto de exemplo dentro do campo) */
+body.theme-white #modal-search::placeholder,
+body.theme-white #new-cat-input::placeholder {
+    color: #6c757d !important;
+}
 /* ========================================================================== */
 /* ESTILOS RESPONSIVOS (PARA DISPOSITIVOS MÓVEIS)                             */
 /* ========================================================================== */

@@ -62,6 +62,9 @@ from .views import (
     landing_page,
     cancelar_assinatura_manual,
     editar_funcionario_view,
+    listar_categorias_json,
+    criar_categoria_json,
+    deletar_categoria_json,
 )
 
 urlpatterns = [
@@ -132,4 +135,7 @@ urlpatterns = [
     path('comercial/cliente/editar/<int:pk>/', editar_cliente_view, name='editar_cliente'),
     # --- API (Interface para comunicação interna) ---
     path('api/cadastrar-cliente-rapido/', cadastrar_cliente_rapido, name='cadastrar_cliente_rapido'),
+    path('contas-pagar/categorias/json/', listar_categorias_json, name='listar_categorias_json'),
+    path('contas-pagar/categorias/criar/', criar_categoria_json, name='criar_categoria_json'),
+    path('contas-pagar/categorias/deletar/<int:id>/', deletar_categoria_json, name='deletar_categoria_json'),
 ]

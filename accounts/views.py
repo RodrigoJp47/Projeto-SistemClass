@@ -7959,3 +7959,40 @@ def gerar_financeiro_contrato(contrato, user):
     contrato.save()
 
 
+
+
+
+
+
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from django.views.decorators.csrf import csrf_exempt
+
+@login_required
+def listar_categorias_json(request):
+    tipo = request.GET.get('tipo', 'PAYABLE')
+    categorias = Category.objects.filter(user=request.user, category_type=tipo).values('id', 'name')
+    return JsonResponse(list(categorias), safe=False)
+
+@require_POST
+@login_required
+def criar_categoria_json(request):
+    nome = request.POST.get('name')
+    tipo = request.POST.get('tipo', 'PAYABLE')
+    if nome:
+        categoria, created = Category.objects.get_or_create(
+            user=request.user, name=nome, category_type=tipo
+        )
+        return JsonResponse({'id': categoria.id, 'name': categoria.name, 'created': created})
+    return JsonResponse({'error': 'Nome inválido'}, status=400)
+
+@require_POST
+@login_required
+def deletar_categoria_json(request, id):
+    categoria = get_object_or_404(Category, id=id, user=request.user)
+    # Importante: Verificar se há contas vinculadas antes de deletar ou tratar o SET_NULL
+    categoria.delete()
+    return JsonResponse({'status': 'success'})
+
+
+
