@@ -1768,16 +1768,27 @@
                             .then(html => {
                                 const parser = new DOMParser();
                                 const doc = parser.parseFromString(html, 'text/html');
-                                
-                                // Encontra a seção no novo conteúdo
                                 const newContent = doc.getElementById('analise-de-contas-wrapper');
                                 
                                 if (newContent) {
-                                    // Substitui o conteúdo antigo pelo novo
+                                    // 1. Atualiza o HTML
                                     wrapper.innerHTML = newContent.innerHTML;
-                                    
-                                    // Reativa os scripts dos gráficos na seção que acabamos de carregar
-                                    ativarScriptsAnaliseContas();
+
+                                    // 2. Atualiza os dados invisíveis (os JSONs) que o script consome
+                                    // Isso é vital porque o script busca os IDs 'client-labels-data', etc.
+                                    ['client-labels-data', 'client-data-data', 'open-overdue-data', 
+                                    'overdue-labels-data', 'overdue-data-data'].forEach(id => {
+                                        const oldTag = document.getElementById(id);
+                                        const newTag = doc.getElementById(id);
+                                        if (oldTag && newTag) {
+                                            oldTag.textContent = newTag.textContent;
+                                        }
+                                    });
+
+                                    // 3. Dá um pequeno fôlego para o navegador (0ms) antes de renderizar os gráficos
+                                    setTimeout(() => {
+                                        ativarScriptsAnaliseContas();
+                                    }, 0);
                                 }
                             });
                     }
