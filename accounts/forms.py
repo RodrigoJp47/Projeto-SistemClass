@@ -134,7 +134,7 @@ class PayableAccountForm(forms.ModelForm):
         self.fields['recurrence_count'].required = False
         self.fields['recurrence_count'].widget.attrs['min'] = 1
         self.fields['file'].required = False
-        self.fields['bank_account'].required = True
+        self.fields['bank_account'].required = False
 
         # Lista do que NÃO deve aparecer no Contas a Pagar
         excluir_opcoes = ['BRUTA', 'OUTRAS_RECEITAS'] 
@@ -212,6 +212,7 @@ class ReceivableAccountForm(forms.ModelForm):
         self.fields['recurrence_count'].required = False
         self.fields['recurrence_count'].widget.attrs['min'] = 1
         self.fields['file'].required = False
+        self.fields['bank_account'].required = False
 # --- INÍCIO DOS NOVOS FORMULÁRIOS PARA O MÓDULO COMERCIAL ---
 
 def clean_file(self):

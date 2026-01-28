@@ -120,7 +120,7 @@ class PayableAccount(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     cost_type = models.CharField(max_length=20, choices=COST_TYPES, default='FIXO')
     file = models.FileField(upload_to='payables/%Y/%m/%d/', null=True, blank=True)
-    bank_account = models.ForeignKey(BankAccount, on_delete=models.SET_NULL, null=True)
+    bank_account = models.ForeignKey(BankAccount, on_delete=models.SET_NULL, null=True, blank=True)
     ofx_import = models.ForeignKey(OFXImport, on_delete=models.SET_NULL, null=True, blank=True)
     payment_date = models.DateField(null=True, blank=True, verbose_name="Data de Pagamento")
     external_id = models.CharField(max_length=255, null=True, blank=True, unique=True, db_index=True)
@@ -150,7 +150,7 @@ class ReceivableAccount(models.Model):
     ofx_import = models.ForeignKey(OFXImport, on_delete=models.SET_NULL, null=True, blank=True)
     # Em models.py, dentro da classe ReceivableAccount
     payment_date = models.DateField(null=True, blank=True, verbose_name="Data de Recebimento")
-    bank_account = models.ForeignKey(BankAccount, on_delete=models.SET_NULL, null=True)
+    bank_account = models.ForeignKey(BankAccount, on_delete=models.SET_NULL, null=True, blank=True)
     file = models.FileField(upload_to='receivables/%Y/%m/%d/', null=True, blank=True) # <-- ESTA LINHA
     external_id = models.CharField(max_length=255, null=True, blank=True, unique=True, db_index=True)
     fitid = models.CharField(max_length=255, null=True, blank=True, db_index=True, verbose_name="ID da Transação (FITID)")
