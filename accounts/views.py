@@ -2352,7 +2352,7 @@ def contas_pagar(request):
                             # -----------------------------------------------------------
                             
                             # A. Tenta prever com base no histórico (Dicionário)
-                            cat_smart, dre_smart, bank_smart = prever_classificacao(request.user, name, 'PAYABLE')
+                            cat_smart, dre_smart, bank_smart, _ = prever_classificacao(request.user, name, 'PAYABLE')
 
                             # B. Define a Categoria Final
                             # Prioridade: Excel > Inteligência > Padrão (Criar nova)
@@ -2802,7 +2802,7 @@ def contas_receber(request):
                             # -----------------------------------------------------------
                             
                             # A. Previsão
-                            cat_smart, dre_smart, bank_smart = prever_classificacao(request.user, name, 'RECEIVABLE')
+                            cat_smart, dre_smart, bank_smart, _ = prever_classificacao(request.user, name, 'RECEIVABLE')
 
                             # B. Categoria
                             category = None
