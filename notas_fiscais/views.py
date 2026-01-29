@@ -1025,33 +1025,30 @@ def emitir_nota_view(request, venda_id):
                     }
 
                     # ===== Grupo de valores/tributação (Padrão NFSe Nacional) =====
-                    # O erro "Missing child element" no tribMun geralmente exige tpRetISSQN
-                    # e, dependendo do regime, tpImunidade ou exigSusp.
+                    # Ajuste rigoroso para evitar o erro 'Missing child element' no tribMun
                     trib_mun = OrderedDict()
 
-                    # 1) tpRetISSQN é OBRIGATÓRIO no padrão nacional. 
-                    # "1" = Não Retido; "2" = Retido; "3" = Imposto abrangido pelo Simples Nacional
-                    if perfil.optante_simples_nacional:
-                        # Para Simples Nacional, o padrão nacional costuma exigir "3"
-                        trib_mun["tpRetISSQN"] = "3" 
-                    else:
-                        # Para outros regimes, usamos o seu utilitário (1 ou 2)
-                        trib_mun["tpRetISSQN"] = str(nfse_tp_ret_default())
-
-                    # 2) pAliq/vISSQN: O padrão nacional exige esses campos se o imposto não for Simples Nacional
-                    # Se for Simples Nacional (tpRetISSQN=3), eles costumam ser omitidos ou zerados.
-                    aliq = float(perfil.aliquota_iss or 0.0)
+                    # 1) Definir a Exigibilidade do ISS (Obrigatório no Padrão Nacional)
+                    # "1": Exigível; "2": Imune; "3": Isento; "4": Exportação...
+                    # Para a grande maioria dos serviços, usamos "1" (Exigível)
+                    trib_mun["tpRetISSQN"] = "3" if perfil.optante_simples_nacional else str(nfse_tp_ret_default())
                     
+                    # 2) Campo CRÍTICO: exigISSQN (Exigibilidade do ISS)
+                    # Se este campo faltar, o tribMun é considerado incompleto
+                    trib_mun["exigISSQN"] = "1" 
+
+                    # 3) Alíquota e Base de Cálculo
+                    aliq = float(perfil.aliquota_iss or 0.0)
                     if trib_mun["tpRetISSQN"] != "3" and aliq > 0:
                         trib_mun["pAliq"] = aliq
                         trib_mun["vBC"] = valor_servico
                         trib_mun["vISSQN"] = round(valor_servico * (aliq / 100.0), 2)
                     else:
-                        # Se não há alíquota ou é Simples, informe apenas a Base de Cálculo
+                        # Para Simples Nacional, informe apenas a base
                         trib_mun["vBC"] = valor_servico
-
-                    # >>> Importante: NÃO enviar 'tribISSQN' para evitar colisão com a ordem esperada <<<
-
+                    
+                    # 4) Remova qualquer outro campo que possa estar causando colisão na ordem
+                    
                     valores_data = {
                         "vServPrest": {"vServ": valor_servico},
                         "trib": {"tribMun": trib_mun}
