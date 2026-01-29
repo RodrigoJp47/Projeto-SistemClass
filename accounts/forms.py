@@ -9,6 +9,7 @@ from .models import (
 )
 import datetime
 from decimal import Decimal, InvalidOperation # Adicione esta importação
+import re
 
 
 # --- SEUS FORMULÁRIOS EXISTENTES ---
@@ -392,12 +393,37 @@ class CustomUserCreationForm(UserCreationForm):
         fields = UserCreationForm.Meta.fields + ('email', 'cnpj')
 
     def clean_cnpj(self):
-        """Valida se o CNPJ já está em uso por outra empresa"""
-        cnpj = self.cleaned_data.get('cnpj')
-        if cnpj:
-            # Verifica na tabela CompanyProfile se já existe este CNPJ
-            if CompanyProfile.objects.filter(cnpj=cnpj).exists():
-                raise forms.ValidationError("Este CNPJ já está cadastrado em nossa base.")
+        # Remove qualquer caractere que não seja número
+        cnpj = re.sub(r'\D', '', self.cleaned_data.get('cnpj', ''))
+
+        # 1. Valida tamanho
+        if len(cnpj) != 14:
+            raise forms.ValidationError("O CNPJ deve conter exatamente 14 dígitos.")
+
+        # 2. Valida números repetidos (Ex: 11.111.111/1111-11)
+        if cnpj in [str(i)*14 for i in range(10)]:
+            raise forms.ValidationError("Número de CNPJ inválido.")
+
+        # 3. Validação matemática dos dígitos verificadores
+        def calcular_digito(cnpj_parcial, pesos):
+            soma = sum(int(digito) * peso for digito, peso in zip(cnpj_parcial, pesos))
+            resto = soma % 11
+            return '0' if resto < 2 else str(11 - resto)
+
+        # Valida primeiro dígito
+        pesos1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]
+        if cnpj[12] != calcular_digito(cnpj[:12], pesos1):
+            raise forms.ValidationError("CNPJ inválido (Dígito verificador incorreto).")
+
+        # Valida segundo dígito
+        pesos2 = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]
+        if cnpj[13] != calcular_digito(cnpj[:13], pesos2):
+            raise forms.ValidationError("CNPJ inválido (Dígito verificador incorreto).")
+
+        # 4. Verifica duplicidade no banco (ignorando a própria empresa na edição)
+        if CompanyProfile.objects.filter(cnpj=cnpj).exclude(pk=self.instance.pk).exists():
+            raise forms.ValidationError("Este CNPJ já está cadastrado em nossa base.")
+
         return cnpj
 
     def save(self, commit=True):

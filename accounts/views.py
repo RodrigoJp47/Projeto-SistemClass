@@ -379,47 +379,49 @@ def company_profile_view(request):
                         if not cod_mun_envio:
                             cod_mun_envio = request.POST.get('codigo_municipio', '')
 
-                        # Lógica Corrigida para Inscrição Estadual
-                        raw_ie = getattr(profile, 'inscricao_estadual', '')
-                        ie_limpa = str(raw_ie).replace(".", "").replace("-", "").replace("/", "").strip() if raw_ie else ""
-                        
-                        print(f"\n[DEBUG] Inscrição Estadual - Raw: '{raw_ie}' | Limpa: '{ie_limpa}'")
-                        
-                        # Se depois de limpar estiver vazio, força ZEROS (Bypass Focus)
-                        if not ie_limpa:
-                            ie_limpa = "0000000000000"
-                            print("[DEBUG] Forçando ZEROS (0000000000000)")
+                        # --- NOVO TRECHO CORRIGIDO E BLINDADO ---
 
+                        # 1. Tratamento da Inscrição Estadual (Regra Focus NFe)
+                        # Convertemos para string, removemos espaços e deixamos em maiúsculo para o "ISENTO"
+                        raw_ie = str(profile.inscricao_estadual or '').strip().upper()
+
+                        # Se estiver vazio, None ou for apenas zeros, a Focus exige string vazia ""
+                        if raw_ie in ['', 'NONE', '0', '0000000000000']:
+                            ie_final = ""
+                        else:
+                            # Se for "ISENTO", mantemos. Se forem números, removemos pontos/traços.
+                            if raw_ie == "ISENTO":
+                                ie_final = "ISENTO"
+                            else:
+                                ie_final = re.sub(r'\D', '', raw_ie)
+
+                        # 2. Montagem do Payload utilizando as propriedades do Model
                         payload_empresa = {
                             "nome": profile.nome_empresa,
                             "nome_fantasia": profile.nome_fantasia or profile.nome_empresa,
-                            "cnpj": cnpj_limpo,
-                            
+                            "cnpj": re.sub(r'\D', '', profile.cnpj or ''),
                             "regime_tributario": profile.regime_tributario, 
                             "bairro": profile.bairro,
-                            "cep": cep_limpo,
-                            
-                            # AQUI ESTÁ A CORREÇÃO BLINDADA:
-                            "municipio": cidade_envio, 
-                            "codigo_municipio": cod_mun_envio,
-                            
+                            "cep": re.sub(r'\D', '', profile.cep or ''),
+                            "municipio": profile.cidade or request.POST.get('cidade', ''), 
+                            "codigo_municipio": profile.codigo_municipio or request.POST.get('codigo_municipio', ''),
                             "uf": profile.estado,
                             "logradouro": profile.endereco,
                             "numero": profile.numero or "S/N",
-                            
-                            # Lógica corrigida: Usa a variável tratada acima
-                            "inscricao_estadual": ie_limpa,
-                            "inscricao_municipal": (profile.inscricao_municipal or "").replace(".", "").replace("-", "").replace("/", "").strip(),
-                            
+                            "inscricao_estadual": ie_final,
+                            "inscricao_municipal": re.sub(r'\D', '', profile.inscricao_municipal or ''),
                             "telefone": re.sub(r'\D', '', profile.telefone_contato or ''),
                             "email": profile.email_contato,
-                            # Se for ISENTO, não pode emitir NFe (Produtos)
-                            "habilita_nfe": False if ie_limpa == "ISENTO" else True,
-                            "habilita_nfse": True,
-                            "optante_simples_nacional": True if profile.regime_tributario == '1' else False,
-                            "incentivador_cultural": profile.incentivador_cultural,
                             
-                            # --- NOVOS CAMPOS DE NUMERAÇÃO ---
+                            # Se a empresa não tem IE ou é Isenta, ela não pode emitir NF-e (Produto)
+                            "habilita_nfe": False if (not ie_final or ie_final == "ISENTO") else True,
+                            "habilita_nfse": True,
+                            
+                            # Aqui usamos a @property 'optante_simples_nacional' do seu Model
+                            # Isso já cobre os regimes '1', '2' e '4' automaticamente
+                            "optante_simples_nacional": profile.optante_simples_nacional,
+                            
+                            "incentivador_cultural": profile.incentivador_cultural,
                             "proximo_numero_nfe_producao": profile.proximo_numero_nfe,
                             "serie_nfe_producao": profile.serie_nfe,
                             "proximo_numero_nfse_producao": profile.proximo_numero_nfse,

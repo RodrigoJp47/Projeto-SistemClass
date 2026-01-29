@@ -400,7 +400,7 @@ class CompanyProfile(models.Model):
     # --- CAMPOS FISCAIS ADICIONADOS ---
     inscricao_municipal = models.CharField(max_length=20, blank=True, null=True, verbose_name="Inscrição Municipal")
     codigo_municipio = models.CharField(max_length=7, blank=True, null=True, verbose_name="Cód. Município (IBGE)", help_text="Ex: 3106200 para Belo Horizonte")
-    inscricao_estadual = models.CharField(max_length=20, blank=True, null=True, verbose_name="Inscrição Estadual")
+    inscricao_estadual = models.CharField(max_length=30, blank=True, null=True, verbose_name="Inscrição Estadual")
     # ----------------------------------
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -456,9 +456,9 @@ class CompanyProfile(models.Model):
     # -----------------------------
     
     aliquota_iss = models.DecimalField(
-        max_digits=5, 
-        decimal_places=2, 
-        default=2.00, 
+        max_digits=7, 
+        decimal_places=4, 
+        default=2.0000, 
         verbose_name="Alíquota ISS (%)",
         help_text="Alíquota padrão para serviços. Ex: 2.00 para 2%."
     )
