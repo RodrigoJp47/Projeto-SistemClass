@@ -48,8 +48,7 @@ def buscar_saldo_asaas(user):
 
 def buscar_extrato_asaas(user, start_date, end_date):
     """
-    Busca o extrato financeiro (entradas e saídas) do Asaas.
-    Endpoint: /financialTransactions
+    Busca o extrato financeiro COMPLETO (com paginação automática).
     """
     config = get_asaas_config(user)
     if 'erro' in config:
@@ -57,51 +56,64 @@ def buscar_extrato_asaas(user, start_date, end_date):
 
     url = f"{config['base_url']}/financialTransactions"
     
-    # Parâmetros de filtro
-    params = {
-        'startDate': start_date.strftime('%Y-%m-%d'),
-        'endDate': end_date.strftime('%Y-%m-%d'),
-        'limit': 100, # Busca até 100 movimentos no período
-    }
+    transacoes_formatadas = []
+    offset = 0
+    limit = 100 # Máximo permitido pelo Asaas por página
+    
+    while True:
+        params = {
+            'startDate': start_date.strftime('%Y-%m-%d'),
+            'endDate': end_date.strftime('%Y-%m-%d'),
+            'limit': limit,
+            'offset': offset # Pula os que já pegamos
+        }
 
-    try:
-        response = requests.get(url, headers=config['headers'], params=params)
-        response.raise_for_status()
-        data = response.json()
-        
-        transacoes_api = data.get('data', [])
-        transacoes_formatadas = []
-
-        for item in transacoes_api:
-            # O Asaas detalha muito bem o tipo (PAYMENT_RECEIVED, TRANSFER_OUT, BILL_PAYMENT, ASAAS_CARD_TRANSACTION...)
-            tipo_asaas = item.get('type')
-            valor = abs(float(item.get('value', 0)))
-            data_movimento = item.get('date') # YYYY-MM-DD
-            descricao = item.get('description') or f"Movimento Asaas: {tipo_asaas}"
+        try:
+            response = requests.get(url, headers=config['headers'], params=params)
+            response.raise_for_status()
+            data = response.json()
             
-            # Define se é Crédito (C) ou Débito (D) baseado no valor positivo/negativo do extrato
-            # Na API 'financialTransactions', saídas vêm negativas, entradas positivas.
-            valor_original = float(item.get('value', 0))
+            lista_atual = data.get('data', [])
             
-            if valor_original < 0:
-                tipo_operacao = 'D' # Débito (Saída)
-                descricao = f"[SAÍDA] {descricao}"
-            else:
-                tipo_operacao = 'C' # Crédito (Entrada)
-                descricao = f"[ENTRADA] {descricao}"
+            # Se não veio nada, encerra o loop
+            if not lista_atual:
+                break
+                
+            for item in lista_atual:
+                tipo_asaas = item.get('type')
+                
+                # --- CORREÇÃO DAS TAXAS DE BOLETO ---
+                # Asaas costuma chamar taxa de boleto de 'BOLETO_FEE' ou similar.
+                # Vamos garantir que ele pegue tudo.
+                
+                valor_original = float(item.get('value', 0))
+                descricao = item.get('description') or f"Movimento Asaas: {tipo_asaas}"
+                data_movimento = item.get('date')
+                
+                if valor_original < 0:
+                    tipo_operacao = 'D'
+                    # Removemos o prefixo [SAÍDA] para não ficar repetitivo se já tiver
+                    if "Tarifa" in descricao or "FEE" in str(tipo_asaas):
+                        descricao = f"Tarifa Asaas: {tipo_asaas}"
+                else:
+                    tipo_operacao = 'C'
 
-            transacoes_formatadas.append({
-                'id_asaas': item.get('id'), # ID único da transação
-                'data': data_movimento,
-                'descricao': descricao,
-                'valor': valor,     # Valor absoluto para salvar no banco
-                'tipo': tipo_operacao,    # C ou D
-            })
+                transacoes_formatadas.append({
+                    'id_asaas': item.get('id'),
+                    'data': data_movimento,
+                    'descricao': descricao,
+                    'valor': abs(valor_original),
+                    'tipo': tipo_operacao,
+                })
 
-        return {'transacoes': transacoes_formatadas}
+            # Atualiza o offset para a próxima página
+            offset += limit
+            
+            # Se a lista atual veio menor que o limite, significa que acabou
+            if len(lista_atual) < limit:
+                break
+                
+        except Exception as e:
+            return {'erro': f"Erro ao buscar extrato (pág {offset}): {str(e)}"}
 
-    except Exception as e:
-        erro_msg = str(e)
-        if 'response' in locals() and hasattr(response, 'text'):
-            erro_msg += f" | Detalhe Asaas: {response.text}"
-        return {'erro': erro_msg}
+    return {'transacoes': transacoes_formatadas}
