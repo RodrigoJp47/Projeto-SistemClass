@@ -818,6 +818,8 @@
 
 import requests
 import re
+from collections import OrderedDict
+
 from django.conf import settings
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
@@ -843,7 +845,7 @@ def only_digits(s):
     return re.sub(r'\D', '', s or '')
 
 def normalize_ibge(code):
-    """Força IBGE com 7 dígitos (ex.: Contagem-MG = 3118601)"""
+    """Força IBGE com 7 dígitos (ex.: Contagem-MG = 3118601)."""
     code = only_digits(code)
     return code.zfill(7) if code else code
 
@@ -852,16 +854,11 @@ def normalize_cep(code):
 
 def get_focus_credentials(user):
     """
-    Permite token por tenant (se você decidir guardar token por empresa no futuro).
-    Por enquanto usa os tokens globais do settings.
+    Permite token por tenant no futuro. Hoje usa tokens do settings.
     """
     base_url = getattr(settings, "FOCUS_API_URL", None)
     if not base_url:
         base_url = "https://homologacao.focusnfe.com.br" if settings.DEBUG else "https://api.focusnfe.com.br"
-
-    # Exemplo para, no futuro, permitir token específico por tenant:
-    # tenant_token = getattr(user.company_profile, "focus_api_token", None)
-    # api_token = tenant_token or (settings.NFE_TOKEN_HOMOLOGACAO if "homologacao" in base_url else settings.NFE_TOKEN_PRODUCAO)
 
     if "homologacao" in base_url:
         api_token = settings.NFE_TOKEN_HOMOLOGACAO
@@ -875,7 +872,7 @@ def nfse_envia_aliquota():
     return bool(getattr(settings, "FOCUS_NFSE_ENVIA_PALIQUOTA", False))
 
 def nfse_tp_ret_default():
-    """1 = sem retenção, 2 = com retenção"""
+    """1 = sem retenção, 2 = com retenção."""
     return int(getattr(settings, "FOCUS_NFSE_TP_RETENCAO_DEFAULT", 1))
 
 
@@ -974,10 +971,10 @@ def emitir_nota_view(request, venda_id):
                 # NFSE (Serviço)
                 # ==============
                 if eh_servico:
-                    url_nfse = f"{BASE_URL}/v2/nfse?ref={nova_nota.id}"
+                    URL_API = f"{BASE_URL}/v2/nfse?ref={nova_nota.id}"
                     if settings.DEBUG:
                         # em homologação você pode operar em dry-run
-                        url_nfse += "&dry_run=1"
+                        URL_API += "&dry_run=1"
 
                     # Discriminação: concatena itens
                     discriminacao = "; ".join([
@@ -1030,19 +1027,27 @@ def emitir_nota_view(request, venda_id):
 
                     # ===== Grupo de valores/tributação (Padrão NFSe Nacional) =====
                     # Muitas prefeituras parametrizam a alíquota. Envie pAliq/vISSQN
-                    # somente se necessário. Além disso, respeite a ordem: tpRetISSQN -> pAliq.
-                    trib_mun = {
-                        "tribISSQN": 1,
-                        "tpRetISSQN": nfse_tp_ret_default(),  # 1: sem retenção; 2: com retenção
-                        "vBC": valor_servico
-                    }
+                    # somente se necessário. Além disso, respeite a ORDEM: tpRetISSQN -> pAliq -> vBC -> vISSQN -> tribISSQN.
+                    trib_mun = OrderedDict()
 
+                    # 1) Primeiro: tpRetISSQN
+                    trib_mun["tpRetISSQN"] = nfse_tp_ret_default()  # 1: sem retenção; 2: com retenção
+
+                    # 2) pAliq/vISSQN apenas quando a flag estiver ligada
                     if nfse_envia_aliquota():
-                        # Caso você decida enviar alíquota manualmente
                         aliq = float(perfil.aliquota_iss or 0.0)
                         if aliq > 0:
                             trib_mun["pAliq"] = aliq
+                            trib_mun["vBC"] = valor_servico
                             trib_mun["vISSQN"] = round(valor_servico * (aliq / 100.0), 2)
+                        else:
+                            trib_mun["vBC"] = valor_servico
+                    else:
+                        # Sem alíquota manual (cenário típico no Emissor Nacional): ainda assim informe a base
+                        trib_mun["vBC"] = valor_servico
+
+                    # 3) Por último: tribISSQN (string por segurança)
+                    trib_mun["tribISSQN"] = "1"  # ajuste conforme sua regra/benefício, se houver
 
                     valores_data = {
                         "vServPrest": {"vServ": valor_servico},
@@ -1058,8 +1063,6 @@ def emitir_nota_view(request, venda_id):
                         "servico": servico_data,
                         "valores": valores_data
                     }
-
-                    URL_API = url_nfse
 
                 # ============
                 # NFE (Produto)

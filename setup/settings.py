@@ -255,7 +255,21 @@ if DEBUG:
 else:
     FOCUS_API_URL = os.environ.get('FOCUS_API_URL', 'https://api.focusnfe.com.br')
 
+# ==================================================================
+#  NFSe Nacional – Feature flags (cirúrgico, sem impacto em NFe)
+#  - Comece com FOCUS_NFSE_ENVIA_PALIQUOTA=False (municipios parametrizados)
+#  - Se o retorno exigir alíquota, troque para True via ambiente (.env/Render)
+# ==================================================================
 
+# Envia ou não a alíquota do ISS (pAliq/vISSQN) no grupo tribMun (NFSe Nacional)
+FOCUS_NFSE_ENVIA_PALIQUOTA = os.environ.get('FOCUS_NFSE_ENVIA_PALIQUOTA', 'False').lower() == 'true'
+
+# Valor padrão do tpRetISSQN (1 = sem retenção; 2 = com retenção)
+FOCUS_NFSE_TP_RETENCAO_DEFAULT = int(os.environ.get('FOCUS_NFSE_TP_RETENCAO_DEFAULT', '1'))
+
+# (Opcional, seguro) Séries padrão caso não haja no company_profile
+DEFAULT_SERIE_NFE  = os.environ.get('DEFAULT_SERIE_NFE',  '1')
+DEFAULT_SERIE_NFSE = os.environ.get('DEFAULT_SERIE_NFSE', '1')
 # Configurações Banco Inter
 INTER_CLIENT_ID = os.environ.get('INTER_CLIENT_ID')
 INTER_CLIENT_SECRET = os.environ.get('INTER_CLIENT_SECRET')
