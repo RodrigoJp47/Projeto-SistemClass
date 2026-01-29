@@ -1025,24 +1025,29 @@ def emitir_nota_view(request, venda_id):
                     }
 
                     # ===== Grupo de valores/tributação (Padrão NFSe Nacional) =====
-                    # Muitas prefeituras parametrizam a alíquota. Envie pAliq/vISSQN
-                    # somente se necessário. Além disso, respeite a ORDEM: tpRetISSQN -> pAliq -> vBC -> vISSQN.
+                    # O erro "Missing child element" no tribMun geralmente exige tpRetISSQN
+                    # e, dependendo do regime, tpImunidade ou exigSusp.
                     trib_mun = OrderedDict()
 
-                    # 1) Primeiro: tpRetISSQN (string por segurança em parsers estritos)
-                    trib_mun["tpRetISSQN"] = str(nfse_tp_ret_default())  # "1": sem retenção; "2": com retenção
-
-                    # 2) pAliq/vISSQN apenas quando a flag estiver ligada
-                    if nfse_envia_aliquota():
-                        aliq = float(perfil.aliquota_iss or 0.0)
-                        if aliq > 0:
-                            trib_mun["pAliq"] = aliq
-                            trib_mun["vBC"] = valor_servico
-                            trib_mun["vISSQN"] = round(valor_servico * (aliq / 100.0), 2)
-                        else:
-                            trib_mun["vBC"] = valor_servico
+                    # 1) tpRetISSQN é OBRIGATÓRIO no padrão nacional. 
+                    # "1" = Não Retido; "2" = Retido; "3" = Imposto abrangido pelo Simples Nacional
+                    if perfil.optante_simples_nacional:
+                        # Para Simples Nacional, o padrão nacional costuma exigir "3"
+                        trib_mun["tpRetISSQN"] = "3" 
                     else:
-                        # Sem alíquota manual (cenário típico no Emissor Nacional): informe a base
+                        # Para outros regimes, usamos o seu utilitário (1 ou 2)
+                        trib_mun["tpRetISSQN"] = str(nfse_tp_ret_default())
+
+                    # 2) pAliq/vISSQN: O padrão nacional exige esses campos se o imposto não for Simples Nacional
+                    # Se for Simples Nacional (tpRetISSQN=3), eles costumam ser omitidos ou zerados.
+                    aliq = float(perfil.aliquota_iss or 0.0)
+                    
+                    if trib_mun["tpRetISSQN"] != "3" and aliq > 0:
+                        trib_mun["pAliq"] = aliq
+                        trib_mun["vBC"] = valor_servico
+                        trib_mun["vISSQN"] = round(valor_servico * (aliq / 100.0), 2)
+                    else:
+                        # Se não há alíquota ou é Simples, informe apenas a Base de Cálculo
                         trib_mun["vBC"] = valor_servico
 
                     # >>> Importante: NÃO enviar 'tribISSQN' para evitar colisão com a ordem esperada <<<
