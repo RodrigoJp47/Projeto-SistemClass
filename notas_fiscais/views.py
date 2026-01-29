@@ -1,4 +1,5 @@
 import requests
+import re
 from django.conf import settings
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
@@ -155,7 +156,7 @@ def emitir_nota_view(request, venda_id):
                         "natureza_operacao": "1", # 1=Tributação no município (Padrão mais comum)
                         "prestador": prestador_data,
                         "tomador": {
-                             "cnpj_cpf": cliente.cpf_cnpj.replace(".", "").replace("-", "").replace("/", ""),
+                             "cnpj_cpf": re.sub(r'\D', '', cliente.cpf_cnpj or ''),
                              "razao_social": cliente.razao_social or cliente.nome,
                              "email": cliente.email,
                              "endereco": {
@@ -199,7 +200,7 @@ def emitir_nota_view(request, venda_id):
                         "cnpj_emitente": cnpj_emitente,
                         "nome_destinatario": cliente.razao_social or cliente.nome,
                         "email_destinatario": cliente.email,
-                        "cpf_cnpj_destinatario": cliente.cpf_cnpj.replace(".", "").replace("-", "").replace("/", ""),
+                        "cpf_cnpj_destinatario": re.sub(r'\D', '', cliente.cpf_cnpj or ''),
                         "logradouro_destinatario": cliente.logradouro,
                         "numero_destinatario": cliente.numero,
                         "itens": itens_api
