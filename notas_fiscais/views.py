@@ -819,6 +819,7 @@
 import requests
 import re
 from collections import OrderedDict
+from decimal import Decimal
 
 from django.conf import settings
 from django.shortcuts import render, get_object_or_404, redirect
@@ -826,9 +827,7 @@ from django.contrib import messages
 from django.utils import timezone
 from django.core.paginator import Paginator
 from django.contrib.auth.decorators import login_required
-from decimal import Decimal
 
-# Decorators e modelos do seu projeto
 from accounts.decorators import (
     subscription_required, module_access_required, check_employee_permission
 )
@@ -838,46 +837,45 @@ from .forms import EmissaoNotaFiscalForm
 
 
 # =========================
-# Utilitários Multi-tenant
+# UTILITÁRIOS
 # =========================
 
 def only_digits(s):
     return re.sub(r'\D', '', s or '')
 
 def normalize_ibge(code):
-    """Força IBGE com 7 dígitos (ex.: Contagem-MG = 3118601)."""
     code = only_digits(code)
-    return code.zfill(7) if code else code
+    return code.zfill(7) if code else ""
 
 def normalize_cep(code):
-    return only_digits(code).zfill(8) if code else code
+    code = only_digits(code)
+    return code.zfill(8) if code else ""
 
 def get_focus_credentials(user):
-    """
-    Permite token por tenant no futuro. Hoje usa tokens do settings.
-    """
     base_url = getattr(settings, "FOCUS_API_URL", None)
     if not base_url:
-        base_url = "https://homologacao.focusnfe.com.br" if settings.DEBUG else "https://api.focusnfe.com.br"
+        base_url = (
+            "https://homologacao.focusnfe.com.br"
+            if settings.DEBUG else
+            "https://api.focusnfe.com.br"
+        )
 
-    if "homologacao" in base_url:
-        api_token = settings.NFE_TOKEN_HOMOLOGACAO
-    else:
-        api_token = settings.NFE_TOKEN_PRODUCAO
-
+    api_token = (
+        settings.NFE_TOKEN_HOMOLOGACAO
+        if "homologacao" in base_url
+        else settings.NFE_TOKEN_PRODUCAO
+    )
     return base_url, api_token
 
 def nfse_envia_aliquota():
-    """Feature flag controlada em settings para NFSe Nacional."""
     return bool(getattr(settings, "FOCUS_NFSE_ENVIA_PALIQUOTA", False))
 
 def nfse_tp_ret_default():
-    """1 = sem retenção, 2 = com retenção."""
     return int(getattr(settings, "FOCUS_NFSE_TP_RETENCAO_DEFAULT", 1))
 
 
 # =========================
-# LISTAGEM / CONSULTA / EXCLUSÃO
+# LISTAGEM
 # =========================
 
 @login_required
@@ -885,32 +883,34 @@ def nfse_tp_ret_default():
 @module_access_required('fiscal')
 @check_employee_permission('can_access_notas_fiscais')
 def lista_notas_fiscais_view(request):
-    notas_list = NotaFiscal.objects.filter(user=request.user).select_related('cliente', 'venda')
+    notas = NotaFiscal.objects.filter(user=request.user).select_related('cliente', 'venda')
 
-    status_filter = request.GET.get('status', '')
+    status_filter = request.GET.get('status')
     start_date = request.GET.get('start_date')
     end_date = request.GET.get('end_date')
 
     if status_filter:
-        notas_list = notas_list.filter(status=status_filter)
+        notas = notas.filter(status=status_filter)
     if start_date:
-        notas_list = notas_list.filter(data_criacao__date__gte=start_date)
+        notas = notas.filter(data_criacao__date__gte=start_date)
     if end_date:
-        notas_list = notas_list.filter(data_criacao__date__lte=end_date)
+        notas = notas.filter(data_criacao__date__lte=end_date)
 
-    paginator = Paginator(notas_list, 15)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
+    paginator = Paginator(notas, 15)
+    page_obj = paginator.get_page(request.GET.get('page'))
 
-    context = {
+    return render(request, 'notas_fiscais/lista_notas.html', {
         'page_obj': page_obj,
         'status_choices': NotaFiscal.STATUS_CHOICES,
         'status_filter': status_filter,
         'start_date': start_date,
         'end_date': end_date,
-    }
-    return render(request, 'notas_fiscais/lista_notas.html', context)
+    })
 
+
+# =========================
+# EMISSÃO
+# =========================
 
 @login_required
 @subscription_required
@@ -919,343 +919,179 @@ def lista_notas_fiscais_view(request):
 def emitir_nota_view(request, venda_id):
     venda = get_object_or_404(Venda, id=venda_id, user=request.user)
 
-    # Garante 1-para-1
     if hasattr(venda, 'nota_fiscal') and venda.nota_fiscal:
         messages.info(request, "Já existe uma nota fiscal para esta venda.")
         return redirect('lista_notas_fiscais')
 
     if request.method == 'POST':
         form = EmissaoNotaFiscalForm(request.POST)
-        if form.is_valid():
-            # Ambiente e credenciais (multi-tenant friendly)
-            BASE_URL, API_TOKEN = get_focus_credentials(request.user)
+        if not form.is_valid():
+            return render(request, 'notas_fiscais/emitir_nota.html', {'form': form, 'venda': venda})
 
-            primeiro_item = venda.itens.first()
-            eh_servico = bool(primeiro_item and getattr(primeiro_item.produto, "tipo", "") == 'SERVICO')
+        BASE_URL, API_TOKEN = get_focus_credentials(request.user)
 
-            # 1) Dados do prestador a partir do tenant (empresa do usuário)
-            try:
-                perfil = request.user.company_profile
-                if not perfil.cnpj:
-                    raise ValueError("CNPJ da empresa não configurado.")
+        primeiro_item = venda.itens.first()
+        eh_servico = bool(primeiro_item and primeiro_item.produto.tipo == 'SERVICO')
 
-                cnpj_emitente = only_digits(perfil.cnpj)
-                im_emitente = only_digits(perfil.inscricao_municipal) if perfil.inscricao_municipal else ""
-                cod_mun_emitente = normalize_ibge(perfil.codigo_municipio) if perfil.codigo_municipio else ""
+        perfil = request.user.company_profile
+        if not perfil.cnpj:
+            messages.error(request, "CNPJ da empresa não configurado.")
+            return redirect('company_profile')
 
-            except Exception as e:
-                messages.error(request, "Erro no perfil da empresa: " + str(e))
-                return redirect('company_profile')
+        nova_nota = NotaFiscal.objects.create(
+            user=request.user,
+            venda=venda,
+            cliente=venda.cliente,
+            valor_total=venda.valor_total_liquido,
+            status='PENDENTE'
+        )
 
-            # Cria nota (PENDENTE) antes do envio
-            nova_nota = NotaFiscal.objects.create(
-                user=request.user,
-                venda=venda,
-                cliente=venda.cliente,
-                valor_total=venda.valor_total_liquido,
-                status='PENDENTE'
-            )
-
-            try:
-                cliente = venda.cliente
-                # Endereço mínimo para Focus
-                if not cliente.logradouro or not cliente.numero or not cliente.bairro:
-                    raise ValueError("Endereço do cliente incompleto.")
-
-                # Documento do tomador (NFSe exige cpf OU cnpj; não aceita chave agregada)
-                doc_tomador = only_digits(getattr(cliente, "cpf_cnpj", ""))
-                if not doc_tomador or len(doc_tomador) not in (11, 14):
-                    raise ValueError("CPF/CNPJ do tomador inválido ou ausente.")
-
-                # ==============
-                # NFSE (Serviço)
-                # ==============
-                if eh_servico:
-                    URL_API = f"{BASE_URL}/v2/nfse?ref={nova_nota.id}"
-                    if settings.DEBUG:
-                        # em homologação você pode operar em dry-run
-                        URL_API += "&dry_run=1"
-
-                    # Discriminação: concatena itens
-                    discriminacao = "; ".join([
-                        f"{i.quantidade:.0f}x {i.produto.nome}" for i in venda.itens.all()
-                    ])
-
-                    # Código LC 116 com 6 dígitos (Item+Subitem+Desdobro) — exigência do padrão nacional
-                    # Ex.: para BPO Financeiro em Contagem: 170101
-                    item_lista_servico = only_digits(getattr(primeiro_item.produto, "codigo_servico", ""))
-                    if not item_lista_servico or len(item_lista_servico) != 6:
-                        raise ValueError("Cód. Serviço (LC 116) inválido. Use 6 dígitos (ex.: 170101).")
-
-                    # Prestador (multi-tenant, vindo do perfil do usuário)
-                    prestador_data = {
-                        "cnpj": cnpj_emitente,
-                        "inscricao_municipal": im_emitente,
-                        "codigo_municipio": cod_mun_emitente,
-                        "iss_retido": False,
-                        "optante_simples_nacional": bool(perfil.optante_simples_nacional),
-                        "incentivador_cultural": bool(perfil.incentivador_cultural),
-                    }
-                    if perfil.regime_especial_tributacao and perfil.regime_especial_tributacao != '0':
-                        prestador_data["regime_especial_tributacao"] = perfil.regime_especial_tributacao
-
-                    # Tomador (NFSe exige 'cpf' OU 'cnpj')
-                    tomador_data = {
-                        "razao_social": (cliente.razao_social or cliente.nome)[:115],
-                        "email": cliente.email,
-                        "endereco": {
-                            "logradouro": cliente.logradouro,
-                            "numero": cliente.numero,
-                            "bairro": cliente.bairro,
-                            "cep": normalize_cep(cliente.cep),
-                            "codigo_municipio": normalize_ibge(cliente.codigo_municipio),
-                            "uf": cliente.uf
-                        }
-                    }
-                    if len(doc_tomador) == 11:
-                        tomador_data["cpf"] = doc_tomador
-                    else:
-                        tomador_data["cnpj"] = doc_tomador
-
-                    # Serviço
-                    valor_servico = float(venda.valor_total_liquido)
-                    servico_data = {
-                        "item_lista_servico": item_lista_servico,
-                        "discriminacao": discriminacao[:2000],  # Focus limit
-                        "valor_servicos": valor_servico
-                    }
-
-                    # ===== Grupo de valores/tributação (Padrão NFSe Nacional) =====
-                    # Muitas prefeituras parametrizam a alíquota. Envie pAliq/vISSQN
-                    # somente se necessário. Além disso, respeite a ORDEM: tpRetISSQN -> pAliq -> vBC -> vISSQN -> tribISSQN.
-                    trib_mun = OrderedDict()
-
-                    # 1) Primeiro: tpRetISSQN
-                    trib_mun["tpRetISSQN"] = nfse_tp_ret_default()  # 1: sem retenção; 2: com retenção
-
-                    # 2) pAliq/vISSQN apenas quando a flag estiver ligada
-                    if nfse_envia_aliquota():
-                        aliq = float(perfil.aliquota_iss or 0.0)
-                        if aliq > 0:
-                            trib_mun["pAliq"] = aliq
-                            trib_mun["vBC"] = valor_servico
-                            trib_mun["vISSQN"] = round(valor_servico * (aliq / 100.0), 2)
-                        else:
-                            trib_mun["vBC"] = valor_servico
-                    else:
-                        # Sem alíquota manual (cenário típico no Emissor Nacional): ainda assim informe a base
-                        trib_mun["vBC"] = valor_servico
-
-                    # 3) Por último: tribISSQN (string por segurança)
-                    trib_mun["tribISSQN"] = "1"  # ajuste conforme sua regra/benefício, se houver
-
-                    valores_data = {
-                        "vServPrest": {"vServ": valor_servico},
-                        "trib": {"tribMun": trib_mun}
-                    }
-
-                    dados_api = {
-                        "data_emissao": timezone.now().strftime("%Y-%m-%dT%H:%M:%S"),
-                        "serie_rps": str(getattr(perfil, "serie_nfse", "1") or "1"),
-                        "natureza_operacao": "1",
-                        "prestador": prestador_data,
-                        "tomador": tomador_data,
-                        "servico": servico_data,
-                        "valores": valores_data
-                    }
-
-                # ============
-                # NFE (Produto)
-                # ============
-                else:
-                    URL_API = f"{BASE_URL}/v2/nfe?ref={nova_nota.id}"
-
-                    itens_api = []
-                    for item in venda.itens.all():
-                        prod = item.produto
-                        if not prod.ncm:
-                            raise ValueError(f"Produto {prod.nome} sem NCM.")
-
-                        itens_api.append({
-                            "nome_produto": prod.nome,
-                            "ncm": prod.ncm.replace(".", ""),
-                            "quantidade": f"{item.quantidade:.2f}",
-                            "valor_unitario": f"{item.preco_unitario:.2f}",
-                            "unidade_medida": prod.unidade_medida,
-                            "origem_produto": prod.origem,
-                            "cfop": form.cleaned_data['cfop'],
-                            "icms_situacao_tributaria": "102" if perfil.optante_simples_nacional else "00",
-                        })
-
-                    dados_api = {
-                        "data_emissao": timezone.now().strftime("%Y-%m-%dT%H:%M:%S"),
-                        "natureza_operacao": form.cleaned_data['natureza_operacao'],
-                        "cnpj_emitente": cnpj_emitente,
-                        "nome_destinatario": cliente.razao_social or cliente.nome,
-                        "email_destinatario": cliente.email,
-                        "cpf_cnpj_destinatario": only_digits(cliente.cpf_cnpj),
-                        "logradouro_destinatario": cliente.logradouro,
-                        "numero_destinatario": cliente.numero,
-                        "itens": itens_api
-                    }
-
-                # ==== DEBUG ====
-                print("\n=== DEBUG PAYLOAD EMISSÃO ===")
-                print(f"URL: {URL_API}")
-                print(f"Token: {API_TOKEN[:4]}...{API_TOKEN[-4:]}")
-                print(f"Payload: {dados_api}")
-                if eh_servico:
-                    print(f"TOMADOR ENVIADO (NFSe): {dados_api.get('tomador')}")
-                    print(f"VALORES (NFSe): {dados_api.get('valores')}")
-                print("=============================\n")
-
-                # 2) Envia para Focus
-                response = requests.post(URL_API, json=dados_api, auth=(API_TOKEN, ""))
-                try:
-                    resposta_api = response.json()
-                except Exception:
-                    resposta_api = {"mensagem": response.text}
-
-                print("\n--- CONSULTA API FOCUS ---")
-                print(f"Status Code: {response.status_code}")
-                print(f"Resposta: {resposta_api}")
-                print("--------------------------\n")
-
-                # 3) Trata retorno
-                if response.status_code in [200, 201, 202]:
-                    status_api = resposta_api.get('status')
-
-                    if status_api == 'autorizado':
-                        nova_nota.status = 'EMITIDA'
-                        nova_nota.numero_nf = resposta_api.get('numero')
-                        nova_nota.serie = resposta_api.get('serie')
-                        nova_nota.chave_acesso = resposta_api.get('codigo_verificacao', resposta_api.get('chave_nfe'))
-                        nova_nota.data_emissao = timezone.now()
-                        nova_nota.url_pdf = resposta_api.get('url_danfe') or resposta_api.get('url')
-                        nova_nota.url_xml = resposta_api.get('url_xml')
-                        nova_nota.save()
-                        messages.success(request, f"Nota Fiscal Nº {nova_nota.numero_nf} foi autorizada!")
-
-                    elif status_api in ['erro_autorizacao', 'rejeitado', 'cancelado']:
-                        nova_nota.status = 'ERRO'
-                        lista_erros = resposta_api.get('erros', [])
-                        if lista_erros and isinstance(lista_erros, list):
-                            msg_final = " | ".join([f"{e.get('codigo', '')}: {e.get('mensagem', '')}" for e in lista_erros])
-                        else:
-                            msg_final = resposta_api.get('status_sefaz_mensagem', resposta_api.get('mensagem', 'Erro desconhecido'))
-                        nova_nota.mensagem_erro = msg_final
-                        nova_nota.save()
-                        messages.error(request, f"Erro na nota: {msg_final}")
-
-                    elif status_api in ['processando', 'processando_autorizacao']:
-                        nova_nota.status = 'PROCESSANDO'
-                        nova_nota.save()
-                        messages.info(request, "A nota foi enviada e está em processamento. Clique em 'Verificar' para atualizar o status.")
-
-                    else:
-                        messages.warning(request, f"Status atual: {status_api}")
-
-                else:
-                    # Erros 4xx/5xx (ex.: schema do padrão nacional)
-                    msg_api = resposta_api.get('mensagem', 'Sem resposta')
-                    messages.error(request, f"Erro de comunicação: {msg_api}")
-
-            except Exception as e:
-                messages.error(request, f"Erro interno: {e}")
-
-            return redirect('lista_notas_fiscais')
-
-    else:
-        form = EmissaoNotaFiscalForm()
-
-    return render(request, 'notas_fiscais/emitir_nota.html', {'form': form, 'venda': venda})
-
-
-@login_required
-@subscription_required
-@module_access_required('fiscal')
-@check_employee_permission('can_access_notas_fiscais')
-def consultar_nota_view(request, nota_id):
-    nota = get_object_or_404(NotaFiscal, id=nota_id, user=request.user)
-
-    BASE_URL, API_TOKEN = get_focus_credentials(request.user)
-
-    primeiro_item = nota.venda.itens.first()
-    eh_servico = bool(primeiro_item and getattr(primeiro_item.produto, "tipo", "") == 'SERVICO')
-
-    ref_focus = str(nota.id)
-    URL_CONSULTA = f"{BASE_URL}/v2/nfse/{ref_focus}" if eh_servico else f"{BASE_URL}/v2/nfe/{ref_focus}"
-
-    try:
-        response = requests.get(URL_CONSULTA, auth=(API_TOKEN, ""))
         try:
-            dados = response.json()
-        except Exception:
-            dados = {"mensagem": response.text}
+            cliente = venda.cliente
+            doc_tomador = only_digits(cliente.cpf_cnpj)
 
-        print(f"--- CONSULTA RETORNO ({response.status_code}) ---")
-        print(dados)
-        if response.status_code >= 400 and eh_servico:
-            print("ERROS NFSe:", dados.get('erros'))
+            if len(doc_tomador) not in (11, 14):
+                raise ValueError("CPF/CNPJ do tomador inválido.")
 
-        if response.status_code == 200:
-            status_api = dados.get('status')
+            # =========================
+            # NFSE
+            # =========================
+            if eh_servico:
+                URL_API = f"{BASE_URL}/v2/nfse?ref={nova_nota.id}"
+                if settings.DEBUG:
+                    URL_API += "&dry_run=1"
 
-            if status_api == 'autorizado':
-                nota.status = 'EMITIDA'
-                nota.numero_nf = dados.get('numero')
-                nota.serie = dados.get('serie')
-                nota.chave_acesso = dados.get('codigo_verificacao', dados.get('chave_nfe'))
-                nota.url_pdf = dados.get('url_danfe') or dados.get('url')
-                nota.url_xml = dados.get('url_xml')
-                nota.save()
-                messages.success(request, f"Nota atualizada: {status_api}")
+                discriminacao = "; ".join(
+                    f"{i.quantidade:.0f}x {i.produto.nome}"
+                    for i in venda.itens.all()
+                )
 
-            elif status_api in ['erro_autorizacao', 'rejeitado', 'cancelado']:
-                lista_erros = dados.get('erros', [])
-                if lista_erros and isinstance(lista_erros, list):
-                    msg = " | ".join([f"{e.get('mensagem')}" for e in lista_erros])
-                    codigo_erro = lista_erros[0].get('codigo') if len(lista_erros) > 0 else ""
+                item_lista_servico = only_digits(primeiro_item.produto.codigo_servico)
+                if len(item_lista_servico) != 6:
+                    raise ValueError("Código de serviço inválido (use 6 dígitos).")
+
+                valor_servico = float(venda.valor_total_liquido)
+
+                prestador = {
+                    "cnpj": only_digits(perfil.cnpj),
+                    "inscricao_municipal": only_digits(perfil.inscricao_municipal or ""),
+                    "codigo_municipio": normalize_ibge(perfil.codigo_municipio),
+                    "optante_simples_nacional": perfil.optante_simples_nacional,
+                }
+
+                tomador = {
+                    "razao_social": (cliente.razao_social or cliente.nome)[:115],
+                    "email": cliente.email,
+                    "endereco": {
+                        "logradouro": cliente.logradouro,
+                        "numero": cliente.numero,
+                        "bairro": cliente.bairro,
+                        "cep": normalize_cep(cliente.cep),
+                        "codigo_municipio": normalize_ibge(cliente.codigo_municipio),
+                        "uf": cliente.uf
+                    }
+                }
+                tomador["cpf" if len(doc_tomador) == 11 else "cnpj"] = doc_tomador
+
+                servico = {
+                    "item_lista_servico": item_lista_servico,
+                    "discriminacao": discriminacao[:2000],
+                    "valor_servicos": valor_servico
+                }
+
+                # ===== TRIBUTAÇÃO CORRETA =====
+                trib_mun = OrderedDict()
+                trib_mun["tpRetISSQN"] = nfse_tp_ret_default()
+
+                if nfse_envia_aliquota():
+                    aliq = float(perfil.aliquota_iss or 0)
+                    trib_mun["vBC"] = valor_servico
+                    if aliq > 0:
+                        trib_mun["pAliq"] = aliq
+                        trib_mun["vISSQN"] = round(valor_servico * (aliq / 100), 2)
                 else:
-                    msg = dados.get('status_sefaz_mensagem', dados.get('mensagem', 'Erro desconhecido'))
-                    codigo_erro = ""
+                    trib_mun["vBC"] = valor_servico
 
-                # BYPASS E45 em homologação (se fizer sentido para o seu fluxo)
-                if settings.DEBUG and codigo_erro == 'E45':
-                    print("=== BYPASS E45 ATIVADO ===")
-                    nota.status = 'EMITIDA'
-                    nota.numero_nf = 'SIMULACAO'
-                    nota.serie = '1'
-                    nota.chave_acesso = 'SIMULACAO_E45_BYPASS'
-                    nota.url_pdf = '#'
-                    nota.mensagem_erro = "Nota simulada (Erro E45 ignorado em Homologação)"
-                    nota.save()
-                    messages.success(request, "SUCESSO SIMULADO: O erro E45 foi ignorado.")
-                else:
-                    nota.status = 'ERRO'
-                    nota.mensagem_erro = msg
-                    nota.save()
-                    messages.error(request, f"Nota com erro: {msg}")
+                trib_mun["tribISSQN"] = "1"
 
-            elif status_api == 'processando_autorizacao':
-                messages.info(request, "A nota ainda está em processamento. Tente novamente em alguns segundos.")
+                valores = {
+                    "vServPrest": {"vServ": valor_servico},
+                    "trib": {"tribMun": trib_mun}
+                }
+
+                dados_api = {
+                    "data_emissao": timezone.now().strftime("%Y-%m-%dT%H:%M:%S"),
+                    "serie_rps": str(getattr(perfil, "serie_nfse", "1")),
+                    "natureza_operacao": "1",
+                    "prestador": prestador,
+                    "tomador": tomador,
+                    "servico": servico,
+                    "valores": valores
+                }
+
+            # =========================
+            # NFE
+            # =========================
             else:
-                messages.info(request, f"Status na API: {status_api}")
-        else:
-            messages.error(request, f"Erro ao consultar API: {dados.get('mensagem')}")
+                URL_API = f"{BASE_URL}/v2/nfe?ref={nova_nota.id}"
 
-    except Exception as e:
-        messages.error(request, f"Erro interno ao consultar: {e}")
+                itens = []
+                for item in venda.itens.all():
+                    prod = item.produto
+                    if not prod.ncm:
+                        raise ValueError(f"Produto {prod.nome} sem NCM.")
 
-    return redirect('lista_notas_fiscais')
+                    itens.append({
+                        "nome_produto": prod.nome,
+                        "ncm": prod.ncm.replace(".", ""),
+                        "quantidade": f"{item.quantidade:.2f}",
+                        "valor_unitario": f"{item.preco_unitario:.2f}",
+                        "unidade_medida": prod.unidade_medida,
+                        "origem_produto": prod.origem,
+                        "cfop": form.cleaned_data['cfop'],
+                        "icms_situacao_tributaria": "102" if perfil.optante_simples_nacional else "00",
+                    })
 
+                dados_api = {
+                    "data_emissao": timezone.now().strftime("%Y-%m-%dT%H:%M:%S"),
+                    "natureza_operacao": form.cleaned_data['natureza_operacao'],
+                    "cnpj_emitente": only_digits(perfil.cnpj),
+                    "nome_destinatario": cliente.razao_social or cliente.nome,
+                    "email_destinatario": cliente.email,
+                    "cpf_cnpj_destinatario": doc_tomador,
+                    "logradouro_destinatario": cliente.logradouro,
+                    "numero_destinatario": cliente.numero,
+                    "itens": itens
+                }
 
-@login_required
-def excluir_nota_view(request, nota_id):
-    nota = get_object_or_404(NotaFiscal, id=nota_id, user=request.user)
-    if nota.status in ['EMITIDA', 'PROCESSANDO']:
-        messages.error(request, "Você não pode excluir uma nota fiscal já emitida ou em processamento.")
-    else:
-        nota.delete()
-        messages.success(request, "Nota fiscal excluída com sucesso.")
-    return redirect('lista_notas_fiscais')
+            response = requests.post(URL_API, json=dados_api, auth=(API_TOKEN, ""))
+            retorno = response.json()
+
+            if response.status_code in (200, 201, 202) and retorno.get('status') == 'autorizado':
+                nova_nota.status = 'EMITIDA'
+                nova_nota.numero_nf = retorno.get('numero')
+                nova_nota.serie = retorno.get('serie')
+                nova_nota.chave_acesso = retorno.get('codigo_verificacao') or retorno.get('chave_nfe')
+                nova_nota.url_pdf = retorno.get('url_danfe') or retorno.get('url')
+                nova_nota.url_xml = retorno.get('url_xml')
+                nova_nota.data_emissao = timezone.now()
+                nova_nota.save()
+                messages.success(request, "Nota fiscal emitida com sucesso.")
+            else:
+                nova_nota.status = 'ERRO'
+                nova_nota.mensagem_erro = retorno.get('mensagem', retorno)
+                nova_nota.save()
+                messages.error(request, f"Erro na emissão: {nova_nota.mensagem_erro}")
+
+        except Exception as e:
+            nova_nota.status = 'ERRO'
+            nova_nota.mensagem_erro = str(e)
+            nova_nota.save()
+            messages.error(request, f"Erro interno: {e}")
+
+        return redirect('lista_notas_fiscais')
+
+    return render(request, 'notas_fiscais/emitir_nota.html', {
+        'form': EmissaoNotaFiscalForm(),
+        'venda': venda
+    })
