@@ -2271,7 +2271,6 @@ def contas_pagar(request):
                 print(f"Erro crítico ao ler boleto: {e}") # Mostra no terminal
                 return JsonResponse({'status': 'error', 'message': f'Erro interno no servidor: {str(e)}'})
         # ▲▲▲ FIM DO BLOCO ▲▲▲
-        # ▼▼▼ SUBSTITUA O BLOCO 'import_excel' INTEIRO POR ESTE NOVO BLOCO MELHORADO ▼▼▼
         if request.POST.get('action') == 'import_excel':
             excel_file = request.FILES.get('excel_file')
             if not excel_file:
@@ -2281,50 +2280,39 @@ def contas_pagar(request):
             try:
                 df = pd.read_excel(excel_file)
                 
+                # --- NOVO MAPA DE COLUNAS MAIS INTELIGENTE ---
                 column_map = {
-                    'nome': 'name', 'cliente': 'name', 'fornecedor': 'name',
-                    'descrição': 'description', 'histórico': 'description',
-                    'vencimento': 'due_date', 'data do pagamento': 'due_date', 'data do vencimento': 'due_date',
-                    'valor': 'amount', 'pagamento': 'amount',
-                    'categoria': 'category',
+                    # Obrigatórios / Básicos
+                    'nome': 'name', 'cliente': 'name', 'fornecedor': 'name', 'favorecido': 'name',
+                    'vencimento': 'due_date', 'data de vencimento': 'due_date', 'data vencimento': 'due_date',
+                    'valor': 'amount', 'valor total': 'amount', 'pagamento': 'amount',
+                    
+                    # Opcionais de Texto
+                    'descrição': 'description', 'histórico': 'description', 'observação': 'description',
+                    'categoria': 'category', 'plano de contas': 'category',
                     'centro de custo': 'centro_custo', 'centro custo': 'centro_custo',
-                    'conta bancária': 'bank_account', 'banco': 'bank_account',
-                    'forma de pagamento': 'payment_method',
-                    'custo': 'cost_type',
+                    'conta bancária': 'bank_account', 'banco': 'bank_account', 'conta': 'bank_account',
+                    'forma de pagamento': 'payment_method', 'forma pgto': 'payment_method',
+                    'custo': 'cost_type', 'tipo de custo': 'cost_type',
+                    
+                    # --- NOVAS COLUNAS PARA STATUS E BAIXA ---
+                    'status': 'status_check', 'situação': 'status_check', 'ações': 'status_check', 'pago?': 'status_check',
+                    'data do pagamento': 'payment_date_real', 'data pagamento': 'payment_date_real', 'data baixa': 'payment_date_real'
                 }
 
-                # --- INÍCIO DA CORREÇÃO DA MENSAGEM DE ERRO ---
-                
-                # 1. Guarda os nomes originais das colunas da planilha (em minúsculo).
-                original_columns = {str(col).strip().lower() for col in df.columns}
-                
-                # 2. Dicionário para criar mensagens de erro amigáveis.
+                # ... (Lógica de mensagens de erro amigáveis continua igual) ...
                 friendly_names_map = {
-                    'name': "'Nome', 'Cliente' ou 'Fornecedor'",
-                    'due_date': "'Vencimento', 'Data do pagamento' ou 'Data do vencimento'",
-                    'amount': "'Valor' ou 'Pagamento'"
+                    'name': "'Nome', 'Fornecedor' ou 'Favorecido'",
+                    'due_date': "'Vencimento' ou 'Data de Vencimento'",
+                    'amount': "'Valor' ou 'Valor Total'"
                 }
                 
-                # 3. Verifica ANTES de renomear se as colunas obrigatórias existem.
-                required_internal_names = {'name', 'due_date', 'amount'}
-                
-                # Inverte o mapa de colunas para facilitar a busca.
-                reverse_map = {v: k for k, v in column_map.items()}
-                
-                # Pega todas as chaves do mapa original (ex: 'nome', 'cliente', 'vencimento'...).
-                valid_original_names = set(column_map.keys())
-                
-                # Renomeia as colunas da planilha para os nomes internos.
-                df.rename(columns={col: column_map.get(col.strip().lower()) for col in df.columns}, inplace=True)
+                df.rename(columns={col: column_map.get(str(col).strip().lower()) for col in df.columns}, inplace=True)
 
-                # 4. Verifica DEPOIS de renomear se os nomes internos foram criados.
+                required_internal_names = {'name', 'due_date', 'amount'}
                 for internal_name in required_internal_names:
                     if internal_name not in df.columns:
-                        # Se um nome interno não foi criado, significa que nenhum dos seus nomes amigáveis existia na planilha.
-                        # Agora, a mensagem de erro usa o mapa amigável!
-                        raise ValueError(f"A coluna obrigatória {friendly_names_map[internal_name]} não foi encontrada. Verifique os nomes das colunas da sua planilha.")
-                        
-                # --- FIM DA CORREÇÃO DA MENSAGEM DE ERRO ---
+                        raise ValueError(f"A coluna obrigatória {friendly_names_map[internal_name]} não foi encontrada.")
 
                 successful_imports = 0
                 failed_rows = []
@@ -2333,101 +2321,113 @@ def contas_pagar(request):
                     for index, row in df.iterrows():
                         excel_row_number = index + 2
                         try:
-                            # 1. Tratamento Básico de Dados (Nome, Descrição, Valor, Data)
-                            # -----------------------------------------------------------
+                            # 1. Tratamento Básico
                             name = str(row['name']).strip()
                             description = str(row.get('description', 'Importado via Excel'))
                             
                             due_date = pd.to_datetime(row['due_date'], errors='coerce', dayfirst=True).date()
-                            if pd.isnull(due_date):
-                                raise ValueError("Formato de data inválido.")
+                            if pd.isnull(due_date): raise ValueError("Formato de data de vencimento inválido.")
 
-                            amount_str = str(row['amount']).replace(',', '.')
-                            amount = float(amount_str)
-
+                            amount = float(str(row['amount']).replace(',', '.'))
                             payment_method = str(row.get('payment_method', 'BOLETO')).strip().upper()
                             cost_type_value = str(row.get('cost_type', 'FIXO')).strip().upper()
-                            if cost_type_value not in ['FIXO', 'VARIAVEL']:
-                                cost_type_value = 'FIXO'
+                            if cost_type_value not in ['FIXO', 'VARIAVEL']: cost_type_value = 'FIXO'
 
-                            # 2. Lógica Inteligente de Classificação (Categoria, DRE, Banco)
-                            # -----------------------------------------------------------
-                            
-                            # A. Tenta prever com base no histórico (Dicionário)
+                            # 2. Lógica Inteligente (Previsão, Categoria, CC, Banco)
+                            # Nota: Use _, no final para ignorar o 4º valor se sua função retornar 4
                             cat_smart, dre_smart, bank_smart, _ = prever_classificacao(request.user, name, 'PAYABLE')
 
-                            # B. Define a Categoria Final
-                            # Prioridade: Excel > Inteligência > Padrão (Criar nova)
+                            # Categoria
                             category = None
                             if pd.notna(row.get('category')):
-                                cat_name_excel = str(row.get('category')).strip()
-                                category, _ = Category.objects.get_or_create(name=cat_name_excel, category_type='PAYABLE', user=request.user)
-                            elif cat_smart:
-                                category = cat_smart
-                            else:
-                                # Se não tem no Excel e nem no Smart, cria/usa uma padrão
-                                category, _ = Category.objects.get_or_create(name='Despesas Gerais', category_type='PAYABLE', user=request.user)
+                                cat_name = str(row.get('category')).strip()
+                                category, _ = Category.objects.get_or_create(name=cat_name, category_type='PAYABLE', user=request.user)
+                            elif cat_smart: category = cat_smart
+                            else: category, _ = Category.objects.get_or_create(name='Despesas Gerais', category_type='PAYABLE', user=request.user)
 
-                            # --- ADICIONE ESTE BLOCO NOVO PARA O CENTRO DE CUSTO ---
+                            # Centro de Custo
                             centro_custo = None
                             if pd.notna(row.get('centro_custo')):
-                                cc_name_excel = str(row.get('centro_custo')).strip()
-                                # Busca o centro de custo existente ou cria um novo automaticamente se vier no Excel
-                                centro_custo, _ = CentroCusto.objects.get_or_create(nome=cc_name_excel, user=request.user)
-                            # -------------------------------------------------------    
+                                cc_name = str(row.get('centro_custo')).strip()
+                                centro_custo, _ = CentroCusto.objects.get_or_create(nome=cc_name, user=request.user)
 
-                            # C. Define a Área DRE Final
-                            # Prioridade: Inteligência > Padrão ('OPERACIONAL')
-                            # (Nota: Dificilmente vem DRE no Excel, então confiamos no Smart)
                             dre_final = dre_smart if dre_smart else 'OPERACIONAL'
 
-                            # D. Define o Banco Final
-                            # Prioridade: Excel (Nome do Banco) > Inteligência > None
+                            # Banco
                             bank_account = None
                             if pd.notna(row.get('bank_account')):
-                                bank_name_excel = str(row.get('bank_account')).strip()
-                                bank_account = BankAccount.objects.filter(user=request.user, bank_name__icontains=bank_name_excel).first()
-                            
-                            if not bank_account and bank_smart:
-                                bank_account = bank_smart
+                                bank_name = str(row.get('bank_account')).strip()
+                                bank_account = BankAccount.objects.filter(user=request.user, bank_name__icontains=bank_name).first()
+                            if not bank_account and bank_smart: bank_account = bank_smart
 
-                            # 3. Criação do Objeto
-                            # -----------------------------------------------------------
-                            PayableAccount.objects.create(
-                                user=request.user, 
-                                name=name, 
-                                description=description,
-                                due_date=due_date, 
-                                amount=amount, 
-                                category=category, 
-                                centro_custo=centro_custo,
-                                bank_account=bank_account, # Banco Inteligente ou do Excel
-                                dre_area=dre_final,        # DRE Inteligente ou Padrão
-                                payment_method=payment_method,
-                                cost_type=cost_type_value, 
-                                occurrence='AVULSO', 
-                                is_paid=False
-                            )
-                            successful_imports += 1
+                            # --- 3. LÓGICA DE STATUS (Pago ou Aberto) ---
+                            is_paid_bool = False
+                            payment_date_final = None
+                            
+                            # Verifica se existe coluna de status/ações e se o valor indica pagamento
+                            if 'status_check' in df.columns and pd.notna(row['status_check']):
+                                status_val = str(row['status_check']).strip().lower()
+                                # Palavras-chave que indicam conta PAGA
+                                if status_val in ['pago', 'quitado', 'baixado', 'sim', 'ok', 'recebido', 'liquidado']:
+                                    is_paid_bool = True
+                            
+                            # Se estiver pago, define a data do pagamento
+                            if is_paid_bool:
+                                # Prioridade 1: Coluna "Data Pagamento" da planilha
+                                if 'payment_date_real' in df.columns and pd.notna(row['payment_date_real']):
+                                    payment_date_final = pd.to_datetime(row['payment_date_real'], errors='coerce', dayfirst=True).date()
+                                
+                                # Prioridade 2: Se não tiver data na planilha, usa o Vencimento ou Hoje
+                                if not payment_date_final:
+                                    payment_date_final = due_date
+
+                            # 4. Criação com Anti-Duplicidade
+                            # Verifica se já existe conta com mesmo Fornecedor, Vencimento e Valor
+                            already_exists = PayableAccount.objects.filter(
+                                user=request.user,
+                                name=name,
+                                due_date=due_date,
+                                amount=amount
+                            ).exists()
+
+                            if not already_exists:
+                                PayableAccount.objects.create(
+                                    user=request.user, 
+                                    name=name, 
+                                    description=description,
+                                    due_date=due_date, 
+                                    amount=amount, 
+                                    category=category, 
+                                    centro_custo=centro_custo,
+                                    bank_account=bank_account,
+                                    dre_area=dre_final,
+                                    payment_method=payment_method,
+                                    cost_type=cost_type_value, 
+                                    occurrence='AVULSO', 
+                                    is_paid=is_paid_bool,
+                                    payment_date=payment_date_final
+                                )
+                                successful_imports += 1
 
                         except Exception as e:
                             failed_rows.append(f"Linha {excel_row_number}: {e}")
 
                 if successful_imports > 0:
-                    messages.success(request, f"{successful_imports} conta(s) foi(ram) importada(s) com sucesso!")
+                    messages.success(request, f"{successful_imports} conta(s) importada(s) com sucesso!")
                 
                 if failed_rows:
-                    error_details = "; ".join(failed_rows)
-                    messages.error(request, f"Falha ao importar {len(failed_rows)} linha(s). Detalhes: {error_details}")
+                    # Limita a mostrar apenas os 3 primeiros erros para não poluir a tela
+                    error_msg = "; ".join(failed_rows[:3])
+                    if len(failed_rows) > 3: error_msg += "..."
+                    messages.error(request, f"Falha em {len(failed_rows)} linha(s). Ex: {error_msg}")
                 
                 if successful_imports == 0 and not failed_rows:
-                    messages.warning(request, "A planilha foi processada, mas nenhuma linha válida para importação foi encontrada.")
+                    messages.warning(request, "Nenhuma linha válida encontrada.")
 
             except Exception as e:
-                messages.error(request, f"Ocorreu um erro geral ao processar o arquivo: {e}")
+                messages.error(request, f"Erro ao processar arquivo: {e}")
 
             return redirect(redirect_url)
-        # --- FIM DO BLOCO DE SUBSTITUIÇÃO ---
 
 
         if 'action_pay' in request.POST:
@@ -2741,8 +2741,6 @@ def contas_receber(request):
         redirect_query_string = query_params.urlencode()
         redirect_url = f"{request.path}?{redirect_query_string}"
         # --- FIM DA LÓGICA DE REDIRECIONAMENTO ---
-        # --- FIM DA CORREÇÃO ---
-        # ▼▼▼ SUBSTITUA O BLOCO 'import_excel' INTEIRO POR ESTE NOVO BLOCO CORRIGIDO ▼▼▼
         if request.POST.get('action') == 'import_excel':
             excel_file = request.FILES.get('excel_file')
             if not excel_file:
@@ -2752,33 +2750,34 @@ def contas_receber(request):
             try:
                 df = pd.read_excel(excel_file)
                 
+                # --- NOVO MAPA DE COLUNAS MAIS INTELIGENTE (RECEBER) ---
                 column_map = {
-                    'nome': 'name', 'cliente': 'name', 'fornecedor': 'name',
+                    'nome': 'name', 'cliente': 'name', 'pagador': 'name',
+                    'vencimento': 'due_date', 'data de vencimento': 'due_date',
+                    'valor': 'amount', 'valor total': 'amount', 'recebimento': 'amount',
+                    
                     'descrição': 'description', 'histórico': 'description',
-                    'vencimento': 'due_date', 'data do pagamento': 'due_date', 'data do vencimento': 'due_date',
-                    'valor': 'amount', 'pagamento': 'amount',
-                    'categoria': 'category',
+                    'categoria': 'category', 'plano de contas': 'category',
                     'conta bancária': 'bank_account', 'banco': 'bank_account',
                     'forma de pagamento': 'payment_method',
+                    
+                    # Colunas de Controle
+                    'status': 'status_check', 'situação': 'status_check', 'ações': 'status_check', 'recebido?': 'status_check',
+                    'data do recebimento': 'payment_date_real', 'data recebimento': 'payment_date_real', 'data baixa': 'payment_date_real'
                 }
 
-                # --- INÍCIO DA CORREÇÃO DA MENSAGEM DE ERRO ---
                 friendly_names_map = {
-                    'name': "'Nome', 'Cliente' ou 'Fornecedor'",
-                    'due_date': "'Vencimento', 'Data do pagamento' ou 'Data do vencimento'",
-                    'amount': "'Valor' ou 'Pagamento'"
+                    'name': "'Nome', 'Cliente' ou 'Pagador'",
+                    'due_date': "'Vencimento' ou 'Data de Vencimento'",
+                    'amount': "'Valor' ou 'Valor Recebido'"
                 }
                 
-                # Renomeia as colunas da planilha para os nomes internos.
                 df.rename(columns={col: column_map.get(str(col).strip().lower()) for col in df.columns}, inplace=True)
 
-                # Verifica se os nomes internos obrigatórios foram criados após o renomeio.
                 required_internal_names = {'name', 'due_date', 'amount'}
                 for internal_name in required_internal_names:
                     if internal_name not in df.columns:
-                        # Se não foi criado, lança um erro com a mensagem amigável.
-                        raise ValueError(f"A coluna obrigatória {friendly_names_map[internal_name]} não foi encontrada. Verifique os nomes das colunas da sua planilha.")
-                # --- FIM DA CORREÇÃO DA MENSAGEM DE ERRO ---
+                        raise ValueError(f"A coluna obrigatória {friendly_names_map[internal_name]} não foi encontrada.")
 
                 successful_imports = 0
                 failed_rows = []
@@ -2790,78 +2789,92 @@ def contas_receber(request):
                             # 1. Tratamento Básico
                             name = str(row['name']).strip()
                             description = str(row.get('description', 'Importado via Excel'))
-                            
                             due_date = pd.to_datetime(row['due_date'], errors='coerce', dayfirst=True).date()
-                            if pd.isnull(due_date):
-                                raise ValueError("Formato de data inválido.")
-
-                            amount_str = str(row['amount']).replace(',', '.')
-                            amount = float(amount_str)
-                            
+                            if pd.isnull(due_date): raise ValueError("Formato de data inválido.")
+                            amount = float(str(row['amount']).replace(',', '.'))
                             payment_method = str(row.get('payment_method', 'BOLETO')).strip().upper()
 
-                            # 2. Lógica Inteligente (Categoria, DRE, Banco)
-                            # -----------------------------------------------------------
-                            
-                            # A. Previsão
+                            # 2. Inteligência
                             cat_smart, dre_smart, bank_smart, _ = prever_classificacao(request.user, name, 'RECEIVABLE')
 
-                            # B. Categoria
+                            # Categoria
                             category = None
                             if pd.notna(row.get('category')):
-                                cat_name_excel = str(row.get('category')).strip()
-                                category, _ = Category.objects.get_or_create(name=cat_name_excel, category_type='RECEIVABLE', user=request.user)
-                            elif cat_smart:
-                                category = cat_smart
-                            else:
-                                category, _ = Category.objects.get_or_create(name='Receitas Gerais', category_type='RECEIVABLE', user=request.user)
+                                cat_name = str(row.get('category')).strip()
+                                category, _ = Category.objects.get_or_create(name=cat_name, category_type='RECEIVABLE', user=request.user)
+                            elif cat_smart: category = cat_smart
+                            else: category, _ = Category.objects.get_or_create(name='Receitas Gerais', category_type='RECEIVABLE', user=request.user)
 
-                            # C. DRE
                             dre_final = dre_smart if dre_smart else 'BRUTA'
 
-                            # D. Banco
+                            # Banco
                             bank_account = None
                             if pd.notna(row.get('bank_account')):
-                                bank_name_excel = str(row.get('bank_account')).strip()
-                                bank_account = BankAccount.objects.filter(user=request.user, bank_name__icontains=bank_name_excel).first()
-                            
-                            if not bank_account and bank_smart:
-                                bank_account = bank_smart
+                                bank_name = str(row.get('bank_account')).strip()
+                                bank_account = BankAccount.objects.filter(user=request.user, bank_name__icontains=bank_name).first()
+                            if not bank_account and bank_smart: bank_account = bank_smart
 
-                            # 3. Criação
-                            ReceivableAccount.objects.create(
-                                user=request.user, 
-                                name=name, 
-                                description=description,
-                                due_date=due_date, 
-                                amount=amount, 
-                                category=category, 
-                                bank_account=bank_account, # Banco Inteligente
-                                dre_area=dre_final,        # DRE Inteligente
-                                payment_method=payment_method,
-                                occurrence='AVULSO',
-                                is_received=False
-                            )
-                            successful_imports += 1
+                            # --- 3. LÓGICA DE STATUS (Recebido ou Aberto) ---
+                            is_received_bool = False
+                            payment_date_final = None
+                            
+                            if 'status_check' in df.columns and pd.notna(row['status_check']):
+                                status_val = str(row['status_check']).strip().lower()
+                                # Palavras-chave para RECEBIDO
+                                if status_val in ['recebido', 'pago', 'quitado', 'baixado', 'sim', 'ok', 'liquidado']:
+                                    is_received_bool = True
+                            
+                            if is_received_bool:
+                                if 'payment_date_real' in df.columns and pd.notna(row['payment_date_real']):
+                                    payment_date_final = pd.to_datetime(row['payment_date_real'], errors='coerce', dayfirst=True).date()
+                                
+                                if not payment_date_final:
+                                    payment_date_final = due_date
+
+                            # 4. Criação com Anti-Duplicidade
+                            # Verifica se já existe conta com mesmo Cliente, Vencimento e Valor
+                            already_exists = ReceivableAccount.objects.filter(
+                                user=request.user,
+                                name=name,
+                                due_date=due_date,
+                                amount=amount
+                            ).exists()
+
+                            if not already_exists:
+                                ReceivableAccount.objects.create(
+                                    user=request.user, 
+                                    name=name, 
+                                    description=description,
+                                    due_date=due_date, 
+                                    amount=amount, 
+                                    category=category, 
+                                    bank_account=bank_account,
+                                    dre_area=dre_final,
+                                    payment_method=payment_method,
+                                    occurrence='AVULSO',
+                                    is_received=is_received_bool,
+                                    payment_date=payment_date_final
+                                )
+                                successful_imports += 1
 
                         except Exception as e:
                             failed_rows.append(f"Linha {excel_row_number}: {e}")
 
                 if successful_imports > 0:
-                    messages.success(request, f"{successful_imports} conta(s) foi(ram) importada(s) com sucesso!")
+                    messages.success(request, f"{successful_imports} conta(s) importada(s) com sucesso!")
                 
                 if failed_rows:
-                    error_details = "; ".join(failed_rows)
-                    messages.error(request, f"Falha ao importar {len(failed_rows)} linha(s). Detalhes: {error_details}")
+                    error_msg = "; ".join(failed_rows[:3])
+                    if len(failed_rows) > 3: error_msg += "..."
+                    messages.error(request, f"Falha em {len(failed_rows)} linha(s). Ex: {error_msg}")
                 
                 if successful_imports == 0 and not failed_rows:
-                    messages.warning(request, "A planilha foi processada, mas nenhuma linha válida para importação foi encontrada.")
+                    messages.warning(request, "Nenhuma linha válida encontrada.")
 
             except Exception as e:
-                messages.error(request, f"Ocorreu um erro geral ao processar o arquivo: {e}")
+                messages.error(request, f"Erro ao processar arquivo: {e}")
 
             return redirect(redirect_url)
-        # --- FIM DO BLOCO DE SUBSTITUIÇÃO ---
         # ▼▼▼ ADICIONE ESTE BLOCO ▼▼▼
         elif 'action_attach' in request.POST and 'file' in request.FILES:
             account_id = request.POST.get('attach_account_id')
