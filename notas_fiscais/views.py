@@ -123,54 +123,47 @@ def emitir_nota_view(request, venda_id):
                     # Monta dados do Prestador dinamicamente
                     prestador_data = {
                         "cnpj": cnpj_emitente,
-                        "inscricao_municipal": im_emitente,  # <-- Lê do banco de dados
-                        "codigo_municipio": cod_mun_emitente, # <-- Lê do banco de dados
-                        "iss_retido": False, # (Futuramente pode vir do cadastro do Cliente)
-                        
-                        # Lê a configuração fiscal do Perfil
+                        "inscricao_municipal": im_emitente,
+                        "codigo_municipio": cod_mun_emitente,
+                        "iss_retido": False,
                         "optante_simples_nacional": perfil.optante_simples_nacional,
                         "incentivador_cultural": perfil.incentivador_cultural,
                     }
 
-                    # Lógica do Regime Especial:
-                    # Só envia se tiver valor e não for "0" (Nenhum)
                     if perfil.regime_especial_tributacao and perfil.regime_especial_tributacao != '0':
                         prestador_data["regime_especial_tributacao"] = perfil.regime_especial_tributacao
 
                     # Monta dados do Serviço
                     servico_data = {
                         "item_lista_servico": cod_servico,
-                        "discriminacao": discriminacao,
+                        "discriminacao": discriminacao[:2000], # Limite Focus
                         "valor_servicos": float(venda.valor_total_liquido),
                     }
 
-                    # Lógica da Alíquota:
-                    # Padrão Focus: Se for Simples Nacional, NÃO manda alíquota (prefeitura calcula).
-                    # Se for Lucro Presumido/Real (Não optante), TEM que mandar.
                     if not perfil.optante_simples_nacional:
                         servico_data["aliquota"] = float(perfil.aliquota_iss or 2.0)
 
+                    # --- MONTAGEM DO PAYLOAD FINAL ---
                     dados_api = {
                         "data_emissao": timezone.now().strftime("%Y-%m-%dT%H:%M:%S"),
-                        "serie_rps": "1", # Padrão de mercado. Se quiser dinâmico, crie campo no CompanyProfile.
-                        "natureza_operacao": "1", # 1=Tributação no município (Padrão mais comum)
+                        "serie_rps": "1",
+                        "natureza_operacao": "1",
                         "prestador": prestador_data,
                         "tomador": {
                              "cnpj_cpf": re.sub(r'\D', '', cliente.cpf_cnpj or ''),
-                             "razao_social": cliente.razao_social or cliente.nome,
+                             "razao_social": (cliente.razao_social or cliente.nome)[:115],
                              "email": cliente.email,
                              "endereco": {
                                 "logradouro": cliente.logradouro,
                                 "numero": cliente.numero,
                                 "bairro": cliente.bairro,
-                                "cep": cliente.cep.replace("-", ""),
+                                "cep": re.sub(r'\D', '', cliente.cep or ''), # CORREÇÃO: Limpeza total do CEP
                                 "codigo_municipio": cliente.codigo_municipio,
                                 "uf": cliente.uf
                             }
                         },
                         "servico": servico_data
                     }
-
                 # ==========================================================
                 # LÓGICA B: EMISSÃO DE NOTA DE PRODUTO (NF-e)
                 # ==========================================================
