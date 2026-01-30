@@ -1950,7 +1950,28 @@ def importar_ofx_view(request):
                 # Corrige erro "Empty transaction name" preenchendo tags vazias
                 content = re.sub(r'<NAME>\s*</NAME>', '<NAME>Nao Informado</NAME>', content, flags=re.IGNORECASE)
                 # ▲▲▲▲▲▲▲▲▲▲ FIM DA CORREÇÃO ▲▲▲▲▲▲▲▲▲▲    
+                # --- CORREÇÃO ESPECÍFICA PARA PAGBANK (SALDO COM R$) ---
+                # Esta função limpa o valor dentro da tag <BALAMT> para o OfxParser não falhar
+                def limpar_valor_pagbank(match):
+                    v = match.group(1)
+                    # Remove R$, espaços em branco e acerta a vírgula decimal
+                    v = v.replace('R$', '').replace(' ', '').replace('\xa0', '').replace(',', '.')
+                    return f'<BALAMT>{v.strip()}</BALAMT>'
 
+                content = re.sub(r'<BALAMT>(.*?)</BALAMT>', limpar_valor_pagbank, content, flags=re.IGNORECASE | re.DOTALL)
+                # -------------------------------------------------------
+                # 3. NOVO: Corrige o formato da data DTASOF
+                def corrigir_data_pagbank(match):
+                    data_str = match.group(1).strip()
+                    if '/' in data_str:
+                        try:
+                            d, m, y = data_str.split('/')
+                            return f'<DTASOF>{y}{m}{d}</DTASOF>'
+                        except:
+                            return match.group(0)
+                    return match.group(0)
+                content = re.sub(r'<DTASOF>(.*?)</DTASOF>', corrigir_data_pagbank, content, flags=re.IGNORECASE | re.DOTALL)
+                
                 if not content.strip().startswith('<OFX'):
                      content = re.sub(r'^OFXHEADER:.*?(?=<)', '', content, flags=re.MULTILINE | re.DOTALL)
                      content = re.sub(r'(<[A-Z/][^>]*>)\s*([^<]+)\s*(?=<|$)', r'\1\2</\1>', content)
