@@ -579,12 +579,31 @@ def company_profile_view(request):
                 return redirect('company_profile')
 
         # ... (resto do código de documentos/anexar continua igual) ...
+        # --- Lógica de Anexo de Documentos ---
         elif 'upload_document' in request.POST:
-             # ... (código existente)
-             pass
+            # IMPORTANTE: request.FILES é obrigatório para capturar o arquivo
+            doc_form = CompanyDocumentForm(request.POST, request.FILES)
+            
+            if doc_form.is_valid():
+                documento = doc_form.save(commit=False)
+                documento.user = request.user  # Associa o documento ao usuário logado
+                documento.save()
+                messages.success(request, 'Documento anexado com sucesso!')
+                return redirect('company_profile')
+            else:
+                messages.error(request, 'Erro ao anexar documento. Verifique os campos.')
+        # --- Lógica de Exclusão de Documentos ---
         elif 'delete_document' in request.POST:
-             # ... (código existente)
-             pass
+            doc_id = request.POST.get('document_id')
+            if doc_id:
+                try:
+                    # Garante que o usuário só apague os próprios documentos
+                    documento = CompanyDocument.objects.get(id=doc_id, user=request.user)
+                    documento.delete()
+                    messages.success(request, 'Documento excluído com sucesso!')
+                except CompanyDocument.DoesNotExist:
+                    messages.error(request, 'Documento não encontrado.')
+            return redirect('company_profile')
 
     # else:
     #     # Não é necessário inicializar aqui pois já foi feito no início

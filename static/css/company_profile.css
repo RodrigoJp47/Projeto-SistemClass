@@ -393,7 +393,14 @@ input:checked+.slider:before {
     transform: translateY(-1px);
 }
 
+/* Isso garante que o botão fique na base dos inputs */
+.file-upload-row {
+    align-items: flex-end !important;
+}
 
+.file-upload-row .btn {
+    margin-bottom: 5px; /* Ajuste fino conforme sua necessidade */
+}
 /* ==========================================================================
    RESPONSIVIDADE (MOBILE & TABLET) - VERSÃO CORRIGIDA
    ========================================================================== */
