@@ -19,9 +19,9 @@ def gerar_excel_generic(queryset, tipo_relatorio):
     # Define cabeçalhos baseados no tipo
     # Adicionadas as colunas novas aqui também para manter consistência
     if tipo_relatorio == 'pagar':
-        headers = ['Nome', 'Descrição', 'Vencimento', 'Valor', 'Status', 'Categoria','Centro de Custo', 'Banco', 'Forma Pag.']
+        headers = ['Nome', 'Descrição', 'Vencimento', 'Valor', 'Status', 'Categoria', 'Área-DRE', 'Centro de Custo', 'Banco', 'Forma Pag.']
     else: # receber
-        headers = ['Nome', 'Descrição', 'Vencimento', 'Valor', 'Status', 'Categoria','Centro de Custo', 'Banco', 'Forma Pag.']
+        headers = ['Nome', 'Descrição', 'Vencimento', 'Valor', 'Status', 'Categoria', 'Área-DRE', 'Centro de Custo', 'Banco', 'Forma Pag.']
 
     ws.append(headers)
     
@@ -41,7 +41,7 @@ def gerar_excel_generic(queryset, tipo_relatorio):
         c_custo = str(conta.centro_custo.nome) if hasattr(conta, 'centro_custo') and conta.centro_custo else "-"
         # Pega a forma de pagamento legível (ex: "Boleto" em vez de "BOLETO")
         forma_pag = conta.get_payment_method_display() if hasattr(conta, 'get_payment_method_display') else conta.payment_method
-
+        dre_area = conta.get_dre_area_display() if hasattr(conta, 'get_dre_area_display') else "-"
         row = [
             conta.name,
             conta.description,
@@ -49,6 +49,7 @@ def gerar_excel_generic(queryset, tipo_relatorio):
             conta.amount,
             status_text,
             categoria,
+            dre_area,
             c_custo,
             banco,
             forma_pag
@@ -62,13 +63,9 @@ def gerar_pdf_generic(queryset, tipo_relatorio):
     response = HttpResponse(content_type='application/pdf')
     filename = f"relatorio_{tipo_relatorio}_{timezone.now().strftime('%d_%m_%Y')}.pdf"
     response['Content-Disposition'] = f'inline; filename="{filename}"' 
-    # Mudei para 'inline' para abrir no navegador ao invés de baixar direto, se preferir baixar use 'attachment'
 
-    # Define o título do texto
     titulo_texto = "Contas a Pagar" if tipo_relatorio == 'pagar' else "Contas a Receber"
 
-    # --- CORREÇÃO DO TÍTULO DA ABA/VISUALIZADOR ---
-    # O parâmetro 'title' aqui define o que aparece na aba do navegador e no topo do PDF viewer
     doc = SimpleDocTemplate(
         response, 
         pagesize=landscape(A4), 
@@ -78,13 +75,11 @@ def gerar_pdf_generic(queryset, tipo_relatorio):
     elements = []
     styles = getSampleStyleSheet()
 
-    # Título no corpo do PDF
     elements.append(Paragraph(f"Relatório de {titulo_texto}", styles['Title']))
     elements.append(Spacer(1, 12))
 
-    # --- ATUALIZAÇÃO DAS COLUNAS ---
-    # Adicionados: Descrição, Banco, Forma Pag.
-    headers = ['Nome', 'Descrição', 'Vencimento', 'Valor', 'Status', 'Categoria', 'C. Custo', 'Banco', 'Forma']
+    # --- ATUALIZAÇÃO: AGORA COM 10 COLUNAS ---
+    headers = ['Nome', 'Desc.', 'Venc.', 'Valor', 'Status', 'Cat.', 'DRE', 'C. Custo', 'Banco', 'Forma']
     data = [headers]
 
     total = 0
@@ -99,13 +94,17 @@ def gerar_pdf_generic(queryset, tipo_relatorio):
         c_custo = str(conta.centro_custo.nome) if hasattr(conta, 'centro_custo') and conta.centro_custo else "-"
         banco = str(conta.bank_account) if conta.bank_account else "-"
         forma_pag = conta.get_payment_method_display() if hasattr(conta, 'get_payment_method_display') else conta.payment_method
+        
+        # Obtendo o texto amigável da Área-DRE
+        dre_area = conta.get_dre_area_display() if hasattr(conta, 'get_dre_area_display') else "-"
 
-        # Truncar textos longos para não quebrar a tabela
-        nome_curto = conta.name[:20] + '...' if len(conta.name) > 20 else conta.name
-        desc_curta = conta.description[:25] + '...' if len(conta.description) > 25 else conta.description
-        cat_curta = categoria[:15]
-        cc_curto = c_custo[:15]
-        banco_curto = banco[:15]
+        # Truncar textos para manter a integridade visual da tabela
+        nome_curto = conta.name[:18] + '..' if len(conta.name) > 18 else conta.name
+        desc_curta = conta.description[:20] + '..' if len(conta.description) > 20 else conta.description
+        cat_curta = categoria[:12]
+        dre_curta = dre_area[:12]
+        cc_curto = c_custo[:12]
+        banco_curto = banco[:12]
 
         data.append([
             nome_curto,
@@ -114,18 +113,19 @@ def gerar_pdf_generic(queryset, tipo_relatorio):
             f"R$ {conta.amount:,.2f}",
             status_text,
             cat_curta,
+            dre_curta,
             cc_curto,
             banco_curto,
             forma_pag
         ])
         total += conta.amount
 
-    # Linha de Total (Ajustada para a nova quantidade de colunas - 8 colunas no total)
-    # Colocamos o label "TOTAL:" na coluna 2 (Vencimento) e o valor na coluna 3 (Valor)
-    data.append(['', '', 'TOTAL:', f"R$ {total:,.2f}", '', '', '', ''])
+    # Linha de Total ajustada para 10 colunas
+    # TOTAL: na coluna de índice 2 e valor na coluna de índice 3
+    data.append(['', '', 'TOTAL:', f"R$ {total:,.2f}", '', '', '', '', '', ''])
 
-    # --- AJUSTE DE LARGURA DAS COLUNAS ---
-    col_widths = [110, 130, 60, 75, 45, 80, 80, 80, 60]
+    # --- AJUSTE DE LARGURA DAS COLUNAS (Soma total ~780 pontos para caber no A4 Landscape) ---
+    col_widths = [95, 110, 60, 80, 45, 75, 80, 80, 85, 65]
 
     table = Table(data, colWidths=col_widths)
     
@@ -134,7 +134,7 @@ def gerar_pdf_generic(queryset, tipo_relatorio):
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
         ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, -1), 8), # Reduzi a fonte para 8 para caber mais texto
+        ('FONTSIZE', (0, 0), (-1, -1), 7), # Reduzido para 7 para garantir que os dados caibam
         ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
         ('BACKGROUND', (0, 1), (-1, -2), colors.beige),
         ('GRID', (0, 0), (-1, -1), 1, colors.black),
@@ -142,7 +142,7 @@ def gerar_pdf_generic(queryset, tipo_relatorio):
         # Estilo para a linha de total
         ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
         ('BACKGROUND', (0, -1), (-1, -1), colors.lightgrey),
-        ('ALIGN', (2, -1), (2, -1), 'RIGHT'), # Alinha a palavra "TOTAL:" à direita
+        ('ALIGN', (2, -1), (2, -1), 'RIGHT'), 
     ])
     table.setStyle(style)
     elements.append(table)

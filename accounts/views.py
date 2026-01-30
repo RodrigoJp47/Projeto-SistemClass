@@ -2280,27 +2280,29 @@ def contas_pagar(request):
             try:
                 df = pd.read_excel(excel_file)
                 
-                # --- NOVO MAPA DE COLUNAS MAIS INTELIGENTE ---
+                # --- MAPA DE COLUNAS ATUALIZADO ---
                 column_map = {
-                    # Obrigatórios / Básicos
+                    # Básicos
                     'nome': 'name', 'cliente': 'name', 'fornecedor': 'name', 'favorecido': 'name',
                     'vencimento': 'due_date', 'data de vencimento': 'due_date', 'data vencimento': 'due_date',
                     'valor': 'amount', 'valor total': 'amount', 'pagamento': 'amount',
                     
-                    # Opcionais de Texto
+                    # Opcionais
                     'descrição': 'description', 'histórico': 'description', 'observação': 'description',
                     'categoria': 'category', 'plano de contas': 'category',
                     'centro de custo': 'centro_custo', 'centro custo': 'centro_custo',
-                    'conta bancária': 'bank_account', 'banco': 'bank_account', 'conta': 'bank_account',
-                    'forma de pagamento': 'payment_method', 'forma pgto': 'payment_method',
+                    'conta bancária': 'bank_account', 'banco': 'bank_account',
+                    'forma de pagamento': 'payment_method', 'forma pgto': 'payment_method', 'forma pag.': 'payment_method',
                     'custo': 'cost_type', 'tipo de custo': 'cost_type',
                     
-                    # --- NOVAS COLUNAS PARA STATUS E BAIXA ---
+                    # [NOVO] Coluna DRE
+                    'área dre': 'dre_area', 'area dre': 'dre_area', 'área-dre': 'dre_area', 'dre': 'dre_area',
+                    
+                    # Status e Baixa
                     'status': 'status_check', 'situação': 'status_check', 'ações': 'status_check', 'pago?': 'status_check',
                     'data do pagamento': 'payment_date_real', 'data pagamento': 'payment_date_real', 'data baixa': 'payment_date_real'
                 }
 
-                # ... (Lógica de mensagens de erro amigáveis continua igual) ...
                 friendly_names_map = {
                     'name': "'Nome', 'Fornecedor' ou 'Favorecido'",
                     'due_date': "'Vencimento' ou 'Data de Vencimento'",
@@ -2329,12 +2331,16 @@ def contas_pagar(request):
                             if pd.isnull(due_date): raise ValueError("Formato de data de vencimento inválido.")
 
                             amount = float(str(row['amount']).replace(',', '.'))
-                            payment_method = str(row.get('payment_method', 'BOLETO')).strip().upper()
+
+                            # AJUSTE AQUI: Prioriza a planilha, se vazia usa BOLETO
+                            val_planilha = row.get('payment_method')
+                            payment_method = str(val_planilha).strip().upper() if pd.notna(val_planilha) else 'BOLETO'
+
                             cost_type_value = str(row.get('cost_type', 'FIXO')).strip().upper()
                             if cost_type_value not in ['FIXO', 'VARIAVEL']: cost_type_value = 'FIXO'
 
-                            # 2. Lógica Inteligente (Previsão, Categoria, CC, Banco)
-                            # Nota: Use _, no final para ignorar o 4º valor se sua função retornar 4
+                            # 2. Inteligência e Classificação
+                            # (Lembra da correção do 4º valor? Mantive ela aqui: "_,")
                             cat_smart, dre_smart, bank_smart, _ = prever_classificacao(request.user, name, 'PAYABLE')
 
                             # Categoria
@@ -2351,7 +2357,17 @@ def contas_pagar(request):
                                 cc_name = str(row.get('centro_custo')).strip()
                                 centro_custo, _ = CentroCusto.objects.get_or_create(nome=cc_name, user=request.user)
 
-                            dre_final = dre_smart if dre_smart else 'OPERACIONAL'
+                            # [LÓGICA DRE ATUALIZADA]
+                            # 1. Tenta pegar da planilha
+                            # 2. Se não tiver, tenta da inteligência
+                            # 3. Se não tiver, usa padrão
+                            dre_final = 'OPERACIONAL' # Padrão
+                            
+                            if pd.notna(row.get('dre_area')):
+                                # Pega do Excel (ex: "FINANCEIRA", "PESSOAL")
+                                dre_final = str(row.get('dre_area')).strip().upper() 
+                            elif dre_smart:
+                                dre_final = dre_smart
 
                             # Banco
                             bank_account = None
@@ -2360,52 +2376,37 @@ def contas_pagar(request):
                                 bank_account = BankAccount.objects.filter(user=request.user, bank_name__icontains=bank_name).first()
                             if not bank_account and bank_smart: bank_account = bank_smart
 
-                            # --- 3. LÓGICA DE STATUS (Pago ou Aberto) ---
+                            # 3. Status e Data
                             is_paid_bool = False
                             payment_date_final = None
                             
-                            # Verifica se existe coluna de status/ações e se o valor indica pagamento
                             if 'status_check' in df.columns and pd.notna(row['status_check']):
                                 status_val = str(row['status_check']).strip().lower()
-                                # Palavras-chave que indicam conta PAGA
                                 if status_val in ['pago', 'quitado', 'baixado', 'sim', 'ok', 'recebido', 'liquidado']:
                                     is_paid_bool = True
                             
-                            # Se estiver pago, define a data do pagamento
                             if is_paid_bool:
-                                # Prioridade 1: Coluna "Data Pagamento" da planilha
                                 if 'payment_date_real' in df.columns and pd.notna(row['payment_date_real']):
                                     payment_date_final = pd.to_datetime(row['payment_date_real'], errors='coerce', dayfirst=True).date()
-                                
-                                # Prioridade 2: Se não tiver data na planilha, usa o Vencimento ou Hoje
                                 if not payment_date_final:
                                     payment_date_final = due_date
 
-                            # 4. Criação com Anti-Duplicidade
-                            # Verifica se já existe conta com mesmo Fornecedor, Vencimento e Valor
+                            # 4. Anti-Duplicidade
                             already_exists = PayableAccount.objects.filter(
-                                user=request.user,
-                                name=name,
-                                due_date=due_date,
-                                amount=amount
+                                user=request.user, name=name, due_date=due_date, amount=amount
                             ).exists()
 
                             if not already_exists:
                                 PayableAccount.objects.create(
                                     user=request.user, 
-                                    name=name, 
-                                    description=description,
-                                    due_date=due_date, 
-                                    amount=amount, 
-                                    category=category, 
-                                    centro_custo=centro_custo,
+                                    name=name, description=description,
+                                    due_date=due_date, amount=amount, 
+                                    category=category, centro_custo=centro_custo,
                                     bank_account=bank_account,
-                                    dre_area=dre_final,
-                                    payment_method=payment_method,
-                                    cost_type=cost_type_value, 
+                                    dre_area=dre_final, # <--- CAMPO IMPORTADO OU PREVISTO
+                                    payment_method=payment_method, cost_type=cost_type_value, 
                                     occurrence='AVULSO', 
-                                    is_paid=is_paid_bool,
-                                    payment_date=payment_date_final
+                                    is_paid=is_paid_bool, payment_date=payment_date_final
                                 )
                                 successful_imports += 1
 
@@ -2416,13 +2417,12 @@ def contas_pagar(request):
                     messages.success(request, f"{successful_imports} conta(s) importada(s) com sucesso!")
                 
                 if failed_rows:
-                    # Limita a mostrar apenas os 3 primeiros erros para não poluir a tela
                     error_msg = "; ".join(failed_rows[:3])
                     if len(failed_rows) > 3: error_msg += "..."
                     messages.error(request, f"Falha em {len(failed_rows)} linha(s). Ex: {error_msg}")
                 
                 if successful_imports == 0 and not failed_rows:
-                    messages.warning(request, "Nenhuma linha válida encontrada.")
+                    messages.warning(request, "Nenhuma linha válida encontrada (ou todas já existiam).")
 
             except Exception as e:
                 messages.error(request, f"Erro ao processar arquivo: {e}")
@@ -2750,7 +2750,7 @@ def contas_receber(request):
             try:
                 df = pd.read_excel(excel_file)
                 
-                # --- NOVO MAPA DE COLUNAS MAIS INTELIGENTE (RECEBER) ---
+                # --- MAPA DE COLUNAS ATUALIZADO (RECEBER) ---
                 column_map = {
                     'nome': 'name', 'cliente': 'name', 'pagador': 'name',
                     'vencimento': 'due_date', 'data de vencimento': 'due_date',
@@ -2759,9 +2759,12 @@ def contas_receber(request):
                     'descrição': 'description', 'histórico': 'description',
                     'categoria': 'category', 'plano de contas': 'category',
                     'conta bancária': 'bank_account', 'banco': 'bank_account',
-                    'forma de pagamento': 'payment_method',
+                    'forma de pagamento': 'payment_method', 'forma pag.': 'payment_method',
                     
-                    # Colunas de Controle
+                    # [NOVO] Coluna DRE
+                    'área dre': 'dre_area', 'area dre': 'dre_area', 'área-dre': 'dre_area', 'dre': 'dre_area',
+                    
+                    # Status e Baixa
                     'status': 'status_check', 'situação': 'status_check', 'ações': 'status_check', 'recebido?': 'status_check',
                     'data do recebimento': 'payment_date_real', 'data recebimento': 'payment_date_real', 'data baixa': 'payment_date_real'
                 }
@@ -2792,7 +2795,10 @@ def contas_receber(request):
                             due_date = pd.to_datetime(row['due_date'], errors='coerce', dayfirst=True).date()
                             if pd.isnull(due_date): raise ValueError("Formato de data inválido.")
                             amount = float(str(row['amount']).replace(',', '.'))
-                            payment_method = str(row.get('payment_method', 'BOLETO')).strip().upper()
+
+                            # AJUSTE AQUI: Prioriza a planilha, se vazia usa BOLETO
+                            val_planilha = row.get('payment_method')
+                            payment_method = str(val_planilha).strip().upper() if pd.notna(val_planilha) else 'BOLETO'
 
                             # 2. Inteligência
                             cat_smart, dre_smart, bank_smart, _ = prever_classificacao(request.user, name, 'RECEIVABLE')
@@ -2805,7 +2811,13 @@ def contas_receber(request):
                             elif cat_smart: category = cat_smart
                             else: category, _ = Category.objects.get_or_create(name='Receitas Gerais', category_type='RECEIVABLE', user=request.user)
 
-                            dre_final = dre_smart if dre_smart else 'BRUTA'
+                            # [LÓGICA DRE ATUALIZADA]
+                            dre_final = 'BRUTA' # Padrão
+                            
+                            if pd.notna(row.get('dre_area')):
+                                dre_final = str(row.get('dre_area')).strip().upper()
+                            elif dre_smart:
+                                dre_final = dre_smart
 
                             # Banco
                             bank_account = None
@@ -2814,46 +2826,35 @@ def contas_receber(request):
                                 bank_account = BankAccount.objects.filter(user=request.user, bank_name__icontains=bank_name).first()
                             if not bank_account and bank_smart: bank_account = bank_smart
 
-                            # --- 3. LÓGICA DE STATUS (Recebido ou Aberto) ---
+                            # 3. Status
                             is_received_bool = False
                             payment_date_final = None
                             
                             if 'status_check' in df.columns and pd.notna(row['status_check']):
                                 status_val = str(row['status_check']).strip().lower()
-                                # Palavras-chave para RECEBIDO
                                 if status_val in ['recebido', 'pago', 'quitado', 'baixado', 'sim', 'ok', 'liquidado']:
                                     is_received_bool = True
                             
                             if is_received_bool:
                                 if 'payment_date_real' in df.columns and pd.notna(row['payment_date_real']):
                                     payment_date_final = pd.to_datetime(row['payment_date_real'], errors='coerce', dayfirst=True).date()
-                                
                                 if not payment_date_final:
                                     payment_date_final = due_date
 
-                            # 4. Criação com Anti-Duplicidade
-                            # Verifica se já existe conta com mesmo Cliente, Vencimento e Valor
+                            # 4. Criação
                             already_exists = ReceivableAccount.objects.filter(
-                                user=request.user,
-                                name=name,
-                                due_date=due_date,
-                                amount=amount
+                                user=request.user, name=name, due_date=due_date, amount=amount
                             ).exists()
 
                             if not already_exists:
                                 ReceivableAccount.objects.create(
                                     user=request.user, 
-                                    name=name, 
-                                    description=description,
-                                    due_date=due_date, 
-                                    amount=amount, 
-                                    category=category, 
-                                    bank_account=bank_account,
-                                    dre_area=dre_final,
-                                    payment_method=payment_method,
-                                    occurrence='AVULSO',
-                                    is_received=is_received_bool,
-                                    payment_date=payment_date_final
+                                    name=name, description=description,
+                                    due_date=due_date, amount=amount, 
+                                    category=category, bank_account=bank_account,
+                                    dre_area=dre_final, # <--- CAMPO IMPORTADO
+                                    payment_method=payment_method, occurrence='AVULSO',
+                                    is_received=is_received_bool, payment_date=payment_date_final
                                 )
                                 successful_imports += 1
 
@@ -2869,7 +2870,7 @@ def contas_receber(request):
                     messages.error(request, f"Falha em {len(failed_rows)} linha(s). Ex: {error_msg}")
                 
                 if successful_imports == 0 and not failed_rows:
-                    messages.warning(request, "Nenhuma linha válida encontrada.")
+                    messages.warning(request, "Nenhuma linha válida encontrada (ou todas já existiam).")
 
             except Exception as e:
                 messages.error(request, f"Erro ao processar arquivo: {e}")

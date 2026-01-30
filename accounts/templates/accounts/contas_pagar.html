@@ -202,6 +202,7 @@
                             <th>Data Pagamento</th>
                             <th>Valor</th>
                             <th>Categoria</th>
+                            <th>Área-DRE</th>
                             <th>Centro de Custo</th>
                             <th>Conta Bancária</th>
                             <th>Forma Pag.</th>
@@ -226,6 +227,7 @@
                             </td>
                             <td data-label="Valor">R$ {{ account.amount|intcomma }}</td>
                             <td data-label="Categoria">{{ account.category.name|default:"-" }}</td>
+                            <td data-label="Área-DRE">{{ account.get_dre_area_display|default:"-" }}</td>
                             <td data-label="Centro de Custo">{{ account.centro_custo.nome|default:"-" }}</td>
                             <td data-label="Conta Bancária">{{ account.bank_account|default:"-" }}</td>
                             <td data-label="Forma Pag.">{{ account.get_payment_method_display }}</td>
