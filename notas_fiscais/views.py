@@ -931,7 +931,7 @@ def emitir_nota_view(request, venda_id):
         return redirect('lista_notas_fiscais')
 
     if request.method == 'POST':
-        form = EmissaoNotaFiscalForm(request.POST)
+        form = EmissaoNotaFiscalForm(request.POST, eh_servico=eh_servico)
         if eh_servico:
             form.fields['natureza_operacao'].choices = form.CHOICES_NFSE
         if form.is_valid():
@@ -1032,39 +1032,46 @@ def emitir_nota_view(request, venda_id):
                     }
 
                     # ===== Grupo de valores/tributação (Padrão NFSe Nacional) =====
-                    # Ajuste rigoroso para evitar o erro 'Missing child element' no tribMun
+                   # Substitua o bloco anterior por este:
                     trib_mun = OrderedDict()
 
-                    # 1) Definir a Exigibilidade do ISS (Obrigatório no Padrão Nacional)
-                    # "1": Exigível; "2": Imune; "3": Isento; "4": Exportação...
-                    # Para a grande maioria dos serviços, usamos "1" (Exigível)
-                    trib_mun["tpRetISSQN"] = "3" if perfil.optante_simples_nacional else str(nfse_tp_ret_default())
-                    
-                    # 2) Campo CRÍTICO: exigISSQN (Exigibilidade do ISS)
-                    # Se este campo faltar, o tribMun é considerado incompleto
+                    # 1) Exigibilidade do ISS (DEVE SER O PRIMEIRO)
+                    # 1 = Exigível
                     trib_mun["exigISSQN"] = "1" 
 
-                    # 3) Alíquota e Base de Cálculo
+                    # 2) Tipo de Retenção
+                    # 3 = Simples Nacional
+                    trib_mun["tpRetISSQN"] = "3" if perfil.optante_simples_nacional else str(nfse_tp_ret_default())
+                    
+                    # 3) Alíquota (pAliq)
                     aliq = float(perfil.aliquota_iss or 0.0)
-                    if trib_mun["tpRetISSQN"] != "3" and aliq > 0:
+                    if aliq > 0:
                         trib_mun["pAliq"] = aliq
-                        trib_mun["vBC"] = valor_servico
+
+                    # 4) Base de Cálculo (vBC) - Obrigatório
+                    trib_mun["vBC"] = valor_servico
+
+                    # 5) Valor do ISS (vISSQN)
+                    if aliq > 0:
                         trib_mun["vISSQN"] = round(valor_servico * (aliq / 100.0), 2)
-                    else:
-                        # Para Simples Nacional, informe apenas a base
-                        trib_mun["vBC"] = valor_servico
                     
                     # 4) Remova qualquer outro campo que possa estar causando colisão na ordem
                     
+                    # Substitua o bloco 'valores_data' e 'dados_api' por este:
+
                     valores_data = {
-                        "vServPrest": {"vServ": valor_servico},
-                        "trib": {"tribMun": trib_mun}
+                        "vServPrest": {
+                            "vServ": valor_servico
+                        },
+                        "trib": {
+                            "tribMun": trib_mun
+                        }
                     }
 
                     dados_api = {
                         "data_emissao": timezone.now().strftime("%Y-%m-%dT%H:%M:%S"),
                         "serie_rps": str(getattr(perfil, "serie_nfse", getattr(settings, "DEFAULT_SERIE_NFSE", "1")) or "1"),
-                        "natureza_operacao": "1",
+                        "natureza_operacao": "1", # Valor validado pelo seu novo formulário
                         "prestador": prestador_data,
                         "tomador": tomador_data,
                         "servico": servico_data,
@@ -1178,7 +1185,7 @@ def emitir_nota_view(request, venda_id):
             return redirect('lista_notas_fiscais')
 
     else:
-        form = EmissaoNotaFiscalForm()
+        form = EmissaoNotaFiscalForm(eh_servico=eh_servico)
         
         # Ajuste dinâmico do formulário para o Template
         if eh_servico:
