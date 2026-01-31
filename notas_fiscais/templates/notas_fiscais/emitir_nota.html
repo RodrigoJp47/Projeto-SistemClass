@@ -157,7 +157,8 @@
                         {% if eh_servico %}
                             <label>Tipo de Emissão</label>
                             <input type="text" value="Serviço (NFS-e)" readonly disabled style="background-color: #e9ecef;">
-                            {{ form.cfop }} {% else %}
+                            <div style="display: none;">{{ form.cfop }}</div> 
+                        {% else %}
                             <label for="{{ form.cfop.id_for_label }}">CFOP</label>
                             {{ form.cfop }}
                         {% endif %}

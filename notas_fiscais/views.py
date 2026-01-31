@@ -932,6 +932,8 @@ def emitir_nota_view(request, venda_id):
 
     if request.method == 'POST':
         form = EmissaoNotaFiscalForm(request.POST)
+        if eh_servico:
+            form.fields['natureza_operacao'].choices = form.CHOICES_NFSE
         if form.is_valid():
             # Ambiente e credenciais (multi-tenant friendly)
             BASE_URL, API_TOKEN = get_focus_credentials(request.user)
