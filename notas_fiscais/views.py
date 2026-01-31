@@ -918,9 +918,12 @@ def lista_notas_fiscais_view(request):
 @module_access_required('fiscal')
 @check_employee_permission('can_access_notas_fiscais')
 def emitir_nota_view(request, venda_id):
+    print(f"DEBUG: Recebi requisição {request.method} para venda {venda_id}")
     venda = get_object_or_404(Venda, id=venda_id, user=request.user)
     primeiro_item = venda.itens.first()
-    eh_servico = bool(primeiro_item and getattr(primeiro_item.produto, "tipo", "") == 'SERVICO')
+    # Garante que pegamos o tipo em maiúsculas e remove espaços
+    tipo_produto = str(getattr(primeiro_item.produto, "tipo", "")).upper().strip()
+    eh_servico = (tipo_produto == 'SERVICO')
 
     # Garante 1-para-1
     if hasattr(venda, 'nota_fiscal') and venda.nota_fiscal:

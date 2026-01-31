@@ -20,7 +20,7 @@
     <div class="main-content">
         {% include 'accounts/partials/bpo_banner.html' %}
         <button id="menu-toggle">&#9776;</button>
-        <h1>Emitir Nota Fiscal (NF-e)</h1>
+        <h1>Emitir Nota Fiscal {% if eh_servico %}(NFS-e){% else %}(NF-e){% endif %}</h1>
         {% if messages %}
         <style>
             /* Estilos Locais para as Mensagens */
@@ -128,7 +128,7 @@
         </div>
 
         <div class="section-container">
-            <h3>Dados para Emissão da NF-e</h3>
+            <h3>Dados para Emissão da {% if eh_servico %}NFS-e{% else %}NF-e{% endif %}</h3>
             <p style="font-size: 0.9em; color: var(--text-color-light);">
                 <strong>Atenção:</strong> Estes são campos fiscais. Preencha de acordo com a orientação da sua
                 contabilidade.
@@ -136,6 +136,17 @@
 
             <form method="POST">
                 {% csrf_token %}
+                {% if form.errors %}
+                <div class="alert-box msg-error">
+                    <i class="fas fa-times-circle"></i>
+                    <span>Por favor, corrija os erros abaixo: {{ form.non_field_errors }}</span>
+                    <ul>
+                        {% for field in form %}
+                            {% if field.errors %}<li>{{ field.label }}: {{ field.errors|striptags }}</li>{% endif %}
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
 
                 <div class="grid-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                     <div class="form-group">
