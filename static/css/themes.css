@@ -2407,3 +2407,52 @@ body.theme-white .fiscal-card h5 {
     color: #0056b3 !important; /* Azul escuro */
     border-bottom-color: #DEE2E6 !important;
 }
+
+/* ==========================================================================
+   AJUSTE DE TEMA CLARO PARA SEÇÃO DE IMPORTAÇÃO (PÁGINA DE CADASTROS)
+   ========================================================================== */
+
+/* 1. Força o fundo branco e borda clara no container de importação */
+body.theme-white.cadastros-page .import-container {
+    background-color: #FFFFFF !important;
+    border: 1px solid #DEE2E6 !important;
+    color: #212529 !important;
+}
+
+/* 2. Ajusta o título e as instruções (small) */
+body.theme-white.cadastros-page .import-container h4 {
+    color: #212529 !important;
+}
+
+body.theme-white.cadastros-page .import-container small {
+    color: #6c757d !important;
+}
+
+/* 3. Ajusta o campo de seleção de arquivo para fundo branco */
+body.theme-white.cadastros-page .import-container input[type="file"] {
+    background-color: #FFFFFF !important;
+    color: #212529 !important;
+    border: 1px solid #CED4DA !important;
+}
+
+/* 4. Estiliza o link "Baixar Planilha Modelo" para o tema claro */
+body.theme-white.cadastros-page .btn-modelo-link {
+    color: #007bff !important; /* Azul para links no tema claro */
+    border: 1px solid #007bff !important;
+}
+
+body.theme-white.cadastros-page .btn-modelo-link:hover {
+    background-color: #007bff !important;
+    color: #FFFFFF !important;
+}
+
+/* 5. Ajusta o botão "Processar Planilha" para não ficar com texto branco ilegível */
+body.theme-white.cadastros-page .btn-processar-planilha {
+    background-color: #28a745 !important; /* Verde padrão de sucesso */
+    color: #FFFFFF !important;
+    border: none !important;
+}
+
+body.theme-white.cadastros-page .btn-processar-planilha:hover {
+    background-color: #218838 !important;
+}

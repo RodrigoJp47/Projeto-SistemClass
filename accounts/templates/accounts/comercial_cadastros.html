@@ -30,6 +30,36 @@
                 {% endfor %}
             </div>
         {% endif %}
+
+        <div class="import-container">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h4 style="margin: 0;">Importação em Massa</h4>
+                <a href="?download_modelo=1" class="btn-modelo-link">
+                    Baixar Planilha Modelo
+                </a>
+            </div>
+            
+            <form method="post" enctype="multipart/form-data" style="display: flex; align-items: flex-end; gap: 15px; flex-wrap: wrap;">
+                {% csrf_token %}
+                <input type="hidden" name="form_type" value="importar_planilha">
+                <div class="form-group" style="flex: 1; min-width: 250px; margin-bottom: 0;">
+                    <label style="font-weight: bold; display: block; margin-bottom: 8px;">Arquivo (.xlsx ou .csv)</label>
+                    <input type="file" name="arquivo_planilha" accept=".csv, .xlsx" required>
+                </div>
+                <button type="submit" class="btn-processar-planilha">
+                    Processar Planilha
+                </button>
+            </form>
+            <small style="color: var(--text-color); opacity: 0.8; display: block; margin-top: 15px; line-height: 1.6;">
+                <b>Colunas obrigatórias:</b> nome, codigo, tipo (PRODUTO/SERVICO), preco_venda. <br>
+                <b>Orientações de preenchimento:</b> <br>
+                • <b>Tipo:</b> Use 'PRODUTO' ou 'SERVICO'. <br>
+                • <b>Unidade:</b> Exemplos: UN, CX, PC, KG, MES, HR. <br>
+                • <b>Origem:</b> 0 para Nacional, 1 para Estrangeira/Importação Direta. <br>
+                • <b>NCM:</b> Apenas os 8 números (ex: 84716052). <br>
+                • <b>Cód. Serviço:</b> Formato LC116 (ex: 17.06).
+            </small>
+        </div>
         
         <div class="form-container">
             <h3>Cadastrar Novo Produto ou Serviço</h3>
@@ -38,16 +68,25 @@
                 {% csrf_token %}
                 <div class="form-grid">
                     {% for field in produto_form %}
-                    <div class="form-group">
+                    <div class="form-group {% if field.name == 'descricao' %}full-width{% endif %}">
                         {{ field.label_tag }}
-                        {{ field }}
+                        
+                        {% if field.name == 'ncm' %}
+                            {{ field }}
+                            <small style="color: #666; font-size: 0.8em;">Ex: 6109.10.00</small>
+                        {% elif field.name == 'cod_servico' %}
+                            {{ field }}
+                            <small style="color: #666; font-size: 0.8em;">Ex: 01.01 (LC116)</small>
+                        {% else %}
+                            {{ field }}
+                        {% endif %}
                         
                         {% if field.errors %}
                             <div style="color: red; font-size: 0.9em; margin-top: 5px;">
                                 {{ field.errors }}
                             </div>
                         {% endif %}
-                        </div>
+                    </div>
                     {% endfor %}
                 </div>
                 <button type="submit">Salvar Produto/Serviço</button>
@@ -309,6 +348,53 @@
                 });
             }
             // --- FIM DO SCRIPT DE MÁSCARA DE MOEDA ---
+            // --- MÁSCARAS PARA NCM E CÓD. SERVIÇO ---
+            const ncmInput = document.getElementById('id_ncm');
+            const codServicoInput = document.getElementById('id_cod_servico');
+
+            if (ncmInput) {
+                ncmInput.addEventListener('input', function(e) {
+                    let value = e.target.value.replace(/\D/g, '');
+                    if (value.length > 4) {
+                        value = value.substring(0, 4) + '.' + value.substring(4, 6) + '.' + value.substring(6, 8);
+                    }
+                    e.target.value = value.substring(0, 10); // Limita ao formato 0000.00.00
+                });
+            }
+
+            if (codServicoInput) {
+                codServicoInput.addEventListener('input', function(e) {
+                    let value = e.target.value.replace(/\D/g, '');
+                    if (value.length > 2) {
+                        value = value.substring(0, 2) + '.' + value.substring(2, 4);
+                    }
+                    e.target.value = value.substring(0, 5); // Limita ao formato 00.00
+                });
+            }
+            // --- CONTROLE DINÂMICO: PRODUTO VS SERVIÇO ---
+            const tipoInput = document.getElementById('id_tipo');
+            const estoqueInput = document.getElementById('id_estoque_atual');
+
+            if (tipoInput && estoqueInput) {
+                const toggleEstoque = () => {
+                    if (tipoInput.value === 'S') { // 'S' de Serviço
+                        estoqueInput.value = 0;
+                        estoqueInput.disabled = true;
+                        estoqueInput.style.backgroundColor = '#e9ecef'; // Cor cinza de desabilitado
+                        estoqueInput.style.cursor = 'not-allowed';
+                    } else {
+                        estoqueInput.disabled = false;
+                        estoqueInput.style.backgroundColor = '';
+                        estoqueInput.style.cursor = 'auto';
+                    }
+                };
+
+                // Executa ao mudar a opção
+                tipoInput.addEventListener('change', toggleEstoque);
+                
+                // Executa ao carregar a página (caso venha de um erro de validação ou edição)
+                toggleEstoque();
+            }
 
             // Expande o submenu que contém o link ativo na página atual
             const activeLink = document.querySelector('.sidebar .submenu a.active');

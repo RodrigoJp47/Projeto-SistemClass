@@ -196,6 +196,74 @@ tr:nth-child(even) {
     text-align: center;
 }
 
+/* Seção de Importação Adaptável (Light e Dark Mode) */
+.import-container {
+    background-color: var(--surface-color); /* Usa #222 no dark e o padrão do light */
+    border: 1px solid var(--border-color);   /* Usa #444 no dark e o padrão do light */
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 30px;
+    transition: background-color 0.3s, border-color 0.3s;
+}
+
+.import-container h4 {
+    color: var(--text-color); /* Branco no dark, preto no light */
+    margin-top: 0;
+    margin-bottom: 15px;
+}
+
+.import-container small {
+    color: var(--text-color);
+    opacity: 0.7; /* Fica cinza suave em ambos os temas */
+    display: block;
+    margin-top: 10px;
+}
+
+/* Ajuste do Campo de Arquivo */
+.import-container input[type="file"] {
+    background-color: rgba(128, 128, 128, 0.1); /* Fundo sutil que funciona nos dois temas */
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    padding: 8px;
+    border-radius: 4px;
+    width: 100%;
+}
+
+/* Link de Modelo Dinâmico */
+.btn-modelo-link {
+    color: var(--primary-color) !important; /* Sempre verde neon */
+    border: 1px solid var(--primary-color) !important;
+    padding: 5px 12px;
+    border-radius: 4px;
+    text-decoration: none;
+    font-size: 0.85em;
+    font-weight: bold;
+    transition: all 0.2s;
+    background-color: transparent;
+}
+
+.btn-modelo-link:hover {
+    background-color: var(--primary-color) !important;
+    color: var(--background-color) !important; /* Inverte a cor no hover */
+}
+
+/* Botão Processar Adaptado */
+.btn-processar-planilha {
+    background-color: var(--primary-color);
+    color: var(--background-color); /* Texto preto no botão verde */
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    height: 42px;
+    font-weight: bold;
+    transition: opacity 0.2s;
+}
+
+.btn-processar-planilha:hover {
+    opacity: 0.8;
+}
+
 /* Media Query para telas pequenas (celulares e tablets) */
 @media screen and (max-width: 768px) {
     #menu-toggle {

@@ -1971,7 +1971,7 @@ def importar_ofx_view(request):
                             return match.group(0)
                     return match.group(0)
                 content = re.sub(r'<DTASOF>(.*?)</DTASOF>', corrigir_data_pagbank, content, flags=re.IGNORECASE | re.DOTALL)
-                
+
                 if not content.strip().startswith('<OFX'):
                      content = re.sub(r'^OFXHEADER:.*?(?=<)', '', content, flags=re.MULTILINE | re.DOTALL)
                      content = re.sub(r'(<[A-Z/][^>]*>)\s*([^<]+)\s*(?=<|$)', r'\1\2</\1>', content)
@@ -4891,6 +4891,36 @@ def faturamento_dashboard_view(request):
 @module_access_required('commercial')
 @check_employee_permission('can_access_cadastros_comercial')
 def comercial_cadastros_view(request):
+    # --- GERADOR DINÂMICO DE PLANILHA MODELO COMPLETA ---
+    if request.GET.get('download_modelo'):
+        import pandas as pd
+        from django.http import HttpResponse
+        
+        # Lista completa de colunas baseada no seu Models.py
+        colunas = [
+            'nome', 'codigo', 'descricao', 'tipo', 
+            'preco_custo', 'preco_venda', 'estoque', 
+            'ncm', 'cod_servico', 'unidade', 'origem'
+        ]
+        
+        df_modelo = pd.DataFrame(columns=colunas)
+        
+        # Adiciona exemplos claros para o cliente (Um Produto e Um Serviço)
+        df_modelo.loc[0] = [
+            'Teclado Mecânico RGB', 'KBD-001', 'Teclado switch azul ABNT2', 'PRODUTO', 
+            '120.00', '350.00', '50', '84716052', '', 'UN', '0'
+        ]
+        df_modelo.loc[1] = [
+            'Consultoria BPO Financeiro', 'SERV-001', 'Assessoria mensal completa', 'SERVICO', 
+            '0.00', '1500.00', '0', '', '17.06', 'MES', '0'
+        ]
+        
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename=modelo_importacao_sistemclass.xlsx'
+        
+        # O Pandas gera o arquivo na hora com as novas colunas
+        df_modelo.to_excel(response, index=False)
+        return response
     # Inicializa os formulários antes de qualquer lógica
     produto_form = ProdutoServicoForm()
     vendedor_form = VendedorForm()
@@ -4941,6 +4971,57 @@ def comercial_cadastros_view(request):
                     messages.success(request, f'{excluidos_count} cliente(s) excluídos.')
                 if protegidos:
                     messages.warning(request, f'Clientes com vendas não podem ser excluídos: {", ".join(protegidos)}.')
+            return redirect('comercial_cadastros')
+        
+        # 6. Importação Profissional de Planilha (SaaS Ready)
+        elif request.POST.get('form_type') == 'importar_planilha':
+            import pandas as pd
+            from decimal import Decimal
+            arquivo = request.FILES.get('arquivo_planilha')
+            
+            if not arquivo:
+                messages.error(request, "Selecione um arquivo.")
+                return redirect('comercial_cadastros')
+
+            try:
+                df = pd.read_csv(arquivo) if arquivo.name.endswith('.csv') else pd.read_excel(arquivo)
+                df.columns = [str(c).lower().strip() for c in df.columns]
+                
+                importados, atualizados = 0, 0
+                for _, row in df.iterrows():
+                    codigo_item = str(row.get('codigo', '')).strip()
+                    if not codigo_item or pd.isna(row.get('nome')):
+                        continue
+
+                    # Ajuste do Tipo para bater com o seu TIPO_CHOICES
+                    tipo_planilha = str(row.get('tipo', 'PRODUTO')).upper().strip()
+                    tipo_final = 'SERVICO' if tipo_planilha in ['S', 'SERVICO', 'SERVIÇO'] else 'PRODUTO'
+
+                    # Mapeamento exato para o seu ProdutoServico
+                    produto, created = ProdutoServico.objects.update_or_create(
+                        user=request.user,
+                        codigo=codigo_item,
+                        defaults={
+                            'nome': str(row['nome'])[:200],
+                            'descricao': str(row.get('descricao', '')),
+                            'tipo': tipo_final,
+                            'preco_custo': Decimal(str(row.get('preco_custo', 0)).replace(',', '.')),
+                            'preco_venda': Decimal(str(row.get('preco_venda', 0)).replace(',', '.')),
+                            'estoque_atual': int(row.get('estoque', 0)) if tipo_final == 'PRODUTO' else 0,
+                            'ncm': str(row.get('ncm', '')).strip()[:8],
+                            'codigo_servico': str(row.get('cod_servico', '')).strip(), # CAMPO CORRIGIDO
+                            'unidade_medida': str(row.get('unidade', 'UN')).strip()[:6],
+                            'origem': str(row.get('origem', '0')).strip()[:1],
+                        }
+                    )
+                    
+                    if created: importados += 1
+                    else: atualizados += 1
+
+                messages.success(request, f'Sucesso! {importados} novos e {atualizados} atualizados.')
+            except Exception as e:
+                messages.error(request, f'Erro técnico: {str(e)}')
+            
             return redirect('comercial_cadastros')
 
         # 3. Checa se a ação é de criar um produto
@@ -5282,7 +5363,18 @@ def vendas_view(request):
                 elif 'PRODUTO' in tipos_de_item: category_name = "Venda de Produtos"
                 elif 'SERVICO' in tipos_de_item: category_name = "Venda de Serviços"
 
-                venda_category, _ = Category.objects.get_or_create(name=category_name)
+                # --- [INÍCIO DO AJUSTE CIRÚRGICO] ---
+                # Usamos filter().first() com o user logado para evitar o erro de duplicidade
+                venda_category = Category.objects.filter(user=request.user, name=category_name).first()
+                
+                # Se não existir para este usuário, criamos a categoria vinculada a ele
+                if not venda_category:
+                    venda_category = Category.objects.create(
+                        user=request.user, 
+                        name=category_name, 
+                        category_type='RECEIVABLE'
+                    )
+                # --- [FIM DO AJUSTE CIRÚRGICO] ---
                 # A descrição da conta a receber AGORA USA o ID da venda (seja ela nova ou atualizada)
                 receivable_description = f"Ref. Venda #{nova_venda.id}: " + ", ".join(description_parts)
                 

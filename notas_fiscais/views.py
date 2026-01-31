@@ -821,6 +821,7 @@ import re
 from collections import OrderedDict
 
 from django.conf import settings
+from django import forms
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.utils import timezone
@@ -918,6 +919,8 @@ def lista_notas_fiscais_view(request):
 @check_employee_permission('can_access_notas_fiscais')
 def emitir_nota_view(request, venda_id):
     venda = get_object_or_404(Venda, id=venda_id, user=request.user)
+    primeiro_item = venda.itens.first()
+    eh_servico = bool(primeiro_item and getattr(primeiro_item.produto, "tipo", "") == 'SERVICO')
 
     # Garante 1-para-1
     if hasattr(venda, 'nota_fiscal') and venda.nota_fiscal:
@@ -930,8 +933,7 @@ def emitir_nota_view(request, venda_id):
             # Ambiente e credenciais (multi-tenant friendly)
             BASE_URL, API_TOKEN = get_focus_credentials(request.user)
 
-            primeiro_item = venda.itens.first()
-            eh_servico = bool(primeiro_item and getattr(primeiro_item.produto, "tipo", "") == 'SERVICO')
+            
 
             # 1) Dados do prestador a partir do tenant (empresa do usuário)
             try:
@@ -1172,8 +1174,22 @@ def emitir_nota_view(request, venda_id):
 
     else:
         form = EmissaoNotaFiscalForm()
+        
+        # Ajuste dinâmico do formulário para o Template
+        if eh_servico:
+            form.fields['natureza_operacao'].choices = form.CHOICES_NFSE
+            form.fields['natureza_operacao'].initial = '1'
+            # Oculta o CFOP para não confundir o usuário em serviços
+            form.fields['cfop'].widget = forms.HiddenInput()
+            form.fields['cfop'].label = ""
+        else:
+            form.fields['natureza_operacao'].choices = form.CHOICES_NFE
 
-    return render(request, 'notas_fiscais/emitir_nota.html', {'form': form, 'venda': venda})
+    return render(request, 'notas_fiscais/emitir_nota.html', {
+        'form': form, 
+        'venda': venda, 
+        'eh_servico': eh_servico # Passamos essa flag para o HTML
+    })
 
 
 @login_required
