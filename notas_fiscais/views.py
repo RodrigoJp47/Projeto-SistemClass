@@ -1034,26 +1034,34 @@ def emitir_nota_view(request, venda_id):
                     # 1. Certifique-se de usar OrderedDict para travar a ordem dos campos
                     from collections import OrderedDict
 
-                    # 2. Monte o trib_mun respeitando a hierarquia do Padrão Nacional
+                   
+
+                    # 1. Monte o trib_mun respeitando a hierarquia e obrigatoriedade do Padrão Nacional
                     trib_mun = OrderedDict()
 
-                    # Campo 1: Exigibilidade do ISS (Obrigatório)
-                    # 1 = Exigível
+                    # Campo Obrigatório: Exigibilidade do ISS (1 = Exigível)
                     trib_mun["exigISSQN"] = "1" 
 
-                    # Campo 2: tpRetISSQN (Obrigatório para o Padrão Nacional)
-                    # 1 = Não retido, 2 = Retido, 3 = Simples Nacional
-                    # O erro citou explicitamente a falta deste campo
-                    trib_mun["tpRetISSQN"] = "3" if perfil.optante_simples_nacional else "1"
+                    # Campo Obrigatório: tpRetISSQN (1 = Não retido, 2 = Retido, 3 = Simples Nacional)
+                    # Como você já tem a flag no perfil:
+                    if perfil.optante_simples_nacional:
+                        trib_mun["tpRetISSQN"] = "3"
+                    else:
+                        # Lógica simples: se houver valor de retenção seria 2, se não, 1.
+                        trib_mun["tpRetISSQN"] = "1"
 
-                    # Campo 3: Alíquota e Base de Cálculo (vBC e pAliq)
+                    # Campo: Alíquota e Base de Cálculo
+                    valor_servico = float(venda.valor_total_liquido)
                     aliq = float(perfil.aliquota_iss or 0.0)
+
                     trib_mun["vBC"] = valor_servico
 
                     if aliq > 0:
                         trib_mun["pAliq"] = aliq
+                        # vISSQN é obrigatório se pAliq for informado
                         trib_mun["vISSQN"] = round(valor_servico * (aliq / 100.0), 2)
 
+                    # Monte a estrutura de valores conforme o Schema da Focus V2
                     valores_data = {
                         "vServPrest": {
                             "vServ": valor_servico
@@ -1063,14 +1071,15 @@ def emitir_nota_view(request, venda_id):
                         }
                     }
 
+                    # Atualize o payload final
                     dados_api = {
                         "data_emissao": timezone.now().strftime("%Y-%m-%dT%H:%M:%S"),
-                        "serie_rps": str(getattr(perfil, "serie_nfse", getattr(settings, "DEFAULT_SERIE_NFSE", "1")) or "1"),
-                        "natureza_operacao": "1", # Valor validado pelo seu novo formulário
+                        "serie_rps": str(perfil.serie_nfse or "1"),
+                        "natureza_operacao": "1", 
                         "prestador": prestador_data,
                         "tomador": tomador_data,
                         "servico": servico_data,
-                        "valores": valores_data
+                        "valores": valores_data  # Certifique-se de que esta chave está no nível raiz do JSON
                     }
 
                 # ============
