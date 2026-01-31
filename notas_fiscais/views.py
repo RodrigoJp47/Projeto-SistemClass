@@ -1031,33 +1031,28 @@ def emitir_nota_view(request, venda_id):
                         "valor_servicos": valor_servico
                     }
 
-                    # ===== Grupo de valores/tributação (Padrão NFSe Nacional) =====
-                   # Substitua o bloco anterior por este:
+                    # 1. Certifique-se de usar OrderedDict para travar a ordem dos campos
+                    from collections import OrderedDict
+
+                    # 2. Monte o trib_mun respeitando a hierarquia do Padrão Nacional
                     trib_mun = OrderedDict()
 
-                    # 1) Exigibilidade do ISS (DEVE SER O PRIMEIRO)
+                    # Campo 1: Exigibilidade do ISS (Obrigatório)
                     # 1 = Exigível
                     trib_mun["exigISSQN"] = "1" 
 
-                    # 2) Tipo de Retenção
-                    # 3 = Simples Nacional
-                    trib_mun["tpRetISSQN"] = "3" if perfil.optante_simples_nacional else str(nfse_tp_ret_default())
-                    
-                    # 3) Alíquota (pAliq)
-                    aliq = float(perfil.aliquota_iss or 0.0)
-                    if aliq > 0:
-                        trib_mun["pAliq"] = aliq
+                    # Campo 2: tpRetISSQN (Obrigatório para o Padrão Nacional)
+                    # 1 = Não retido, 2 = Retido, 3 = Simples Nacional
+                    # O erro citou explicitamente a falta deste campo
+                    trib_mun["tpRetISSQN"] = "3" if perfil.optante_simples_nacional else "1"
 
-                    # 4) Base de Cálculo (vBC) - Obrigatório
+                    # Campo 3: Alíquota e Base de Cálculo (vBC e pAliq)
+                    aliq = float(perfil.aliquota_iss or 0.0)
                     trib_mun["vBC"] = valor_servico
 
-                    # 5) Valor do ISS (vISSQN)
                     if aliq > 0:
+                        trib_mun["pAliq"] = aliq
                         trib_mun["vISSQN"] = round(valor_servico * (aliq / 100.0), 2)
-                    
-                    # 4) Remova qualquer outro campo que possa estar causando colisão na ordem
-                    
-                    # Substitua o bloco 'valores_data' e 'dados_api' por este:
 
                     valores_data = {
                         "vServPrest": {
