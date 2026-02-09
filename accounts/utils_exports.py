@@ -589,11 +589,12 @@ def gerar_pdf_generic(queryset, tipo_relatorio):
     # AJUSTE CIRÚRGICO: Cabeçalhos e Larguras condicionais
     if tipo_relatorio == 'receber':
         headers = ['Nome', 'Desc.', 'Venc.', 'Valor', 'Status', 'Cat.', 'DRE', 'Banco', 'Forma']
-        # Redistribuição dos pontos (Total 780): Colunas ficaram um pouco mais largas para preencher o espaço
-        col_widths = [110, 130, 70, 90, 60, 90, 90, 90, 50] 
+        # Nome aumentado para 160 (antes era menor no cálculo implícito)
+        col_widths = [160, 110, 65, 85, 55, 80, 80, 85, 60] 
     else:
         headers = ['Nome', 'Desc.', 'Venc.', 'Valor', 'Status', 'Cat.', 'DRE', 'C. Custo', 'Banco', 'Forma']
-        col_widths = [95, 110, 60, 80, 45, 75, 80, 80, 85, 65]
+        # Coluna Nome aumentada para 145 e Desc. para 115 (Total 780 pontos)
+        col_widths = [145, 115, 60, 80, 45, 70, 70, 70, 70, 55]
 
     data = [headers]
     total = 0
@@ -607,10 +608,9 @@ def gerar_pdf_generic(queryset, tipo_relatorio):
         forma_pag = conta.get_payment_method_display() if hasattr(conta, 'get_payment_method_display') else conta.payment_method
         dre_area = conta.get_dre_area_display() if hasattr(conta, 'get_dre_area_display') else "-"
 
-        nome_curto = conta.name[:18] + '..' if len(conta.name) > 18 else conta.name
+        nome_curto = conta.name[:35] + '..' if len(conta.name) > 35 else conta.name
         desc_curta = conta.description[:20] + '..' if len(conta.description) > 20 else conta.description
         
-        # AJUSTE CIRÚRGICO: Montagem da linha de dados PDF
         row_pdf = [
             nome_curto,
             desc_curta,
