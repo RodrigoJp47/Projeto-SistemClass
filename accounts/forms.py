@@ -623,14 +623,26 @@ class EmployeeCreationForm(forms.ModelForm):
 # Adicione ao FINAL de accounts/forms.py
 
 class CompanyProfileForm(forms.ModelForm):
+    # Definimos apenas uma vez fora do Meta para controle total
     optante_simples_nacional = forms.BooleanField(
         required=False, 
+        label="Optante pelo Simples Nacional?",
         widget=forms.CheckboxInput(attrs={'style': 'width: 20px; height: 20px;'})
     )
+
     class Meta:
         model = CompanyProfile
-        # Exclui 'user' (será pego da sessão) e 'updated_at' (automático)
-        exclude = ('user', 'updated_at')
+        # AJUSTE CRUCIAL: Adicionamos todos os campos técnicos ao EXCLUDE
+        # Isso impede o erro de "campo obrigatório" para campos que o usuário não vê.
+        exclude = (
+            'user', 
+            'updated_at', 
+            'asaas_subaccount_id', 
+            'asaas_wallet_id', 
+            'asaas_api_key', 
+            'provider_fiscal'
+        )
+        
         widgets = {
             'nome_empresa': forms.TextInput(attrs={'class': 'form-field'}),
             'nome_fantasia': forms.TextInput(attrs={'class': 'form-field'}),
@@ -648,21 +660,11 @@ class CompanyProfileForm(forms.ModelForm):
             'codigo_municipio': forms.TextInput(attrs={'class': 'form-field', 'placeholder': 'Código IBGE (7 dígitos)'}),
             'senha_certificado': forms.PasswordInput(attrs={'class': 'form-field', 'placeholder': 'Senha do arquivo .pfx', 'autocomplete': 'new-password'}),
             'certificado_digital': forms.FileInput(attrs={'class': 'form-field', 'accept': '.pfx'}),
-            # 1. Regime Tributário (Vai virar um Dropdown/Select)
             'regime_tributario': forms.Select(attrs={'class': 'form-field'}),
-
-            # 2. Alíquota ISS (Campo numérico com casas decimais)
             'aliquota_iss': forms.NumberInput(attrs={'class': 'form-field', 'step': '0.01', 'placeholder': 'Ex: 2.00'}),
-
-            # 3. Enviar Email (Checkbox - quadradinho de marcar)
             'enviar_email_automatico': forms.CheckboxInput(attrs={'style': 'width: 20px; height: 20px; margin-top: 10px;'}),
-            
-            # 4. Regime Especial (NFS-e)
             'regime_especial_tributacao': forms.Select(attrs={'class': 'form-field'}),
-            'optante_simples_nacional': forms.CheckboxInput(attrs={'style': 'width: 20px; height: 20px;'}),
             'incentivador_cultural': forms.CheckboxInput(attrs={'style': 'width: 20px; height: 20px;'}),
-
-            # 5. Configuração de Emissão e Layout
             'arquivo_logo': forms.FileInput(attrs={'class': 'form-field', 'accept': 'image/*'}),
             'proximo_numero_nfe': forms.NumberInput(attrs={'class': 'form-field'}),
             'serie_nfe': forms.TextInput(attrs={'class': 'form-field'}),
@@ -672,9 +674,13 @@ class CompanyProfileForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        # Deixando campos não obrigatórios para não travar o form
         self.fields['regime_especial_tributacao'].required = False
         self.fields['inscricao_estadual'].required = False
+        
+        # Sincroniza o valor inicial da checkbox customizada com o model
         if self.instance and self.instance.pk:
+            # Aqui acessamos a @property que você tem no seu model
             self.fields['optante_simples_nacional'].initial = self.instance.optante_simples_nacional
 
 class CompanyDocumentForm(forms.ModelForm):

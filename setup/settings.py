@@ -307,3 +307,8 @@ STRIPE_PRICE_IDS = {
 # Sem isso, você pode ter erros de "CSRF Failed" ao tentar logar vindo da Landing Page.
 # SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
+# ==================================================================
+#  CONFIGURAÇÕES ASAAS (MARKETPLACE / SUBCOONTAS)
+# ==================================================================
+ASAAS_API_URL = os.environ.get('ASAAS_API_URL', 'https://sandbox.asaas.com/api/v3')
+ASAAS_MASTER_API_KEY = os.environ.get('ASAAS_MASTER_API_KEY')

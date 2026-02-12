@@ -116,6 +116,8 @@ class PayableAccount(models.Model):
     payment_method = models.CharField(max_length=20, choices=PAYMENT_METHODS)
     occurrence = models.CharField(max_length=20, choices=OCCURRENCE_TYPES)
     recurrence_count = models.PositiveIntegerField(null=True, blank=True)
+    recurrence_index = models.PositiveIntegerField(null=True, blank=True, verbose_name="Índice da Recorrência")
+    recurrence_group_id = models.UUIDField(null=True, blank=True, db_index=True)
     is_paid = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     cost_type = models.CharField(max_length=20, choices=COST_TYPES, default='FIXO')
@@ -145,6 +147,8 @@ class ReceivableAccount(models.Model):
     payment_method = models.CharField(max_length=20, choices=PAYMENT_METHODS)
     occurrence = models.CharField(max_length=20, choices=OCCURRENCE_TYPES)
     recurrence_count = models.PositiveIntegerField(null=True, blank=True)
+    recurrence_index = models.PositiveIntegerField(null=True, blank=True, verbose_name="Índice da Recorrência")
+    recurrence_group_id = models.UUIDField(null=True, blank=True, db_index=True)
     is_received = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     ofx_import = models.ForeignKey(OFXImport, on_delete=models.SET_NULL, null=True, blank=True)
@@ -242,7 +246,7 @@ class Cliente(models.Model):
     # --- ADICIONE ESTES CAMPOS FISCAIS ABAIXO ---
     razao_social = models.CharField(max_length=200, blank=True, null=True, verbose_name="Razão Social (se PJ)")
     inscricao_estadual = models.CharField(max_length=20, blank=True, null=True, verbose_name="Inscrição Estadual")
-    
+    asaas_customer_id = models.CharField(max_length=100, blank=True, null=True)
     # Endereço separado (obrigatório para a API)
     logradouro = models.CharField(max_length=200, blank=True, null=True, verbose_name="Logradouro (Rua, Av.)")
     numero = models.CharField(max_length=10, blank=True, null=True, verbose_name="Número")
@@ -418,7 +422,39 @@ class CompanyProfile(models.Model):
         verbose_name="Senha do Certificado"
     )    
 
-    # ... campos existentes ...
+    
+    # --- INTEGRAÇÃO ASAAS (MARKETPLACE/SUBCOONTAS) ---
+    asaas_subaccount_id = models.CharField(
+        max_length=100, 
+        blank=True, 
+        null=True, 
+        verbose_name="ID da Subconta Asaas",
+        help_text="Identificador da conta (ex: adp_...)"
+    )
+    asaas_wallet_id = models.CharField(
+        max_length=100, 
+        blank=True, 
+        null=True, 
+        verbose_name="Wallet ID Asaas"
+    )
+    asaas_api_key = models.CharField(
+        max_length=255, 
+        blank=True, 
+        null=True, 
+        verbose_name="API Key da Subconta",
+        help_text="Chave gerada para transacionar em nome desta subconta"
+    )
+
+    # Campo de controle para saber qual motor fiscal usar
+    # Como você não emitiu nada na Focus, podemos colocar default 'ASAAS' se preferir,
+    # mas 'FOCUS' é mais seguro para não impactar algo que você esteja testando.
+    provider_fiscal = models.CharField(
+        max_length=20,
+        choices=(('FOCUS', 'Focus NFe'), ('ASAAS', 'Asaas')),
+        default='FOCUS',
+        blank=True,
+        verbose_name="Provedor Fiscal Ativo"
+    )
 
     # --- CONFIGURAÇÕES FISCAIS ---
     REGIME_CHOICES = (

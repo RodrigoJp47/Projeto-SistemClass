@@ -106,6 +106,15 @@
                 {{ form.cost_type.label_tag }} {{ form.cost_type }}
                 {{ form.bank_account.label_tag }} {{ form.bank_account }}
                 {{ form.file.label_tag }} {{ form.file }}
+                {% if form.instance.recurrence_group_id %}
+                <div style="background: #34495e; padding: 10px; border-radius: 5px; margin-bottom: 15px;">
+                    <label style="color: white;">Ao salvar, aplicar alteração em:</label>
+                    <select name="edit_mode" style="width: 100%; padding: 5px;">
+                        <option value="single">Apenas este lançamento</option>
+                        <option value="future">Este e todos os próximos (não pagos)</option>
+                    </select>
+                </div>
+                {% endif %}
                 <button type="submit" name="save" class="btn btn-primary">Salvar</button>
                 <button type="submit" name="save_and_pay" class="btn btn-primary">Salvar e Pagar</button>
             </form>
@@ -129,6 +138,12 @@
                         </option>
                     {% endfor %}
                 </select>
+                <label for="occurrence">Ocorrência:</label>
+                <select name="occurrence" id="occurrence">
+                    <option value="all" {% if occurrence_filter == 'all' %}selected{% endif %}>Todas</option>
+                    <option value="AVULSO" {% if occurrence_filter == 'AVULSO' %}selected{% endif %}>Avulsas</option>
+                    <option value="RECORRENTE" {% if occurrence_filter == 'RECORRENTE' %}selected{% endif %}>Recorrentes</option>
+                </select>
 
                 <label for="start_date">Data inicial:</label>
                 <input type="date" name="start_date" id="start_date" value="{{ start_date|default_if_none:'' }}">
@@ -144,6 +159,7 @@
                     <option value="50" {% if per_page == '50' %}selected{% endif %}>50</option>
                     <option value="100" {% if per_page == '100' %}selected{% endif %}>100</option>
                 </select>    
+                
                 <button type="submit" class="btn btn-primary">Filtrar</button>
             </form>
         </div>
@@ -215,7 +231,14 @@
                         <tr {% if account.payment_date %}style="background-color: rgba(46, 204, 113, 0.1);" title="Conta Paga"{% endif %}>
                             <td data-label="Selecionar"><input type="checkbox" name="account_ids"
                                     value="{{ account.id|unlocalize }}" class="select-item"></td>
-                            <td data-label="Nome">{{ account.name }}</td>
+                            <td data-label="Nome">
+                                {{ account.name }}
+                                {% if account.occurrence == 'RECORRENTE' and account.recurrence_index %}
+                                    <br><small style="color: #3498db; font-weight: bold;">
+                                        ({{ account.recurrence_index }}/{{ account.recurrence_count }})
+                                    </small>
+                                {% endif %}
+                            </td>
                             <td data-label="Descrição">{{ account.description }}</td>
                             <td data-label="Vencimento">{{ account.due_date|date:"d/m/Y" }}</td>
                             <td data-label="Data Pagamento">

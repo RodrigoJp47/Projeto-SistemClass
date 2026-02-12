@@ -64,6 +64,15 @@
                 {{ form.bank_account }}
                 {{ form.file.label_tag }}
                 {{ form.file }}
+                {% if form.instance.recurrence_group_id %}
+                <div style="margin-bottom: 15px; padding: 10px; background-color: #2c3e50; border-radius: 5px; border-left: 4px solid #f1c40f;">
+                    <strong style="color: white; display: block; margin-bottom: 5px;">🔄 Opções de Recorrência:</strong>
+                    <select name="edit_mode" style="width: 100%; padding: 8px; border-radius: 4px;">
+                        <option value="single">Alterar apenas este recebimento</option>
+                        <option value="future">Alterar este e todos os próximos (em aberto)</option>
+                    </select>
+                </div>
+                {% endif %}
                 <button type="submit" name="save" class="btn btn-primary">Salvar</button>
                 <button type="submit" name="save_and_receive" class="btn btn-primary">Salvar e Receber</button>
             </form>
@@ -85,6 +94,12 @@
                             {{ bank.bank_name }}
                         </option>
                     {% endfor %}
+                </select>
+                <label for="occurrence">Ocorrência:</label>
+                <select name="occurrence" id="occurrence">
+                    <option value="all" {% if occurrence_filter == 'all' %}selected{% endif %}>Todas</option>
+                    <option value="AVULSO" {% if occurrence_filter == 'AVULSO' %}selected{% endif %}>Avulsas</option>
+                    <option value="RECORRENTE" {% if occurrence_filter == 'RECORRENTE' %}selected{% endif %}>Recorrentes</option>
                 </select>
                 <label for="start_date">Data inicial:</label>
                 <input type="date" name="start_date" id="start_date" value="{{ start_date|default_if_none:'' }}">
@@ -163,7 +178,15 @@
                         {% for account in accounts %}
                             <tr {% if account.payment_date %}style="background-color: rgba(46, 204, 113, 0.1);" title="Conta Recebida"{% endif %}>
                                 <td data-label="Selecionar"><input type="checkbox" name="account_ids" value="{{ account.id|unlocalize }}" class="select-item"></td>
-                                <td data-label="Nome">{{ account.name }}</td>
+                                <td data-label="Nome">
+                                    {{ account.name }}
+                                    {% if account.occurrence == 'RECORRENTE' and account.recurrence_index %}
+                                        <br>
+                                        <small style="color: #27ae60; font-weight: bold; font-size: 0.85em;">
+                                            index: {{ account.recurrence_index }}/{{ account.recurrence_count }}
+                                        </small>
+                                    {% endif %}
+                                </td>
                                 <td data-label="Descrição">{{ account.description }}</td>
                                 <td data-label="Vencimento">{{ account.due_date|date:"d/m/Y" }}</td>
                                 <td data-label="Data Recebimento">

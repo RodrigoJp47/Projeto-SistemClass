@@ -296,318 +296,83 @@ def home(request):
 @owner_required
 @subscription_required
 def company_profile_view(request):
-    # 1. Pega ou cria o perfil
     profile, created = CompanyProfile.objects.get_or_create(user=request.user)
     documents = CompanyDocument.objects.filter(user=request.user)
 
-    # Inicializa os formulários com valores padrão (GET)
-    # Eles serão sobrescritos dentro do bloco POST se necessário
     profile_form = CompanyProfileForm(instance=profile)
     doc_form = CompanyDocumentForm()
 
     if request.method == 'POST':
-        print("\n=== O QUE O NAVEGADOR MANDOU? ===")
-        print(f"Cidade (POST): '{request.POST.get('cidade')}'")
-        print(f"IBGE (POST): '{request.POST.get('codigo_municipio')}'")
-        print("=====================================\n")
-        # --- Lógica do Perfil da Empresa ---
         if 'save_profile' in request.POST:
+            print("\n🔵 [DEBUG] Botão 'Salvar Alterações' clicado.")
             profile_form = CompanyProfileForm(request.POST, request.FILES, instance=profile)
 
             if profile_form.is_valid():
-                # 1. Captura os arquivos ANTES de salvar (para garantir leitura correta)
-                arquivo_certificado = request.FILES.get('certificado_digital')
-                senha_cert = profile_form.cleaned_data.get('senha_certificado')
-                
-                # Lê o binário do arquivo para memória se ele foi enviado
-                conteudo_certificado = None
-                if arquivo_certificado and senha_cert:
-                    conteudo_certificado = arquivo_certificado.read()
-
-                # 2. Salva no Banco de Dados Local
+                # A. Salva no Banco Local
                 profile = profile_form.save(commit=False)
-                # Se a Inscrição Estadual estiver vazia, salva "0000000000000" no banco
                 if not profile.inscricao_estadual:
                     profile.inscricao_estadual = "0000000000000"
                 profile.save()
+                print("✅ [DEBUG] Dados locais atualizados.")
 
-                # --- ESPIÃO DE DADOS (ADICIONE ISSO) ---
-                print("\n=== DEBUG DADOS DO PERFIL ===")
-                print(f"Cidade no Banco: '{profile.cidade}'")
-                print(f"IBGE no Banco: '{profile.codigo_municipio}'")
-                print(f"Estado no Banco: '{profile.estado}'")
-                print(f"Tem espaços em branco? Cidade len={len(profile.cidade or '')}")
-                print("=============================\n")
-                # ---------------------------------------
+                # B. INTEGRAÇÃO ASAAS
+                from .services_asaas import AsaasMarketplaceService
+                asaas_service = AsaasMarketplaceService()
 
-                # 3. INTEGRAÇÃO COM FOCUS NFE
-                # Só tenta integrar se tiver os dados mínimos
-                # 3. INTEGRAÇÃO COM FOCUS NFE (LÓGICA INTELIGENTE SAAS)
-                if profile.cnpj:
+                # PASSO 1: Criar Subconta
+                if profile.cnpj and not profile.asaas_subaccount_id:
+                    print(f"🚀 [DEBUG] Criando subconta para CNPJ: {profile.cnpj}")
+                    resultado = asaas_service.criar_subconta(profile)
+                    if resultado["success"]:
+                        profile.asaas_subaccount_id = resultado["id"]
+                        profile.asaas_api_key = resultado.get("apiKey")
+                        profile.save()
+                        messages.success(request, 'Conta Asaas sincronizada!')
+
+                # PASSO 2: Enviar Certificado (CORRIGIDO)
+                # Pegamos o arquivo diretamente do formulário validado
+                arquivo_cert = profile_form.cleaned_data.get('certificado_digital')
+                
+                if profile.asaas_subaccount_id and arquivo_cert:
+                    print(f"📦 [DEBUG] Certificado detectado no formulário.")
                     try:
-                        # Ambiente Focus (Dinâmico REALMENTE baseado no settings)
-                        BASE_URL = settings.FOCUS_API_URL
+                        # Resetar o ponteiro e ler os bytes
+                        arquivo_cert.seek(0)
+                        conteudo_binario = arquivo_cert.read()
                         
-                        if settings.DEBUG:
-                            API_TOKEN = settings.NFE_TOKEN_HOMOLOGACAO
-                            print("⚠️ MODO HOMOLOGAÇÃO ATIVADO")
-                        else:
-                            API_TOKEN = settings.NFE_TOKEN_PRODUCAO
-                            print("🚀 MODO PRODUÇÃO ATIVADO")
-
-                        # --- DEBUG DE CONEXÃO ---
-                        token_masked = f"{API_TOKEN[:4]}...{API_TOKEN[-4:]}" if API_TOKEN else "None"
-                        print(f"\n[DEBUG API] URL Base: {BASE_URL}")
-                        print(f"[DEBUG API] Token Usado: {token_masked}")
-                        print(f"[DEBUG API] Ambiente DEBUG: {settings.DEBUG}")
-                        # ------------------------
-
-                        # Limpeza de Dados
-                        cnpj_limpo = re.sub(r'\D', '', profile.cnpj or '')
-                        cep_limpo = re.sub(r'\D', '', profile.cep or '')
-                        telefone_limpo = re.sub(r'\D', '', profile.telefone_contato or '')
-                        
-                        # URL base de empresas
-                        url_base_empresas = f"{BASE_URL.rstrip('/')}/v2/empresas"
-                        
-                        # Monta o Payload com FALBACK (Se falhar no banco, pega do POST)
-                        cidade_envio = profile.cidade
-                        if not cidade_envio:
-                            cidade_envio = request.POST.get('cidade', '') # Pega direto do navegador
-
-                        cod_mun_envio = profile.codigo_municipio
-                        if not cod_mun_envio:
-                            cod_mun_envio = request.POST.get('codigo_municipio', '')
-
-                        # --- NOVO TRECHO CORRIGIDO E BLINDADO ---
-
-                        # 1. Tratamento da Inscrição Estadual (Regra Focus NFe)
-                        # Convertemos para string, removemos espaços e deixamos em maiúsculo para o "ISENTO"
-                        raw_ie = str(profile.inscricao_estadual or '').strip().upper()
-
-                        # Se estiver vazio, None ou for apenas zeros, a Focus exige string vazia ""
-                        if raw_ie in ['', 'NONE', '0', '0000000000000']:
-                            ie_final = ""
-                        else:
-                            # Se for "ISENTO", mantemos. Se forem números, removemos pontos/traços.
-                            if raw_ie == "ISENTO":
-                                ie_final = "ISENTO"
+                        if len(conteudo_binario) > 0:
+                            print(f"📊 [DEBUG] Enviando {len(conteudo_binario)} bytes para o serviço...")
+                            res_fiscal = asaas_service.configurar_dados_fiscais(profile, conteudo_binario)
+                            
+                            if res_fiscal["success"]:
+                                messages.success(request, 'Certificado configurado no Asaas!')
                             else:
-                                ie_final = re.sub(r'\D', '', raw_ie)
-
-                        # 2. Montagem do Payload utilizando as propriedades do Model
-                        payload_empresa = {
-                            "nome": profile.nome_empresa,
-                            "nome_fantasia": profile.nome_fantasia or profile.nome_empresa,
-                            "cnpj": re.sub(r'\D', '', profile.cnpj or ''),
-                            "regime_tributario": profile.regime_tributario, 
-                            "bairro": profile.bairro,
-                            "cep": re.sub(r'\D', '', profile.cep or ''),
-                            "municipio": profile.cidade or request.POST.get('cidade', ''), 
-                            "codigo_municipio": profile.codigo_municipio or request.POST.get('codigo_municipio', ''),
-                            "uf": profile.estado,
-                            "logradouro": profile.endereco,
-                            "numero": profile.numero or "S/N",
-                            "inscricao_estadual": ie_final,
-                            "inscricao_municipal": re.sub(r'\D', '', profile.inscricao_municipal or ''),
-                            "telefone": re.sub(r'\D', '', profile.telefone_contato or ''),
-                            "email": profile.email_contato,
-                            
-                            # Se a empresa não tem IE ou é Isenta, ela não pode emitir NF-e (Produto)
-                            "habilita_nfe": False if (not ie_final or ie_final == "ISENTO") else True,
-                            "habilita_nfse": True,
-                            
-                            # Aqui usamos a @property 'optante_simples_nacional' do seu Model
-                            # Isso já cobre os regimes '1', '2' e '4' automaticamente
-                            "optante_simples_nacional": profile.optante_simples_nacional,
-                            
-                            "incentivador_cultural": profile.incentivador_cultural,
-                            "proximo_numero_nfe_producao": profile.proximo_numero_nfe,
-                            "serie_nfe_producao": profile.serie_nfe,
-                            "proximo_numero_nfse_producao": profile.proximo_numero_nfse,
-                            "serie_nfse_producao": profile.serie_nfse,
-                        }
-
-                        # --- LÓGICA DE LOGO (BASE64) ---
-                        if profile.arquivo_logo:
-                            try:
-                                # Abre o arquivo do disco/S3, lê e converte
-                                profile.arquivo_logo.open('rb')
-                                logo_content = profile.arquivo_logo.read()
-                                import base64
-                                logo_base64 = base64.b64encode(logo_content).decode('utf-8')
-                                payload_empresa["arquivo_logo_base64"] = logo_base64
-                                print(f"[DEBUG] Logo convertido para Base64. Tamanho: {len(logo_base64)}")
-                            except Exception as e_logo:
-                                print(f"[ERRO] Falha ao ler logo: {e_logo}")
-                        # -------------------------------
-                        
-                        print(f"\n[DEBUG FINAL] Payload Inscricao Estadual: '{payload_empresa['inscricao_estadual']}'")
-                        print(f"[DEBUG FINAL] Profile Inscricao Estadual (Memory): '{profile.inscricao_estadual}'")
-                        print(f"[DEBUG FINAL] Payload Completo: {payload_empresa}")
-
-                        # Tenta enviar o certificado JÁ NA CRIAÇÃO (Tentativa 1)
-                        cert_enviado_no_post = False
-                        if conteudo_certificado and senha_cert:
-                            import base64
-                            arquivo_base64 = base64.b64encode(conteudo_certificado).decode('utf-8')
-                            payload_empresa["arquivo_certificado_base64"] = arquivo_base64
-                            payload_empresa["senha_certificado"] = senha_cert
-                            cert_enviado_no_post = True
-
-                        print(f"--- TENTATIVA 1: CRIAR EMPRESA {cnpj_limpo} ---")
-                        # Tenta CRIAR (POST)
-                        response = requests.post(url_base_empresas, json=payload_empresa, auth=(API_TOKEN, ""))
-                        
-                        # --- DEBUG DO ERRO DE CRIAÇÃO ---
-                        if response.status_code not in [200, 201]:
-                            print(f"❌ FALHA AO CRIAR: {response.status_code}")
-                            print(f"MOTIVO: {response.text}")
-                        # --------------------------------
-                        
-                        # Se der erro de "Já existe" (422 ou 409) ou "404" (Token restrito tentando POST geral)
-                        if response.status_code in [422, 409, 403]: 
-                            
-                            print(f"--- TENTATIVA 2: ATUALIZAR EMPRESA (PUT) ---")
-                            # Tenta ATUALIZAR (PUT) na URL específica
-                            url_put = f"{url_base_empresas}/{cnpj_limpo}"
-                            
-                            # No PUT, não mandamos o CNPJ no corpo (já está na URL) para evitar alguns erros
-                            payload_put = payload_empresa.copy()
-                            
-                            response = requests.put(url_put, json=payload_put, auth=(API_TOKEN, ""))
-
-                        # --- TRATAMENTO ESPECIAL PARA TOKEN DE EMPRESA (404 NO ENDPOINT /empresas) ---
-                        if response.status_code == 404 and "Endpoint não encontrado" in response.text:
-                            print("⚠️ DETECTADO TOKEN DE EMPRESA (SEM ACESSO A /empresas)")
-                            print("✅ Permitindo salvar perfil localmente para emissão direta.")
-                            messages.success(request, 'Perfil salvo! Token de Empresa detectado (Sincronização cadastral ignorada).')
-                            # Finge que deu certo para não bloquear o fluxo
-                            response.status_code = 200 
-                        
-                        # --- RESULTADO FINAL ---
-                        print(f"Status Final: {response.status_code}")
-                        print(f"Resposta: {response.text}")
-
-                        if response.status_code in [200, 201, 204]:
-                            if response.status_code != 404: # Só mostra msg padrão se não foi o bypass acima
-                                messages.success(request, 'Empresa configurada e sincronizada com sucesso na Focus!')
-
-                            # --- LÓGICA FORÇADA DE UPLOAD DO CERTIFICADO ---
-                            # O usuário relatou que o envio junto com o POST falha silenciosamente.
-                            # Portanto, SEMPRE faremos o upload separado para garantir.
-                            
-                            precisa_enviar_separado = False
-                            if conteudo_certificado and senha_cert:
-                                # FORÇAR ENVIO SEPARADO SEMPRE
-                                precisa_enviar_separado = True
-                                print("⚠️ Forçando envio separado do certificado para garantir vínculo.")
-
-                            if precisa_enviar_separado:
-                                try:
-                                    print(f"--- TENTATIVA 3: UPLOAD CERTIFICADO (SEPARADO) ---")
-                                    
-                                    # PAUSA PARA PROPAGAÇÃO (CORREÇÃO DO 404)
-                                    print("⏳ Aguardando 2s para propagação no banco da Focus...")
-                                    time.sleep(2)
-
-                                    import base64
-                                    arquivo_base64 = base64.b64encode(conteudo_certificado).decode('utf-8')
-                                    
-                                    # --- CORREÇÃO FINAL: PAYLOAD EXCLUSIVO + CNPJ ---
-                                    # Enviar APENAS o certificado e o CNPJ (para validação cruzada)
-                                    # TENTATIVA COM CHAVES PADRÃO: 'certificado' e 'senha_certificado'
-                                    print(f"Tamanho do arquivo Base64: {len(arquivo_base64)} caracteres")
-                                    
-                                    payload_certificado_exclusivo = {
-                                        "cnpj": cnpj_limpo,
-                                        "arquivo_certificado_base64": arquivo_base64,
-                                        "senha_certificado": senha_cert
-                                    }
-                                    
-                                    # --- CORREÇÃO DO 404: USAR ID SE DISPONÍVEL ---
-                                    # Se a empresa acabou de ser criada, o ID já existe e é imediato.
-                                    # O CNPJ pode demorar para indexar.
-                                    company_id_focus = None
-                                    try:
-                                        resp_json_create = response.json()
-                                        company_id_focus = resp_json_create.get('id')
-                                    except:
-                                        pass
-
-                                    if company_id_focus:
-                                        print(f"✅ Usando ID da Focus para upload: {company_id_focus}")
-                                        url_cert = f"{url_base_empresas}/{company_id_focus}"
-                                    else:
-                                        print(f"⚠️ ID não encontrado, usando CNPJ: {cnpj_limpo}")
-                                        url_cert = f"{url_base_empresas}/{cnpj_limpo}"
-                                    
-                                    print(f"--- ENVIANDO PUT CERTIFICADO ---")
-                                    resp_cert = requests.put(url_cert, json=payload_certificado_exclusivo, auth=(API_TOKEN, ""))
-                                    print(f"RESPOSTA CERTIFICADO: {resp_cert.status_code} - {resp_cert.text}")
-                                    
-                                    if resp_cert.status_code in [200, 201, 204]:
-                                        messages.success(request, 'Certificado Digital enviado com sucesso!')
-                                    elif resp_cert.status_code == 404 and "Endpoint não encontrado" in resp_cert.text:
-                                         print("⚠️ Token de empresa não permite upload de certificado via API.")
-                                         messages.info(request, 'Certificado salvo localmente. (Upload via API não permitido para este Token).')
-                                    else:
-                                        print(f"Erro Certificado: {resp_cert.text}")
-                                        messages.warning(request, f'Empresa salva, mas erro ao enviar certificado: {resp_cert.text}')
-                                except Exception as e_cert:
-                                    print(f"Erro Exception Certificado: {e_cert}")
-                                    messages.warning(request, f'Empresa salva, mas falha interna no certificado: {str(e_cert)}')
-                            # -----------------------------------------------------
-
+                                messages.warning(request, f'Asaas Fiscal: {res_fiscal.get("error")}')
                         else:
-                            # Tenta ler o erro de forma legível
-                            try:
-                                resp_json = response.json()
-                                msg_erro = resp_json.get('mensagem', str(resp_json))
-                                if 'erros' in resp_json:
-                                    msg_erro = str(resp_json['erros'])
-                            except:
-                                msg_erro = response.text
-                            
-                            messages.error(request, f'Erro na integração Focus: {msg_erro}')
-
+                            print("❌ [DEBUG] Arquivo lido resultou em 0 bytes.")
                     except Exception as e:
-                        messages.warning(request, f'Perfil salvo localmente, mas houve erro na integração: {str(e)}')
-                else:
-                    messages.success(request, 'Perfil salvo localmente.')
+                        print(f"💥 [DEBUG] Erro no processamento do arquivo: {str(e)}")
 
-                return redirect('company_profile')
-
-        # ... (resto do código de documentos/anexar continua igual) ...
-        # --- Lógica de Anexo de Documentos ---
-        elif 'upload_document' in request.POST:
-            # IMPORTANTE: request.FILES é obrigatório para capturar o arquivo
-            doc_form = CompanyDocumentForm(request.POST, request.FILES)
-            
-            if doc_form.is_valid():
-                documento = doc_form.save(commit=False)
-                documento.user = request.user  # Associa o documento ao usuário logado
-                documento.save()
-                messages.success(request, 'Documento anexado com sucesso!')
+                messages.success(request, 'Perfil atualizado com sucesso!')
                 return redirect('company_profile')
             else:
-                messages.error(request, 'Erro ao anexar documento. Verifique os campos.')
-        # --- Lógica de Exclusão de Documentos ---
+                messages.error(request, 'Erro ao validar formulário. Verifique os campos.')
+
+        # Lógica de upload de documentos extras
+        elif 'upload_document' in request.POST:
+            doc_form = CompanyDocumentForm(request.POST, request.FILES)
+            if doc_form.is_valid():
+                documento = doc_form.save(commit=False)
+                documento.user = request.user
+                documento.save()
+                messages.success(request, 'Documento anexado!')
+                return redirect('company_profile')
+
+        # Lógica de exclusão
         elif 'delete_document' in request.POST:
             doc_id = request.POST.get('document_id')
-            if doc_id:
-                try:
-                    # Garante que o usuário só apague os próprios documentos
-                    documento = CompanyDocument.objects.get(id=doc_id, user=request.user)
-                    documento.delete()
-                    messages.success(request, 'Documento excluído com sucesso!')
-                except CompanyDocument.DoesNotExist:
-                    messages.error(request, 'Documento não encontrado.')
+            CompanyDocument.objects.filter(id=doc_id, user=request.user).delete()
             return redirect('company_profile')
-
-    # else:
-    #     # Não é necessário inicializar aqui pois já foi feito no início
-    #     pass
 
     context = {
         'profile_form': profile_form,
@@ -615,6 +380,8 @@ def company_profile_view(request):
         'documents': documents,
     }
     return render(request, 'accounts/company_profile.html', context)
+
+
 
 @login_required
 @subscription_required
@@ -2503,7 +2270,12 @@ def contas_pagar(request):
                     transaction_date = account.due_date # Fallback
                 
                 # Pega a categoria padrão
-                payable_category, _ = Category.objects.get_or_create(name="Despesas Administrativas")
+                # Busca a categoria filtrando pelo usuário logado e pelo tipo 'PAYABLE'
+                payable_category, _ = Category.objects.get_or_create(
+                    name="Despesas Administrativas",
+                    user=request.user,
+                    category_type='PAYABLE'
+                )
 
                 PayableAccount.objects.create(
                     user=request.user,
@@ -2576,12 +2348,31 @@ def contas_pagar(request):
             form = PayableAccountForm(request.POST, request.FILES, instance=instance, user=request.user)
             
             if form.is_valid():
-                is_new_account = instance is None
+                # 1. Captura o modo de edição vindo do rádio/select do HTML
+                edit_mode = request.POST.get('edit_mode', 'single')
+                
+                # 2. Prepara o objeto mas não salva no banco ainda (commit=False)
+                account = form.save(commit=False)
+                
+                # 3. Se o usuário quis editar "todos" e a conta for recorrente
+                if edit_mode == 'future' and account.recurrence_group_id:
+                    # Atualiza os campos de todos os lançamentos futuros do mesmo grupo que NÃO estão pagos
+                    PayableAccount.objects.filter(
+                        user=request.user,
+                        recurrence_group_id=account.recurrence_group_id,
+                        due_date__gt=account.due_date, # Apenas datas maiores que a atual
+                        is_paid=False
+                    ).update(
+                        name=account.name,
+                        amount=account.amount,
+                        category=account.category,
+                        dre_area=account.dre_area,
+                        bank_account=account.bank_account
+                    )
 
-                # --- INÍCIO DA CORREÇÃO ---
-                # Compara com o estado original, não com o estado em-memória do form
+                # 4. Agora segue a lógica normal que você já tinha:
+                is_new_account = instance is None
                 was_avulso = (not is_new_account) and (original_occurrence == 'AVULSO')
-                # --- FIM DA CORREÇÃO ---
                 new_category_name = form.cleaned_data.get('new_category')
 
                 if new_category_name:
@@ -2626,17 +2417,25 @@ def contas_pagar(request):
                 # Roda a lógica se:
                 # 1. É uma conta nova E é recorrente
                 # 2. OU era avulsa E foi mudada para recorrente
+                import uuid
                 if (is_new_account and is_recorrente_agora) or (was_avulso and is_recorrente_agora):
-                    if recurrence_count: # Garante que temos um número para iterar
+                    if recurrence_count:
+                        group_id = uuid.uuid4()
+                        # Atualiza o primeiro lançamento
+                        account.recurrence_index = 1
+                        account.recurrence_group_id = group_id
+                        account.save()
+
                         for i in range(1, recurrence_count):
                             new_due_date = account.due_date + relativedelta(months=i)
-                            
                             PayableAccount.objects.create(
                                 user=request.user, name=account.name, description=account.description,
                                 due_date=new_due_date, amount=account.amount,
                                 category=account.category, dre_area=account.dre_area, payment_method=account.payment_method,
                                 occurrence='RECORRENTE', 
                                 recurrence_count=recurrence_count,
+                                recurrence_index=i + 1,
+                                recurrence_group_id=group_id,
                                 cost_type=account.cost_type, bank_account=account.bank_account
                             )
                 
@@ -2664,6 +2463,7 @@ def contas_pagar(request):
     end_date = request.GET.get('end_date')
     search_query = request.GET.get('search_query', '') # <-- LINHA ADICIONADA
     bank_filter = request.GET.get('bank', '')           # <-- NOVA LINHA
+    occurrence_filter = request.GET.get('occurrence', 'all')
 
     # Se nenhuma data for fornecida E não houver busca, define o padrão para o mês atual.
     if not start_date and not end_date and not search_query: # <-- CONDIÇÃO MODIFICADA
@@ -2692,6 +2492,8 @@ def contas_pagar(request):
     if bank_filter:
         accounts_query = accounts_query.filter(bank_account__id=bank_filter)
     # --- FIM DO BLOCO DE FILTRO DE BANCO ---
+    if occurrence_filter != 'all':
+        accounts_query = accounts_query.filter(occurrence=occurrence_filter)
 
     if filter_status == 'open': accounts_query = accounts_query.filter(is_paid=False)
     elif filter_status == 'paid': accounts_query = accounts_query.filter(is_paid=True)
@@ -2732,6 +2534,7 @@ def contas_pagar(request):
         'user_banks': user_banks,        
         'bank_filter': bank_filter,
         'per_page': per_page, # <--- ESSENCIAL: devolve para o HTML
+        'occurrence_filter': occurrence_filter,
     })
 
 
@@ -2969,7 +2772,12 @@ def contas_receber(request):
                     transaction_date = account.due_date # Fallback
                 
                 # Pega a categoria padrão
-                receivable_category, _ = Category.objects.get_or_create(name="Receitas sobre Vendas")
+                # Busca a categoria filtrando pelo usuário logado e pelo tipo 'RECEIVABLE'
+                receivable_category, _ = Category.objects.get_or_create(
+                    name="Receitas sobre Vendas",
+                    user=request.user,
+                    category_type='RECEIVABLE'
+                )
 
                 ReceivableAccount.objects.create(
                     user=request.user,
@@ -3020,12 +2828,32 @@ def contas_receber(request):
             form = ReceivableAccountForm(request.POST, request.FILES, instance=instance, user=request.user)
             
             if form.is_valid():
-                is_new_account = instance is None
+                # --- INÍCIO DO NOVO BLOCO ---
+                # Verifica se o usuário escolheu editar apenas um ou todos no formulário HTML
+                edit_mode = request.POST.get('edit_mode', 'single')
                 
-                # --- INÍCIO DA CORREÇÃO ---
-                # Compara com o estado original, não com o estado em-memória do form
+                # Preparamos o objeto para leitura sem salvar ainda
+                account = form.save(commit=False)
+                
+                # Se o usuário marcou para editar os futuros e a conta faz parte de uma recorrência
+                if edit_mode == 'future' and account.recurrence_group_id:
+                    ReceivableAccount.objects.filter(
+                        user=request.user,
+                        recurrence_group_id=account.recurrence_group_id,
+                        due_date__gt=account.due_date, # Filtra apenas as datas posteriores
+                        is_received=False             # Apenas as que ainda não foram recebidas
+                    ).update(
+                        name=account.name,
+                        amount=account.amount,
+                        category=account.category,
+                        dre_area=account.dre_area,
+                        bank_account=account.bank_account
+                    )
+                # --- FIM DO NOVO BLOCO ---
+
+                # Agora a sua lógica original de verificação de nova conta continua:
+                is_new_account = instance is None
                 was_avulso = (not is_new_account) and (original_occurrence == 'AVULSO')
-                # --- FIM DA CORREÇÃO ---
                 new_category_name = form.cleaned_data.get('new_category')
                 if new_category_name:
                     # 2. ADICIONE 'user=request.user' AQUI e corrija o get_or_create
@@ -3054,18 +2882,31 @@ def contas_receber(request):
                 is_recorrente_agora = form.cleaned_data.get('occurrence') == 'RECORRENTE'
                 recurrence_count = form.cleaned_data.get('recurrence_count')
                 
-                # Roda a lógica se:
-                # 1. É uma conta nova E é recorrente
-                # 2. OU era avulsa E foi mudada para recorrente
+                import uuid
                 if (is_new_account and is_recorrente_agora) or (was_avulso and is_recorrente_agora):
-                    if recurrence_count: # Garante que temos um número para iterar
+                    if recurrence_count:
+                        group_id = uuid.uuid4()
+                        # Atualiza o primeiro lançamento
+                        account.recurrence_index = 1
+                        account.recurrence_group_id = group_id
+                        account.save()
+
                         for i in range(1, recurrence_count):
                             new_due_date = account.due_date + relativedelta(months=i)
+                            # Trecho corrigido
                             ReceivableAccount.objects.create(
-                                user=request.user, name=account.name, description=account.description,
-                                due_date=new_due_date, amount=account.amount, category=account.category,
-                                dre_area=account.dre_area, payment_method=account.payment_method,
-                                occurrence='RECORRENTE', recurrence_count=recurrence_count,
+                                user=request.user, 
+                                name=account.name, 
+                                description=account.description,
+                                due_date=new_due_date, 
+                                amount=account.amount, 
+                                category=account.category,
+                                dre_area=account.dre_area, 
+                                payment_method=account.payment_method,
+                                occurrence='RECORRENTE', 
+                                recurrence_count=recurrence_count,
+                                recurrence_index=i + 1,       # Campo novo de índice
+                                recurrence_group_id=group_id, # Campo novo de grupo
                                 bank_account=account.bank_account
                             )
                 if 'save_and_receive' in request.POST:
@@ -3089,7 +2930,8 @@ def contas_receber(request):
     start_date = request.GET.get('start_date')
     end_date = request.GET.get('end_date')
     search_query = request.GET.get('search_query', '') # <-- LINHA ADICIONADA
-    bank_filter = request.GET.get('bank', '')           # <-- NOVA LINHA
+    bank_filter = request.GET.get('bank', '')     # <-- NOVA LINHA
+    occurrence_filter = request.GET.get('occurrence', 'all')
 
     # Se nenhuma data for fornecida, define o padrão para o mês atual.
     # Adicione esse bloco
@@ -3136,6 +2978,8 @@ def contas_receber(request):
     if bank_filter:
         accounts_query = accounts_query.filter(bank_account__id=bank_filter)
     # --- FIM DO BLOCO DE FILTRO DE BANCO ---
+    if occurrence_filter != 'all':
+        accounts_query = accounts_query.filter(occurrence=occurrence_filter)
 
     # Aplica os filtros.
     if filter_status == 'open':
@@ -3175,6 +3019,8 @@ def contas_receber(request):
         'user_banks': user_banks,
         'bank_filter': bank_filter,
         'per_page': per_page, # <--- ADICIONADO AQUI
+        'occurrence_filter': occurrence_filter,
+        
     }
     return render(request, 'accounts/contas_receber.html', context)
 
@@ -5412,7 +5258,30 @@ def vendas_view(request):
                     )
                 # ▲▲▲ Fim da Lógica de Contas a Receber ▲▲▲
                 
-            # Mensagem de sucesso (agora usa a variável definida na lógica)
+            # --- INTEGRAÇÃO ASAAS: Sincronização automática ao finalizar venda ---
+            try:
+                from accounts.services_asaas import AsaasMarketplaceService
+                asaas_service = AsaasMarketplaceService()
+                perfil = request.user.company_profile
+
+                # 1. Garante que o cliente existe no Asaas (Opção B que criamos)
+                asaas_cust_id = asaas_service.get_or_create_asaas_customer(perfil, cliente)
+                
+                if asaas_cust_id:
+                    # Salva o ID no seu banco para não precisar buscar de novo
+                    cliente.asaas_customer_id = asaas_cust_id
+                    cliente.save()
+                    
+                    # 2. Se for uma venda finalizada, já podemos deixar a nota "engatilhada"
+                    # Aqui você pode decidir se quer emitir na hora ou apenas 
+                    # deixar o ID do cliente pronto para o app de Notas Fiscais.
+                    print(f"✅ Cliente {cliente.nome} sincronizado com Asaas ID: {asaas_cust_id}")
+            
+            except Exception as asaas_err:
+                # Não travamos a venda se o Asaas falhar, apenas logamos o erro
+                print(f"⚠️ Falha na sincronização Asaas: {asaas_err}")
+            # --- FIM DA INTEGRAÇÃO ASAAS ---
+
             messages.success(request, success_message)
             return JsonResponse({'status':'success','redirect_url':request.path})
         except (json.JSONDecodeError, AttributeError):
