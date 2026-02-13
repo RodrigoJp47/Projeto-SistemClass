@@ -65,6 +65,8 @@ from .views import (
     listar_categorias_json,
     criar_categoria_json,
     deletar_categoria_json,
+    configurar_cora_view,
+    cora_webhook,
 )
 
 urlpatterns = [
@@ -103,6 +105,8 @@ urlpatterns = [
     path('assinatura/cancelado/', assinatura_cancelado, name='assinatura_cancelado'),
     path('configuracoes/nibo/', configurar_nibo_view, name='configurar_nibo'),
     path('configuracoes/tiny/', configurar_tiny_view, name='configurar_tiny'),
+    path('configuracoes/cora/', configurar_cora_view, name='configurar_cora'),
+    path('webhook/cora/', cora_webhook, name='cora_webhook'),
     path('gerenciar-usuarios/editar/<int:pk>/', editar_funcionario_view, name='editar_funcionario'),
     # --- Módulo Comercial ---
     path('faturamento/', faturamento_dashboard_view, name='faturamento_dashboard'),

@@ -218,6 +218,52 @@
             {% endif %}
         </div>
         {% comment %} --- FIM DA SECÇÃO ASAAS --- {% endcomment %}
+        {% comment %} --- NOVA SECÇÃO BANCO CORA --- {% endcomment %}
+        <div class="form-container cora-integration mt-4" style="border-left: 5px solid #fe3e6d;"> 
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <img src="{% static 'images/logo-cora.JPEG' %}" alt="Cora" style="height: 25px; object-fit: contain;">
+                <h3>Integração Banco Cora</h3>
+                {% if user.cora_creds.is_sandbox %}
+                    <span style="background: #ffc107; color: #333; font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: bold;">SANDBOX</span>
+                {% endif %}
+            </div>
+            
+            {% if saldo_cora is not None %}
+                <div style="background-color: #fff; border: 1px solid #ddd; border-left: 5px solid #fe3e6d; padding: 10px 15px; margin-bottom: 15px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; margin-top: 15px;">
+                    <div>
+                        <span style="font-size: 12px; color: #666; text-transform: uppercase; font-weight: bold;">Saldo em Conta</span>
+                        <div style="font-size: 24px; font-weight: bold; color: #333;">
+                            R$ {{ saldo_cora|floatformat:2|intcomma }}
+                        </div>
+                    </div>
+                    <div style="color: #fe3e6d; font-size: 24px;">
+                        <i class="fas fa-university"></i>
+                    </div>
+                </div>
+            {% endif %}
+            
+            <p class="description">
+                Sincronize automaticamente o extrato bancário direto da API do Banco Cora (Últimos 7 dias).
+            </p>
+
+            {% if user.cora_creds %}
+                <form method="post">
+                    {% csrf_token %}
+                    <button type="submit" name="sync_cora" class="btn-conta-azul" style="background-color: #fe3e6d; border-color: #fe3e6d; color: white;">
+                        <i class="fas fa-sync"></i> Sincronizar Agora
+                    </button>
+                </form>
+                <div style="margin-top: 10px;">
+                    <a href="{% url 'configurar_cora' %}" style="color: #666; text-decoration: underline;">Alterar configurações da Cora</a>
+                </div>
+            {% else %}
+                <a href="{% url 'configurar_cora' %}" class="btn-inter" style="border: 1px solid #fe3e6d; color: #fe3e6d;">
+                    <i class="fas fa-cog"></i> Configurar Banco Cora
+                </a>
+            {% endif %}
+            <p class="mt-2" style="color: #666;"><small>O sistema buscará as transações dos últimos 7 dias.</small></p>
+        </div>
+        {% comment %} --- FIM DA SECÇÃO CORA --- {% endcomment %}
         {% comment %} --- NOVA SECÇÃO OMIE --- {% endcomment %}
         <div class="form-container omie-integration mt-4" style="border-left: 5px solid #00E5FF;"> 
             <div style="display: flex; align-items: center; gap: 10px;">

@@ -1,0 +1,134 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configurar Cora - Gestão Financeira</title>
+    <link rel="stylesheet" href="{% static 'css/global.css' %}">
+    <link rel="stylesheet" href="{% static 'css/themes.css' %}">
+    <style>
+        body { background-color: #f4f6f9; }
+        .config-container {
+            max-width: 800px;
+            margin: 40px auto;
+            background: #fff;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+        .cora-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 30px;
+            border-bottom: 3px solid #fe3e6d; 
+            padding-bottom: 20px;
+        }
+        .help-box {
+            background-color: #fff0f3;
+            border-left: 4px solid #fe3e6d;
+            padding: 20px;
+            margin-bottom: 30px;
+            border-radius: 6px;
+            color: #333;
+        }
+        .form-group { margin-bottom: 25px; }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            font-size: 1.05rem;
+        }
+        .form-field {
+            width: 100%;
+            padding: 12px 15px;
+            font-size: 1rem;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            height: 50px;
+        }
+        .btn-save {
+            background-color: #fe3e6d;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            font-weight: bold;
+            width: 100%;
+        }
+        .btn-back {
+            display: inline-block;
+            margin-top: 15px;
+            color: #666;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-content" style="padding: 20px;">
+        {% if messages %}
+        <div class="messages" style="max-width: 800px; margin: 0 auto 20px;">
+            {% for message in messages %}
+            <div style="padding: 15px; background: #d4edda; color: #155724; border-radius: 5px; border: 1px solid #c3e6cb;">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="config-container">
+            <div class="cora-header">
+                <img src="{% static 'images/logo-cora.png' %}" alt="Cora" style="height: 25px;">
+                <h1 style="margin: 0; font-size: 1.8rem; color: #333;">Configuração Banco Cora</h1>
+            </div>
+
+            <div class="help-box">
+                <strong><i class="fas fa-info-circle"></i> Como conectar seu SistemClass à Cora:</strong>
+                <p style="margin-top: 10px; margin-bottom: 5px;">Siga este passo a passo simples na sua conta Cora:</p>
+                <ol style="margin-left: 20px;">
+                    <li>Acesse o <strong>Internet Banking da Cora</strong> no seu computador.</li>
+                    <li>No menu lateral, clique em <strong>Configurações</strong> e depois em <strong>Integrações</strong>.</li>
+                    <li>Clique em <strong>Gestão de integrações</strong> e escolha <strong>Adicionar nova integração</strong>.</li>
+                    <li>O banco irá gerar o <strong>Client ID</strong> e o <strong>Client Secret</strong>.</li>
+                    <li>Copie esses códigos e cole nos campos abaixo para ativar a sincronização automática.</li>
+                </ol>
+                <p style="margin-top: 10px; font-size: 0.9rem; color: #666;">
+                    <i class="fas fa-shield-alt"></i> <strong>Dica de Segurança:</strong> Nunca compartilhe sua Chave Secreta com terceiros. Ela é usada apenas para o SistemClass ler seu extrato com segurança.
+                </p>
+            </div>
+
+            <form method="post">
+                <div class="form-group">
+                    <label style="color: #333 !important; display: block;">Client ID (Obtido na Cora)</label>
+                    {{ form.client_id }}
+                </div>
+
+                <div class="form-group">
+                    <label style="color: #333 !important; display: block;">Client Secret</label>
+                    {{ form.client_secret }}
+                </div>
+                {% comment %} <div class="form-group">
+                    <label>
+                        {{ form.is_sandbox }} Ativar Modo Sandbox (Testes)
+                    </label>
+                </div> {% endcomment %}
+                <button type="submit" class="btn-save">Salvar Credenciais Cora</button>
+                <div style="text-align: center;">
+                    <a href="{% url 'importar_ofx' %}" class="btn-back">← Voltar</a>
+                </div>
+            </form>
+        </div>
+    </div>
+    <script>
+        document.querySelector('form').addEventListener('submit', function(e) {
+            const btn = document.querySelector('.btn-save');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Validando chaves com a Cora...';
+            btn.style.opacity = '0.7';
+            btn.style.pointerEvents = 'none';
+        });
+    </script>
+</body>
+</html>

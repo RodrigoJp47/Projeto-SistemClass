@@ -745,6 +745,42 @@ class MercadoPagoCredentialsForm(forms.ModelForm):
 
 # accounts/forms.py
 
+# accounts/forms.py
+
+from .models import CoraCredentials # Importe o modelo que criamos anteriormente
+
+class CoraCredentialsForm(forms.ModelForm):
+    class Meta:
+        model = CoraCredentials
+        fields = ['client_id', 'client_secret', 'is_sandbox']
+        labels = {
+            'client_id': 'Client ID (Identificador do Cliente)',
+            'client_secret': 'Client Secret (Chave Secreta)',
+            'is_sandbox': 'Ativar Modo Sandbox (Ambiente de Testes)',
+        }
+        widgets = {
+            'client_id': forms.TextInput(attrs={
+                'class': 'form-field', 
+                'placeholder': 'Digite seu Client ID da Cora',
+                'autocomplete': 'one-time-code', # Frequentemente ignora o preenchimento automático
+                'readonly': 'readonly', # Começa como apenas leitura
+                'onfocus': "this.removeAttribute('readonly');", # Libera quando o cliente clica
+            }),
+            'client_secret': forms.PasswordInput(render_value=True, attrs={
+                'class': 'form-field', 
+                'placeholder': 'Sua chave secreta da Cora',
+                'autocomplete': 'off'
+            }),
+            'is_sandbox': forms.CheckboxInput(attrs={
+                'style': 'width: 20px; height: 20px; margin-top: 10px;'
+            }),
+        }
+        help_texts = {
+            'client_id': 'Obtenha este ID no portal de desenvolvedores da Cora.',
+            'client_secret': 'Sua chave secreta é pessoal e não deve ser compartilhada.',
+            'is_sandbox': 'Marque apenas se estiver usando o ambiente de homologação (testes) da Cora.'
+        }
+
 # ... (outros imports)
 from .models import AsaasCredentials # Não esqueça de importar
 
