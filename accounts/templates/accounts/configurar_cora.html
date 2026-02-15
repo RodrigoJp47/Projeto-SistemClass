@@ -1,133 +1,218 @@
+{% comment %} {% load static %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configurar Cora</title>
+    <link rel="stylesheet" href="{% static 'css/global.css' %}">
+    <link rel="stylesheet" href="{% static 'css/themes.css' %}">
+    <style>
+        body { background-color: #f4f6f9; }
+        .config-container { max-width: 800px; margin: 40px auto; background: #fff; padding: 40px; border-radius: 12px; }
+        .form-group { margin-bottom: 25px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: bold; color: #333; }
+        .form-field { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; }
+        .btn-save { background-color: #fe3e6d; color: white; border: none; padding: 15px 30px; border-radius: 6px; cursor: pointer; width: 100%; font-weight: bold; font-size: 1.1rem;}
+        
+        /* ESTILO LIMPO PARA OS ARQUIVOS APARECEREM */
+        input[type="file"] {
+            border: none;
+            background: none;
+            padding: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div style="padding: 20px;">
+        {% if messages %}
+            {% for message in messages %}
+                <div style="padding: 15px; margin-bottom: 20px; background: #d4edda; color: #155724; border: 1px solid #c3e6cb; border-radius: 5px;">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <div class="config-container">
+            <h1 style="color: #333; margin-bottom: 20px;">Configuração Banco Cora</h1>
+            
+            <p style="background: #fff3cd; padding: 15px; border-radius: 5px; color: #856404;">
+                <strong>Atenção:</strong> Anexe os arquivos <code>certificate.pem</code> e <code>private.key</code>.
+            </p>
+
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                
+                <div class="form-group">
+                    <label>Client ID</label>
+                    {{ form.client_id }}
+                </div>
+
+                <div class="form-group">
+                    <label>Client Secret (Deixe VAZIO)</label>
+                    {{ form.client_secret }}
+                </div>
+
+                <div class="form-group" style="background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px dashed #999;">
+                    <label style="color: #fe3e6d;">1. Arquivo de Certificado (certificate.pem)</label>
+                    {{ form.certificado }}
+                </div>
+
+                <div class="form-group" style="background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px dashed #999;">
+                    <label style="color: #fe3e6d;">2. Chave Privada (private.key)</label>
+                    {{ form.chave_privada }}
+                </div>
+
+                <button type="submit" class="btn-save">SALVAR E CONECTAR</button>
+            </form>
+            
+            <br>
+            <center><a href="{% url 'importar_ofx' %}" style="color: #666;">Voltar</a></center>
+        </div>
+    </div>
+</body>
+</html> {% endcomment %}
+
 {% load static %}
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Configurar Cora - Gestão Financeira</title>
+    <title>Configurar Integração Cora</title>
     <link rel="stylesheet" href="{% static 'css/global.css' %}">
     <link rel="stylesheet" href="{% static 'css/themes.css' %}">
+    
     <style>
-        body { background-color: #f4f6f9; }
-        .config-container {
-            max-width: 800px;
-            margin: 40px auto;
-            background: #fff;
-            padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-        }
-        .cora-header {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            margin-bottom: 30px;
-            border-bottom: 3px solid #fe3e6d; 
-            padding-bottom: 20px;
-        }
-        .help-box {
-            background-color: #fff0f3;
-            border-left: 4px solid #fe3e6d;
+        body { background-color: #f4f6f9; font-family: sans-serif; }
+        .config-container { max-width: 800px; margin: 40px auto; background: #fff; padding: 40px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        
+        .form-group { margin-bottom: 25px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: bold; color: #333; }
+        .form-field { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; }
+        
+        .btn-save { background-color: #fe3e6d; color: white; border: none; padding: 15px 30px; border-radius: 6px; cursor: pointer; width: 100%; font-weight: bold; font-size: 1.1rem; transition: background 0.3s;}
+        .btn-save:hover { background-color: #d6335b; }
+
+        /* Área de Instruções */
+        .instructions-box {
+            background-color: #fff3cd;
+            border-left: 5px solid #ffc107;
             padding: 20px;
             margin-bottom: 30px;
-            border-radius: 6px;
-            color: #333;
+            border-radius: 4px;
+            color: #856404;
         }
-        .form-group { margin-bottom: 25px; }
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            font-size: 1.05rem;
+        .instructions-box h3 { margin-top: 0; margin-bottom: 10px; font-size: 1.1rem; }
+        .instructions-box ul { padding-left: 20px; margin-bottom: 0; }
+        .instructions-box li { margin-bottom: 5px; }
+
+        /* Estilo para a caixa de upload */
+        .upload-box {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border: 2px dashed #ccc;
+            transition: border-color 0.3s;
+            position: relative;
         }
-        .form-field {
-            width: 100%;
-            padding: 12px 15px;
-            font-size: 1rem;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            height: 50px;
-        }
-        .btn-save {
-            background-color: #fe3e6d;
-            color: white;
-            border: none;
-            padding: 15px 30px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 1.1rem;
+        .upload-box:hover { border-color: #fe3e6d; }
+        
+        /* Texto de sucesso do arquivo */
+        .file-status {
+            margin-top: 10px;
+            font-size: 0.95rem;
             font-weight: bold;
-            width: 100%;
+            color: #28a745;
+            display: none;
         }
-        .btn-back {
-            display: inline-block;
-            margin-top: 15px;
-            color: #666;
-            text-decoration: none;
-        }
+        
+        /* Oculta o input padrão feio, mas deixa funcional */
+        .custom-file-input { width: 100%; }
     </style>
 </head>
 <body>
-    <div class="main-content" style="padding: 20px;">
+    <div style="padding: 20px;">
         {% if messages %}
-        <div class="messages" style="max-width: 800px; margin: 0 auto 20px;">
             {% for message in messages %}
-            <div style="padding: 15px; background: #d4edda; color: #155724; border-radius: 5px; border: 1px solid #c3e6cb;">
-                {{ message }}
-            </div>
+                <div style="padding: 15px; margin-bottom: 20px; background: #d4edda; color: #155724; border: 1px solid #c3e6cb; border-radius: 5px;">
+                    {{ message }}
+                </div>
             {% endfor %}
-        </div>
         {% endif %}
 
         <div class="config-container">
-            <div class="cora-header">
-                <img src="{% static 'images/logo-cora.jpeg' %}" alt="Cora" style="height: 25px;">
-                <h1 style="margin: 0; font-size: 1.8rem; color: #333;">Configuração Banco Cora</h1>
+            <h1 style="color: #333; margin-bottom: 20px; border-bottom: 2px solid #fe3e6d; padding-bottom: 10px;">
+                Configuração Banco Cora
+            </h1>
+
+            <div class="instructions-box">
+                <h3>📌 Como obter suas credenciais:</h3>
+                <ul>
+                    <li>Acesse sua conta <strong>Cora Internet Banking</strong> pelo computador.</li>
+                    <li>Vá no menu <strong>Configurações</strong> &gt; <strong>API (Integrações)</strong>.</li>
+                    <li>Crie uma <strong>Nova Aplicação</strong>.</li>
+                    <li>Copie o <strong>Client ID</strong> gerado.</li>
+                    <li>Baixe os arquivos de segurança (ZIP). Extraia o <strong>certificate.pem</strong> e a <strong>private.key</strong>.</li>
+                </ul>
             </div>
 
-            <div class="help-box">
-                <strong><i class="fas fa-info-circle"></i> Como conectar seu SistemClass à Cora:</strong>
-                <p style="margin-top: 10px; margin-bottom: 5px;">Siga este passo a passo simples na sua conta Cora:</p>
-                <ol style="margin-left: 20px;">
-                    <li>Acesse o <strong>Internet Banking da Cora</strong> no seu computador.</li>
-                    <li>No menu lateral, clique em <strong>Configurações</strong> e depois em <strong>Integrações</strong>.</li>
-                    <li>Clique em <strong>Gestão de integrações</strong> e escolha <strong>Adicionar nova integração</strong>.</li>
-                    <li>O banco irá gerar o <strong>Client ID</strong> e o <strong>Client Secret</strong>.</li>
-                    <li>Copie esses códigos e cole nos campos abaixo para ativar a sincronização automática.</li>
-                </ol>
-                <p style="margin-top: 10px; font-size: 0.9rem; color: #666;">
-                    <i class="fas fa-shield-alt"></i> <strong>Dica de Segurança:</strong> Nunca compartilhe sua Chave Secreta com terceiros. Ela é usada apenas para o SistemClass ler seu extrato com segurança.
-                </p>
-            </div>
-
-            <form method="post">
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                
                 <div class="form-group">
-                    <label style="color: #333 !important; display: block;">Client ID (Obtido na Cora)</label>
+                    <label>Client ID <span style="font-weight:normal; color:#666;">(Copiado do site da Cora)</span></label>
                     {{ form.client_id }}
                 </div>
 
                 <div class="form-group">
-                    <label style="color: #333 !important; display: block;">Client Secret</label>
+                    <label>Client Secret <span style="font-weight:normal; color:#888;">(Deixe VAZIO se não informado)</span></label>
                     {{ form.client_secret }}
+                    <small style="color: #666; display: block; margin-top: 5px;">A maioria das integrações da Cora usa apenas os certificados, não sendo necessário preencher este campo.</small>
                 </div>
-                {% comment %} <div class="form-group">
-                    <label>
-                        {{ form.is_sandbox }} Ativar Modo Sandbox (Testes)
-                    </label>
-                </div> {% endcomment %}
-                <button type="submit" class="btn-save">Salvar Credenciais Cora</button>
-                <div style="text-align: center;">
-                    <a href="{% url 'importar_ofx' %}" class="btn-back">← Voltar</a>
+
+                <div class="form-group upload-box">
+                    <label style="color: #fe3e6d;">1. Arquivo de Certificado (certificate.pem)</label>
+                    {{ form.certificado }}
+                    <div id="status-certificado" class="file-status">✓ Arquivo Selecionado</div>
                 </div>
+
+                <div class="form-group upload-box">
+                    <label style="color: #fe3e6d;">2. Chave Privada (private.key)</label>
+                    {{ form.chave_privada }}
+                    <div id="status-chave" class="file-status">✓ Arquivo Selecionado</div>
+                </div>
+
+                <button type="submit" class="btn-save">SALVAR E CONECTAR</button>
             </form>
+            
+            <br>
+            <center><a href="{% url 'importar_ofx' %}" style="color: #666; text-decoration: none;">&larr; Voltar para Importação</a></center>
         </div>
     </div>
+
     <script>
-        document.querySelector('form').addEventListener('submit', function(e) {
-            const btn = document.querySelector('.btn-save');
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Validando chaves com a Cora...';
-            btn.style.opacity = '0.7';
-            btn.style.pointerEvents = 'none';
+        document.addEventListener("DOMContentLoaded", function() {
+            const certInput = document.getElementById('id_certificado');
+            const keyInput = document.getElementById('id_chave_privada');
+            const certStatus = document.getElementById('status-certificado');
+            const keyStatus = document.getElementById('status-chave');
+
+            function setupInput(inputElement, statusElement) {
+                if (inputElement) {
+                    inputElement.addEventListener('change', function() {
+                        if (this.files && this.files.length > 0) {
+                            const fileName = this.files[0].name;
+                            statusElement.textContent = "✓ Selecionado: " + fileName;
+                            statusElement.style.display = "block";
+                        } else {
+                            statusElement.style.display = "none";
+                        }
+                    });
+                }
+            }
+            setupInput(certInput, certStatus);
+            setupInput(keyInput, keyStatus);
         });
     </script>
 </body>

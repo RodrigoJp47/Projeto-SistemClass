@@ -745,40 +745,63 @@ class MercadoPagoCredentialsForm(forms.ModelForm):
 
 # accounts/forms.py
 
-# accounts/forms.py
+from django import forms
+from .models import CoraCredentials
 
-from .models import CoraCredentials # Importe o modelo que criamos anteriormente
+
 
 class CoraCredentialsForm(forms.ModelForm):
+    # --- AJUSTE AQUI: Definimos o campo explicitamente para ser OPCIONAL ---
+    # Ao colocar aqui fora, ganhamos controle total sobre ele (required=False)
+    client_secret = forms.CharField(
+        required=False,  # <--- O SEGREDO ESTÁ AQUI
+        label='Client Secret (Opcional se usar Certificado)',
+        widget=forms.PasswordInput(render_value=True, attrs={
+            'class': 'form-field', 
+            'placeholder': 'Deixe em branco pois você usa Certificado',
+            'autocomplete': 'off'
+        })
+    )
+
     class Meta:
         model = CoraCredentials
-        fields = ['client_id', 'client_secret', 'is_sandbox']
+        fields = ['client_id', 'client_secret', 'certificado', 'chave_privada', 'is_sandbox']
+        
         labels = {
             'client_id': 'Client ID (Identificador do Cliente)',
-            'client_secret': 'Client Secret (Chave Secreta)',
+            # O label do client_secret já foi definido lá em cima
+            'certificado': 'Certificado Digital (certificate.pem)',
+            'chave_privada': 'Chave Privada (private.key)',
             'is_sandbox': 'Ativar Modo Sandbox (Ambiente de Testes)',
         }
+        
         widgets = {
             'client_id': forms.TextInput(attrs={
                 'class': 'form-field', 
                 'placeholder': 'Digite seu Client ID da Cora',
-                'autocomplete': 'one-time-code', # Frequentemente ignora o preenchimento automático
-                'readonly': 'readonly', # Começa como apenas leitura
-                'onfocus': "this.removeAttribute('readonly');", # Libera quando o cliente clica
+                'autocomplete': 'one-time-code',
+                'readonly': 'readonly', 
+                'onfocus': "this.removeAttribute('readonly');", 
             }),
-            'client_secret': forms.PasswordInput(render_value=True, attrs={
-                'class': 'form-field', 
-                'placeholder': 'Sua chave secreta da Cora',
-                'autocomplete': 'off'
+            # Removemos o widget do client_secret daqui pois já está lá em cima
+            'certificado': forms.ClearableFileInput(attrs={
+                'class': 'form-field',
+                'accept': '.pem,.crt' 
+            }),
+            'chave_privada': forms.ClearableFileInput(attrs={
+                'class': 'form-field',
+                'accept': '.key,.pem'
             }),
             'is_sandbox': forms.CheckboxInput(attrs={
                 'style': 'width: 20px; height: 20px; margin-top: 10px;'
             }),
         }
+        
         help_texts = {
             'client_id': 'Obtenha este ID no portal de desenvolvedores da Cora.',
-            'client_secret': 'Sua chave secreta é pessoal e não deve ser compartilhada.',
-            'is_sandbox': 'Marque apenas se estiver usando o ambiente de homologação (testes) da Cora.'
+            'certificado': 'Faça o upload do arquivo "certificate.pem" que veio no ZIP.',
+            'chave_privada': 'Faça o upload do arquivo "private.key" que veio no ZIP.',
+            'is_sandbox': 'Marque apenas se estiver usando o ambiente de homologação.'
         }
 
 # ... (outros imports)

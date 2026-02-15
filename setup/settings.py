@@ -312,3 +312,9 @@ STRIPE_PRICE_IDS = {
 # ==================================================================
 ASAAS_API_URL = os.environ.get('ASAAS_API_URL', 'https://sandbox.asaas.com/api/v3')
 ASAAS_MASTER_API_KEY = os.environ.get('ASAAS_MASTER_API_KEY')
+
+
+# CSRF_TRUSTED_ORIGINS = [
+#     'https://sistemclass.com.br',
+#     'https://*.onrender.com',
+# ]

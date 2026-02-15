@@ -122,15 +122,16 @@ MESES_ABREVIADOS = {
 
 # Em accounts/views.py
 
-# Adicione 'centro_custo=None' nos argumentos
 def aprender_classificacao(user, nome, categoria, dre_area, tipo, bank_account=None, centro_custo=None):
     """
-    Salva a regra incluindo o Centro de Custo.
+    Salva ou ATUALIZA a regra incluindo o Centro de Custo.
     """
     from .models import ClassificacaoAutomatica 
 
     if nome and categoria and dre_area:
-        ClassificacaoAutomatica.objects.get_or_create(
+        # MUDANÇA IMPORTANTE: Trocamos get_or_create por update_or_create
+        # Assim, se a regra já existir, ele ATUALIZA com o novo centro de custo
+        ClassificacaoAutomatica.objects.update_or_create(
             user=user,
             termo__iexact=nome.strip(),
             tipo=tipo,
@@ -139,7 +140,7 @@ def aprender_classificacao(user, nome, categoria, dre_area, tipo, bank_account=N
                 'categoria': categoria,
                 'dre_area': dre_area,
                 'bank_account': bank_account,
-                'centro_custo': centro_custo  # <--- ADICIONAR AQUI
+                'centro_custo': centro_custo  # Agora grava/atualiza o centro de custo
             }
         )
 
@@ -1623,15 +1624,19 @@ def importar_ofx_view(request):
                     messages.warning(request, "Asaas: Nenhuma transação encontrada no período.")
             
             return redirect('importar_ofx')
-        # ▲▲▲ [FIM] NOVO BLOCO ASAAS ▲▲▲
-
-        # ▼▼▼ [INÍCIO] NOVO BLOCO BANCO CORA ▼▼▼
+        
         elif 'sync_cora' in request.POST:
-            # 1. Define o período (Últimos 7 dias, conforme seu padrão de bancos)
             end_date = datetime.now().date()
             start_date = end_date - timedelta(days=7)
             
-            # 2. Chama a API no utils_cora
+            try:
+                payable_category = Category.objects.filter(category_type='PAYABLE', name__icontains='Gerais').first() or Category.objects.filter(category_type='PAYABLE').first()
+                receivable_category = Category.objects.filter(category_type='RECEIVABLE', name__icontains='Vendas').first() or Category.objects.filter(category_type='RECEIVABLE').first()
+            except:
+                payable_category = None
+                receivable_category = None
+            
+            # Chama o utils (que já busca Tags e Nome Real)
             resultado = buscar_extrato_cora(request.user, start_date, end_date)
             
             if 'erro' in resultado:
@@ -1639,17 +1644,9 @@ def importar_ofx_view(request):
             else:
                 transacoes = resultado.get('transacoes', [])
                 
-                # Tenta localizar a conta bancária 'Cora' no sistema
                 banco_cora = BankAccount.objects.filter(user=request.user, bank_name__icontains='Cora').first()
                 if not banco_cora:
-                    # Cria a conta virtual se não existir para não quebrar o vínculo
-                    banco_cora = BankAccount.objects.create(
-                        user=request.user, 
-                        bank_name='Banco Cora', 
-                        agency='0001', 
-                        account_number='DIGITAL', 
-                        initial_balance=0
-                    )
+                    banco_cora = BankAccount.objects.create(user=request.user, bank_name='Banco Cora', agency='0001', account_number='DIGITAL', initial_balance=0)
 
                 count_importados = 0
                 count_duplicados = 0
@@ -1660,32 +1657,25 @@ def importar_ofx_view(request):
                     id_cora = transacao.get('id_cora')
                     data_str = transacao.get('data')
                     valor = Decimal(str(transacao.get('valor', 0)))
-                    descricao_origem = transacao.get('descricao')
-                    tipo_op = transacao.get('tipo') # 'C' ou 'D'
+                    nome_parte = transacao.get('nome_parte')
+                    descricao_tecnica = transacao.get('descricao')
+                    tipo_op = transacao.get('tipo')
                     
                     try:
                         data_movimento = datetime.strptime(data_str, '%Y-%m-%d').date()
                     except:
                         data_movimento = end_date
 
-                    descricao_final = f"Cora - {descricao_origem} (ID: {id_cora})"
+                    descricao_final = f"{nome_parte} (Ref: {descricao_tecnica})"
                     
-                    # Janela para o Smart-Matching
                     date_window_start = data_movimento - timedelta(days=DATE_WINDOW_DAYS)
                     date_window_end = data_movimento + timedelta(days=DATE_WINDOW_DAYS)
 
-                    # --- LÓGICA DÉBITO (PAYABLE) ---
+                    # === DESPESAS (PAYABLE) ===
                     if tipo_op == 'D':
-                        # Verifica duplicação pelo external_id
-                        existe = PayableAccount.objects.filter(user=request.user, external_id=id_cora).exists()
-
-                        if not existe:
-                            # Tenta Smart-Matching (Conciliação Cirúrgica)
+                        if not PayableAccount.objects.filter(user=request.user, external_id=id_cora).exists():
                             match = PayableAccount.objects.filter(
-                                user=request.user,
-                                is_paid=False,
-                                amount=valor,
-                                due_date__range=[date_window_start, date_window_end]
+                                user=request.user, is_paid=False, amount=valor, due_date__range=[date_window_start, date_window_end]
                             ).first()
 
                             if match:
@@ -1693,22 +1683,26 @@ def importar_ofx_view(request):
                                 match.payment_date = data_movimento
                                 match.bank_account = banco_cora
                                 match.external_id = id_cora
-                                match.description += " (Conciliado Cora)"
+                                match.description += f" (Conciliado Cora)"
                                 match.save()
                                 reconciled_count += 1
                             else:
-                                # Não achou: Previsão de IA e Criação
-                                cat_prevista, dre_prevista, _, centro_previsto = prever_classificacao(request.user, descricao_origem, 'PAYABLE')
+                                # IA: Recebe 4 valores (conforme sua função 'prever_classificacao')
+                                # O '_' ignora o banco sugerido pela IA, pois já sabemos que é Cora
+                                cat_prevista, dre_prevista, _, centro_previsto = prever_classificacao(request.user, nome_parte, 'PAYABLE')
                                 
                                 PayableAccount.objects.create(
                                     user=request.user,
-                                    name=descricao_origem[:100],
+                                    name=nome_parte[:200],
                                     description=descricao_final,
                                     due_date=data_movimento,
                                     amount=valor,
-                                    category=cat_prevista or payable_category, # payable_category definida no início da sua view
+                                    category=cat_prevista or payable_category,
                                     dre_area=dre_prevista or 'OPERACIONAL',
-                                    centro_custo=centro_previsto,
+                                    
+                                    # AQUI SALVAMOS O CENTRO DE CUSTO (Pois PayableAccount tem esse campo)
+                                    centro_custo=centro_previsto, 
+                                    
                                     payment_method='DEBITO_CONTA',
                                     occurrence='AVULSO',
                                     is_paid=True,
@@ -1720,17 +1714,11 @@ def importar_ofx_view(request):
                         else:
                             count_duplicados += 1
 
-                    # --- LÓGICA CRÉDITO (RECEIVABLE) ---
-                    else:
-                        existe = ReceivableAccount.objects.filter(user=request.user, external_id=id_cora).exists()
-
-                        if not existe:
-                            # Tenta Smart-Matching
+                    # === RECEITAS (RECEIVABLE) ===
+                    else: 
+                        if not ReceivableAccount.objects.filter(user=request.user, external_id=id_cora).exists():
                             match = ReceivableAccount.objects.filter(
-                                user=request.user,
-                                is_received=False,
-                                amount=valor,
-                                due_date__range=[date_window_start, date_window_end]
+                                user=request.user, is_received=False, amount=valor, due_date__range=[date_window_start, date_window_end]
                             ).first()
 
                             if match:
@@ -1738,21 +1726,24 @@ def importar_ofx_view(request):
                                 match.payment_date = data_movimento
                                 match.bank_account = banco_cora
                                 match.external_id = id_cora
-                                match.description += " (Conciliado Cora)"
+                                match.description += f" (Conciliado Cora)"
                                 match.save()
                                 reconciled_count += 1
                             else:
-                                # Não achou: Previsão de IA e Criação
-                                cat_prevista, dre_prevista, _, centro_previsto = prever_classificacao(request.user, descricao_origem, 'RECEIVABLE')
+                                # IA: Recebe 4 valores, mas ignoramos o centro_previsto aqui
+                                cat_prevista, dre_prevista, _, centro_previsto = prever_classificacao(request.user, nome_parte, 'RECEIVABLE')
 
                                 ReceivableAccount.objects.create(
                                     user=request.user,
-                                    name=descricao_origem[:100],
+                                    name=nome_parte[:200],
                                     description=descricao_final,
                                     due_date=data_movimento,
                                     amount=valor,
                                     category=cat_prevista or receivable_category,
                                     dre_area=dre_prevista or 'BRUTA',
+                                    
+                                    # REMOVIDO 'centro_custo' DAQUI (Pois ReceivableAccount não tem esse campo)
+                                    
                                     payment_method='PIX',
                                     occurrence='AVULSO',
                                     is_received=True,
@@ -1764,16 +1755,12 @@ def importar_ofx_view(request):
                         else:
                             count_duplicados += 1
 
-                # Feedbacks conforme seu padrão
-                if count_importados > 0:
-                    messages.success(request, f"Cora: {count_importados} novos lançamentos importados.")
-                if reconciled_count > 0:
-                    messages.info(request, f"Cora: {reconciled_count} lançamentos conciliados automaticamente.")
-                if count_importados == 0 and reconciled_count == 0:
-                    messages.info(request, "Cora: Nenhuma transação nova encontrada.")
+                if count_importados > 0: messages.success(request, f"Cora: {count_importados} importados.")
+                if reconciled_count > 0: messages.info(request, f"Cora: {reconciled_count} conciliados.")
+                if count_importados == 0 and reconciled_count == 0: messages.info(request, "Cora: Nada novo.")
 
             return redirect('importar_ofx')
-        # ▲▲▲ [FIM] NOVO BLOCO BANCO CORA ▲▲▲
+        # ▲▲▲ [FIM] BLOCO CORA ▲▲▲
 
         # ▼▼▼ [INÍCIO] NOVO BLOCO OMIE ▼▼▼
         elif 'sync_omie' in request.POST:
@@ -2563,7 +2550,7 @@ def contas_pagar(request):
                 form.instance.user = request.user
                 account = form.save()
 
-                # ▼▼▼ ADICIONE ESTE BLOCO ▼▼▼
+                # ▼▼▼ BLOCO CORRIGIDO (DENTRO DE CONTAS_PAGAR) ▼▼▼
                 # Ensina o dicionário
                 aprender_classificacao(
                     user=request.user,
@@ -2571,7 +2558,10 @@ def contas_pagar(request):
                     categoria=account.category,
                     dre_area=account.dre_area,
                     tipo='PAYABLE',
-                    bank_account=account.bank_account
+                    bank_account=account.bank_account,
+                    
+                    # AQUI ESTAVA FALTANDO:
+                    centro_custo=account.centro_custo 
                 )
                 # ▲▲▲ FIM DO BLOCO ▲▲▲
                 
@@ -7895,31 +7885,43 @@ def configurar_cora_view(request):
         instance = None
 
     if request.method == 'POST':
-        form = CoraCredentialsForm(request.POST, instance=instance)
+        # --- A CORREÇÃO ESTÁ AQUI EMBAIXO ---
+        # Adicionei 'request.FILES' para o Django processar o upload do certificado e da chave
+        form = CoraCredentialsForm(request.POST, request.FILES, instance=instance)
+        
         if form.is_valid():
-            # Criamos um objeto temporário para testar
-            temp_creds = form.save(commit=False)
-            temp_creds.user = request.user
+            creds = form.save(commit=False)
+            creds.user = request.user
+
+            # --- TRAVA DE SEGURANÇA ---
+            # Como tiramos o checkbox do HTML, forçamos aqui para NUNCA ser Sandbox
+            creds.is_sandbox = False 
+            # --------------------------
+            
+            # Precisamos salvar DE VERDADE agora para o arquivo ir para a pasta do servidor
+            # Se não salvar, o 'utils_cora' não acha o arquivo no disco para testar
+            creds.save() 
             
             # --- VALIDAÇÃO EM TEMPO REAL ---
-            # Tentamos buscar o saldo apenas para validar as chaves
             from .utils_cora import buscar_saldo_cora
             
-            # Salvamos temporariamente apenas para a função 'buscar_saldo_cora' funcionar
-            # Se você preferir não salvar, teria que adaptar a 'get_cora_config'
-            temp_creds.save() 
-            
+            # Testamos a conexão buscando o saldo
             teste_conexao = buscar_saldo_cora(request.user)
             
             if 'erro' in teste_conexao:
-                # Se deu erro, removemos o que salvamos e avisamos o cliente
-                temp_creds.delete()
-                messages.error(request, f"As chaves inseridas parecem inválidas: {teste_conexao['erro']}. Verifique o Client ID e o Secret.")
+                # LÓGICA DE SEGURANÇA:
+                # Só deletamos se for uma credencial NOVA que deu errado.
+                # Se for uma atualização (instance existe) e deu erro, mantemos a antiga (ou o estado atual)
+                # para você não perder o registro, mas avisamos do erro.
+                if instance is None:
+                    creds.delete()
+                
+                messages.error(request, f"As chaves ou arquivos parecem inválidos: {teste_conexao['erro']}")
             else:
                 messages.success(request, "Conexão com a Cora validada e configurada com sucesso!")
-                return redirect('importar_ofx')
+                return redirect('importar_ofx') # Ou 'dashboard'
         else:
-            messages.error(request, "Erro ao preencher o formulário.")
+            messages.error(request, "Erro no formulário. Verifique se anexou os arquivos .pem e .key corretamente.")
     else:
         form = CoraCredentialsForm(instance=instance)
 
@@ -8220,39 +8222,56 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+# accounts/views.py
+
+import json
+import logging
+from decimal import Decimal
+from django.http import HttpResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.utils import timezone
+# Importe seus models corretamente
+# from .models import ReceivableAccount (ou Receita, confirme o nome do seu model)
+
+logger = logging.getLogger(__name__)
+
 @csrf_exempt
 def cora_webhook(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
-            # A Cora envia o tipo de evento (ex: 'invoice.paid' ou 'transaction.created')
-            event_type = data.get('event')
             
-            # Identificamos a transação
+            # A Cora envia o tipo de evento
+            event_type = data.get('event')
             resource = data.get('resource', {})
             external_id = resource.get('id')
             
-            # 1. LOG PARA DEBUG (Importante para você ver no console do Render)
-            logger.info(f"Webhook Cora Recebido: {event_type} - ID: {external_id}")
+            # Log para debug no Render/Terminal
+            print(f"--- Webhook Cora: {event_type} | ID: {external_id} ---")
 
-            if event_type == 'invoice.paid' or event_type == 'transaction.created':
-                valor = Decimal(str(resource.get('amount', 0)))
+            if event_type in ['invoice.paid', 'transaction.created']:
+                # --- CORREÇÃO DO VALOR ---
+                # Cora envia em centavos (INT). Dividimos por 100.
+                valor_centavos = int(resource.get('amount', 0))
+                valor_real = Decimal(valor_centavos) / 100
                 
-                # Buscamos a conta a receber que tem esse external_id (ID da Cora)
-                # ou tentamos o Smart-Matching por valor se for uma transação avulsa
-                conta = ReceivableAccount.objects.filter(external_id=external_id).first()
+                # Exemplo: Buscando pelo ID da transação no seu sistema
+                # Ajuste 'Receita' para o nome real da sua tabela de lançamentos
+                # conta = Receita.objects.filter(id_cora=external_id).first()
                 
-                if conta and not conta.is_received:
-                    conta.is_received = True
-                    conta.payment_date = datetime.now().date()
-                    conta.description += " (Baixa Automática Webhook Cora)"
-                    conta.save()
-                    logger.info(f"Conta {conta.id} baixada automaticamente via Webhook.")
+                # SE VOCÊ TIVER A LÓGICA DE BAIXA AUTOMÁTICA:
+                # if conta and not conta.pago:
+                #     conta.pago = True
+                #     conta.data_pagamento = timezone.now().date()
+                #     conta.valor = valor_real
+                #     conta.descricao += " (Baixa via Webhook Cora)"
+                #     conta.save()
+                #     print(f"Conta {conta.id} baixada automaticamente.")
 
-            return HttpResponse(status=200) # Sempre responda 200 para a Cora não reenviar
+            return HttpResponse(status=200) # Sempre retornar 200 OK
             
         except Exception as e:
-            logger.error(f"Erro no processamento do Webhook Cora: {str(e)}")
+            logger.error(f"Erro Webhook Cora: {str(e)}")
             return HttpResponse(status=500)
             
     return HttpResponse(status=405)

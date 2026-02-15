@@ -1010,21 +1010,48 @@ class TinyCredentials(models.Model):
         return f"Credenciais Tiny - {self.user.username}"    
     
 
+from django.db import models
+from django.contrib.auth.models import User
+
+# Função auxiliar para salvar os certificados em uma pasta organizada por usuário
+def upload_cora_cert(instance, filename):
+    return f'cora_certs/user_{instance.user.id}/{filename}'
+
 class CoraCredentials(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='cora_creds')
-    client_id = models.CharField(max_length=255)
-    # A Cora exige um Client Secret ou Certificado dependendo da conta
-    client_secret = models.CharField(max_length=255, blank=True, null=True)
-    access_token = models.TextField(blank=True, null=True)
-    refresh_token = models.TextField(blank=True, null=True)
-    expires_at = models.DateTimeField(blank=True, null=True)
-    is_sandbox = models.BooleanField(default=True)
     
+    # Credenciais de Texto
+    client_id = models.CharField(max_length=255)
+    client_secret = models.CharField(max_length=255, blank=True, null=True)
+    
+    # --- NOVOS CAMPOS PARA O CERTIFICADO ---
+    # É aqui que vamos salvar os arquivos do ZIP que você tem
+    certificado = models.FileField(
+        upload_to=upload_cora_cert, 
+        null=True, 
+        blank=True, 
+        help_text="Upload do arquivo certificate.pem"
+    )
+    chave_privada = models.FileField(
+        upload_to=upload_cora_cert, 
+        null=True, 
+        blank=True, 
+        help_text="Upload do arquivo private.key"
+    )
+    # ---------------------------------------
+
+    # Tokens de Acesso
+    access_token = models.TextField(blank=True, null=True)
+    # O Refresh Token não é muito usado na Cora (eles usam expiração curta), mas pode manter
+    refresh_token = models.TextField(blank=True, null=True) 
+    expires_at = models.DateTimeField(blank=True, null=True)
+    
+    is_sandbox = models.BooleanField(default=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         env = "Sandbox" if self.is_sandbox else "Produção"
-        return f"Cora ({env}) - {self.user.username}"    
+        return f"Cora ({env}) - {self.user.username}"   
 
 
 
