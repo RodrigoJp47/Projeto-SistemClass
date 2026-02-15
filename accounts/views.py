@@ -7876,6 +7876,57 @@ def configurar_omie_view(request):
 
     return render(request, 'accounts/configurar_omie.html', {'form': form})
 
+# @login_required
+# @owner_required
+# def configurar_cora_view(request):
+#     try:
+#         instance = request.user.cora_creds
+#     except CoraCredentials.DoesNotExist:
+#         instance = None
+
+#     if request.method == 'POST':
+#         # --- A CORREÇÃO ESTÁ AQUI EMBAIXO ---
+#         # Adicionei 'request.FILES' para o Django processar o upload do certificado e da chave
+#         form = CoraCredentialsForm(request.POST, request.FILES, instance=instance)
+        
+#         if form.is_valid():
+#             creds = form.save(commit=False)
+#             creds.user = request.user
+
+#             # --- TRAVA DE SEGURANÇA ---
+#             # Como tiramos o checkbox do HTML, forçamos aqui para NUNCA ser Sandbox
+#             creds.is_sandbox = False 
+#             # --------------------------
+            
+#             # Precisamos salvar DE VERDADE agora para o arquivo ir para a pasta do servidor
+#             # Se não salvar, o 'utils_cora' não acha o arquivo no disco para testar
+#             creds.save() 
+            
+#             # --- VALIDAÇÃO EM TEMPO REAL ---
+#             from .utils_cora import buscar_saldo_cora
+            
+#             # Testamos a conexão buscando o saldo
+#             teste_conexao = buscar_saldo_cora(request.user)
+            
+#             if 'erro' in teste_conexao:
+#                 # LÓGICA DE SEGURANÇA:
+#                 # Só deletamos se for uma credencial NOVA que deu errado.
+#                 # Se for uma atualização (instance existe) e deu erro, mantemos a antiga (ou o estado atual)
+#                 # para você não perder o registro, mas avisamos do erro.
+#                 if instance is None:
+#                     creds.delete()
+                
+#                 messages.error(request, f"As chaves ou arquivos parecem inválidos: {teste_conexao['erro']}")
+#             else:
+#                 messages.success(request, "Conexão com a Cora validada e configurada com sucesso!")
+#                 return redirect('importar_ofx') # Ou 'dashboard'
+#         else:
+#             messages.error(request, "Erro no formulário. Verifique se anexou os arquivos .pem e .key corretamente.")
+#     else:
+#         form = CoraCredentialsForm(instance=instance)
+
+#     return render(request, 'accounts/configurar_cora.html', {'form': form})
+
 @login_required
 @owner_required
 def configurar_cora_view(request):
@@ -7885,43 +7936,44 @@ def configurar_cora_view(request):
         instance = None
 
     if request.method == 'POST':
-        # --- A CORREÇÃO ESTÁ AQUI EMBAIXO ---
-        # Adicionei 'request.FILES' para o Django processar o upload do certificado e da chave
         form = CoraCredentialsForm(request.POST, request.FILES, instance=instance)
         
         if form.is_valid():
-            creds = form.save(commit=False)
-            creds.user = request.user
+            try:
+                creds = form.save(commit=False)
+                creds.user = request.user
+                creds.is_sandbox = False 
+                creds.save() # Salva no banco e o arquivo no storage
 
-            # --- TRAVA DE SEGURANÇA ---
-            # Como tiramos o checkbox do HTML, forçamos aqui para NUNCA ser Sandbox
-            creds.is_sandbox = False 
-            # --------------------------
-            
-            # Precisamos salvar DE VERDADE agora para o arquivo ir para a pasta do servidor
-            # Se não salvar, o 'utils_cora' não acha o arquivo no disco para testar
-            creds.save() 
-            
-            # --- VALIDAÇÃO EM TEMPO REAL ---
-            from .utils_cora import buscar_saldo_cora
-            
-            # Testamos a conexão buscando o saldo
-            teste_conexao = buscar_saldo_cora(request.user)
-            
-            if 'erro' in teste_conexao:
-                # LÓGICA DE SEGURANÇA:
-                # Só deletamos se for uma credencial NOVA que deu errado.
-                # Se for uma atualização (instance existe) e deu erro, mantemos a antiga (ou o estado atual)
-                # para você não perder o registro, mas avisamos do erro.
-                if instance is None:
-                    creds.delete()
+                # IMPORTANTE: Força o Django a ler o arquivo do disco/storage novamente
+                # Isso garante que o caminho do arquivo (.path) esteja disponível
+                creds.refresh_from_db()
+
+                # --- VALIDAÇÃO EM TEMPO REAL ---
+                from .utils_cora import buscar_saldo_cora
                 
-                messages.error(request, f"As chaves ou arquivos parecem inválidos: {teste_conexao['erro']}")
-            else:
-                messages.success(request, "Conexão com a Cora validada e configurada com sucesso!")
-                return redirect('importar_ofx') # Ou 'dashboard'
+                # Chamamos o teste
+                teste_conexao = buscar_saldo_cora(request.user)
+                
+                if 'erro' in teste_conexao:
+                    # Se deu erro, mas é uma instância nova, limpamos para não deixar lixo
+                    if instance is None:
+                        creds.delete()
+                    
+                    # Log amigável para o erro de leitura de arquivo no Render
+                    erro_msg = teste_conexao['erro']
+                    if "FileNotFound" in erro_msg or "No such file" in erro_msg:
+                        messages.error(request, "Erro de permissão no servidor: Não foi possível ler os arquivos após o upload. Verifique as configurações de storage.")
+                    else:
+                        messages.error(request, f"Erro na Cora: {erro_msg}")
+                else:
+                    messages.success(request, "Conexão com a Cora validada e configurada com sucesso!")
+                    return redirect('importar_ofx')
+
+            except Exception as e:
+                messages.error(request, f"Erro crítico no servidor: {str(e)}")
         else:
-            messages.error(request, "Erro no formulário. Verifique se anexou os arquivos .pem e .key corretamente.")
+            messages.error(request, "Formulário inválido. Certifique-se de que os arquivos são .pem e .key.")
     else:
         form = CoraCredentialsForm(instance=instance)
 
