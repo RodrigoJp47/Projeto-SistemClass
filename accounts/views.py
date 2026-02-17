@@ -1957,6 +1957,7 @@ def importar_ofx_view(request):
                     date = transaction.date.date() # Data real da transação
                     name = (transaction.memo or f"Transação OFX {transaction.id}").encode('ascii', errors='ignore').decode('ascii')
                     description = f"Transação OFX {transaction.id}"
+                    cat_prevista_match, dre_prevista_match, _, centro_previsto_match = prever_classificacao(request.user, name, 'PAYABLE')
                     
                     # Define a janela de datas para a busca
                     date_window_start = date - timedelta(days=DATE_WINDOW_DAYS)
@@ -1978,10 +1979,16 @@ def importar_ofx_view(request):
 
                         if match:
                             match.is_paid = True
-                            match.payment_date = date # Data real do pagamento (do OFX)
-                            match.fitid = fitid       # Vincula o ID do OFX
-                            match.bank_account = bank_account # Confirma o banco
+                            match.payment_date = date  # Data real do pagamento (do OFX)
+                            match.fitid = fitid        # Vincula o ID do OFX
+                            match.bank_account = bank_account
                             match.ofx_import = ofx_import
+
+                            # >>> NOVO: se a conta existente não tem centro de custo e a IA previu, preenche agora
+                            if hasattr(match, 'centro_custo'):
+                                if not match.centro_custo and centro_previsto_match:
+                                    match.centro_custo = centro_previsto_match
+
                             match.save()
                             
                             reconciled_count += 1
@@ -2019,7 +2026,7 @@ def importar_ofx_view(request):
                         if amount < 0:
                             # --- LÓGICA INTELIGENTE PARA PAGAR ---
                             # 1. Tenta prever com base no dicionário
-                            cat_prevista, dre_prevista, _, _ = prever_classificacao(request.user, name, 'PAYABLE')
+                            cat_prevista, dre_prevista, _, centro_previsto = prever_classificacao(request.user, name, 'PAYABLE')
                             
                             # 2. Define os valores finais (usa o previsto ou o padrão)
                             categoria_final = cat_prevista if cat_prevista else payable_category
@@ -2033,6 +2040,7 @@ def importar_ofx_view(request):
                                 amount=abs(amount), 
                                 category=categoria_final, # <--- USA A PREVISÃO
                                 dre_area=dre_final,       # <--- USA A PREVISÃO
+                                centro_custo=centro_previsto,
                                 payment_method='PIX', 
                                 occurrence='AVULSO', 
                                 
