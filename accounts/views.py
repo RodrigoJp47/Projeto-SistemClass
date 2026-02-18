@@ -1512,9 +1512,18 @@ def importar_ofx_view(request):
 
         # ▼▼▼ [INÍCIO] NOVO BLOCO ASAAS ▼▼▼
         elif 'sync_asaas' in request.POST:
-            # 1. Define o período (Últimos 30 dias, pois Asaas tem taxas antigas que são importantes)
+            
+            # 1. Define o período escolhido no formulário (fallback: 30 dias)
+            try:
+                asaas_days = int(request.POST.get('asaas_days', '30'))
+                # Saneamento simples: restringe a opções esperadas (7, 15, 30, 90)
+                if asaas_days not in (7, 15, 30, 90):
+                    asaas_days = 30
+            except (TypeError, ValueError):
+                asaas_days = 30
+
             end_date = datetime.now().date()
-            start_date = end_date - timedelta(days=30)
+            start_date = end_date - timedelta(days=asaas_days)
             
             # 2. Chama a API
             resultado = buscar_extrato_asaas(request.user, start_date, end_date)
@@ -1617,7 +1626,10 @@ def importar_ofx_view(request):
                             count_duplicados += 1
                 
                 if count_importados > 0:
-                    messages.success(request, f"Asaas: {count_importados} movimentações importadas com sucesso!")
+                    messages.success(
+                        request, 
+                        f"Asaas: {count_importados} movimentações importadas com sucesso (últimos {asaas_days} dias)."
+                    )
                 elif count_duplicados > 0:
                     messages.info(request, "Asaas: Nenhuma movimentação nova.")
                 else:
