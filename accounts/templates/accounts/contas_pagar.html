@@ -655,18 +655,34 @@
             const input = document.getElementById('new-cat-input');
             const nome = input.value.trim();
             if (!nome) return alert('Digite um nome.');
+
+            // 1. Limpa a seleção de categoria existente (id_category)
+            document.getElementById('id_category').value = '';
+
+            // 2. Preenche o campo de texto escondido que a View Python está lendo
+            const fieldNewCat = document.getElementById('id_new_category');
+            if (fieldNewCat) {
+                fieldNewCat.value = nome;
+            }
+
+            // 3. Atualiza o que o usuário vê na tela principal
+            document.getElementById('category-display').value = nome;
+
+            // 4. Fecha o modal (Opcional: você pode manter o fetch se quiser que ela já salve no banco agora)
+            fecharModalCategoria();
+            
+            // Dica: Se quiser que ela apareça na lista imediatamente, mantenha o seu fetch original abaixo:
+            
             const formData = new FormData();
             formData.append('name', nome);
             formData.append('tipo', 'PAYABLE');
-            formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+            formData.append('csrfmiddlewaretoken', CSRF_TOKEN);
             fetch('/contas-pagar/categorias/criar/', { method: 'POST', body: formData })
                 .then(res => res.json())
                 .then(data => {
-                    if (data.id) {
-                        selecionarCategoriaModal(data.id, data.name);
-                        input.value = '';
-                    }
+                    // Categoria criada via Ajax
                 });
+            
         }
 
         function excluirSelecionadosModal() {

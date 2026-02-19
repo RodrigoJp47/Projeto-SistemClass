@@ -1625,15 +1625,30 @@ def importar_ofx_view(request):
                         else:
                             count_duplicados += 1
                 
+                # Mensageria com detalhamento de duplicados
                 if count_importados > 0:
-                    messages.success(
-                        request, 
-                        f"Asaas: {count_importados} movimentações importadas com sucesso (últimos {asaas_days} dias)."
-                    )
+                    # Exibe sempre o número de duplicadas, se houver
+                    if count_duplicados > 0:
+                        messages.success(
+                            request,
+                            f"Asaas: {count_importados} movimentaçõe{'s' if count_importados != 1 else ''} importada{'s' if count_importados != 1 else ''} com sucesso "
+                            f"({count_duplicados} ignorada{'s' if count_duplicados != 1 else ''} por duplicidade)."
+                        )
+                    else:
+                        messages.success(
+                            request,
+                            f"Asaas: {count_importados} movimentaçõe{'s' if count_importados != 1 else ''} importada{'s' if count_importados != 1 else ''} com sucesso!"
+                        )
                 elif count_duplicados > 0:
-                    messages.info(request, "Asaas: Nenhuma movimentação nova.")
+                    # Nenhuma nova, apenas duplicadas
+                    messages.info(
+                        request,
+                        f"Asaas: Nenhuma movimentação nova ({count_duplicados} ignorada{'s' if count_duplicados != 1 else ''} por duplicidade)."
+                    )
                 else:
+                    # Realmente não veio nada do período consultado
                     messages.warning(request, "Asaas: Nenhuma transação encontrada no período.")
+
             
             return redirect('importar_ofx')
         
@@ -2519,59 +2534,54 @@ def contas_pagar(request):
             form = PayableAccountForm(request.POST, request.FILES, instance=instance, user=request.user)
             
             if form.is_valid():
-                # 1. Captura o modo de edição vindo do rádio/select do HTML
                 edit_mode = request.POST.get('edit_mode', 'single')
                 
-                # 2. Prepara o objeto mas não salva no banco ainda (commit=False)
+                # 1. commit=False é VITAL: ele cria o objeto na memória sem tocar no banco ainda
                 account = form.save(commit=False)
-                
-                # 3. Se o usuário quis editar "todos" e a conta for recorrente
+                account.user = request.user
+
+                # 2. PROCESSAMENTO PRIORITÁRIO DA CATEGORIA
+                new_category_name = form.cleaned_data.get('new_category')
+                if new_category_name:
+                    # Se digitou nova, criamos e forçamos no objeto account
+                    category_obj, _ = Category.objects.get_or_create(
+                        name=new_category_name, 
+                        category_type='PAYABLE',
+                        user=request.user
+                    )
+                    account.category = category_obj
+                # Se não digitou nova, mas selecionou uma existente, o form.save(commit=False) já pegou.
+
+                # 3. PROCESSAMENTO PRIORITÁRIO DO CENTRO DE CUSTO
+                new_cc_name = form.cleaned_data.get('new_centro_custo')
+                if new_cc_name:
+                    cc_obj, _ = CentroCusto.objects.get_or_create(
+                        nome=new_cc_name, 
+                        user=request.user
+                    )
+                    account.centro_custo = cc_obj
+
+                # 4. SALVAMENTO EFETIVO DA CONTA PAI
+                # Aqui garantimos que a categoria e o CC estão gravados no banco.
+                account.save()
+
+                # 5. ATUALIZAÇÃO DE LANÇAMENTOS FUTUROS (Caso seja edição)
                 if edit_mode == 'future' and account.recurrence_group_id:
-                    # Atualiza os campos de todos os lançamentos futuros do mesmo grupo que NÃO estão pagos
                     PayableAccount.objects.filter(
                         user=request.user,
                         recurrence_group_id=account.recurrence_group_id,
-                        due_date__gt=account.due_date, # Apenas datas maiores que a atual
+                        due_date__gt=account.due_date,
                         is_paid=False
                     ).update(
                         name=account.name,
                         amount=account.amount,
-                        category=account.category,
+                        category=account.category,      # Garante a propagação na edição
+                        centro_custo=account.centro_custo, # Garante a propagação na edição
                         dre_area=account.dre_area,
                         bank_account=account.bank_account
                     )
 
-                # 4. Agora segue a lógica normal que você já tinha:
-                is_new_account = instance is None
-                was_avulso = (not is_new_account) and (original_occurrence == 'AVULSO')
-                new_category_name = form.cleaned_data.get('new_category')
-
-                if new_category_name:
-                    # 2. ADICIONE 'user=request.user' AQUI e corrija o get_or_create
-                    category, _ = Category.objects.get_or_create(
-                        name=new_category_name, 
-                        category_type='PAYABLE',
-                        user=request.user  # <-- Linha adicionada
-                    )
-                    form.instance.category = category
-
-                # --- ADICIONE ESTE BLOCO NOVO AQUI ---
-                new_cc_name = form.cleaned_data.get('new_centro_custo')
-                if new_cc_name:
-                    # Cria o novo centro de custo vinculado ao usuário
-                    cc_obj, _ = CentroCusto.objects.get_or_create(
-                        nome=new_cc_name,
-                        user=request.user
-                    )
-                    # Força o formulário a usar esse novo objeto
-                    form.instance.centro_custo = cc_obj
-                # -------------------------------------    
-                
-                form.instance.user = request.user
-                account = form.save()
-
-                # ▼▼▼ BLOCO CORRIGIDO (DENTRO DE CONTAS_PAGAR) ▼▼▼
-                # Ensina o dicionário
+                # IA - Aprender classificação
                 aprender_classificacao(
                     user=request.user,
                     nome=account.name,
@@ -2579,38 +2589,44 @@ def contas_pagar(request):
                     dre_area=account.dre_area,
                     tipo='PAYABLE',
                     bank_account=account.bank_account,
-                    
-                    # AQUI ESTAVA FALTANDO:
                     centro_custo=account.centro_custo 
                 )
-                # ▲▲▲ FIM DO BLOCO ▲▲▲
                 
+                # 6. GERAÇÃO DE NOVAS RECORRÊNCIAS (Onde o erro acontecia)
+                is_new_account = (post_instance_id is None)
+                was_avulso = (not is_new_account) and (original_occurrence == 'AVULSO')
                 is_recorrente_agora = form.cleaned_data.get('occurrence') == 'RECORRENTE'
                 recurrence_count = form.cleaned_data.get('recurrence_count')
-                
-                # Roda a lógica se:
-                # 1. É uma conta nova E é recorrente
-                # 2. OU era avulsa E foi mudada para recorrente
-                import uuid
+
                 if (is_new_account and is_recorrente_agora) or (was_avulso and is_recorrente_agora):
                     if recurrence_count:
+                        import uuid
                         group_id = uuid.uuid4()
-                        # Atualiza o primeiro lançamento
+                        
+                        # Atualiza a primeira parcela com o ID do grupo
                         account.recurrence_index = 1
                         account.recurrence_group_id = group_id
                         account.save()
 
+                        # Loop para criar as parcelas futuras herdando os dados JÁ PROCESSADOS
                         for i in range(1, recurrence_count):
                             new_due_date = account.due_date + relativedelta(months=i)
                             PayableAccount.objects.create(
-                                user=request.user, name=account.name, description=account.description,
-                                due_date=new_due_date, amount=account.amount,
-                                category=account.category, dre_area=account.dre_area, payment_method=account.payment_method,
+                                user=request.user, 
+                                name=account.name, 
+                                description=account.description,
+                                due_date=new_due_date, 
+                                amount=account.amount,
+                                category=account.category,          # <--- AGORA VAI VIR PREENCHIDO
+                                centro_custo=account.centro_custo,  # <--- AGORA VAI VIR PREENCHIDO
+                                dre_area=account.dre_area, 
+                                payment_method=account.payment_method,
                                 occurrence='RECORRENTE', 
                                 recurrence_count=recurrence_count,
                                 recurrence_index=i + 1,
                                 recurrence_group_id=group_id,
-                                cost_type=account.cost_type, bank_account=account.bank_account
+                                cost_type=account.cost_type, 
+                                bank_account=account.bank_account
                             )
                 
                 if 'save_and_pay' in request.POST:
