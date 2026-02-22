@@ -56,19 +56,32 @@ class AsaasMarketplaceService:
         response = requests.post(f"{self.base_url}/accounts", json=payload, headers=headers, timeout=self.timeout)
         data = self.safe_json(response)
 
-        # 2. SE JÁ EXISTIR, BUSCA E ATUALIZA O ID (Sincronização)
+        # 2. SE JÁ EXISTIR, BUSCA E SINCRONIZA ID E API KEY
         if response.status_code == 400 and "já está em uso" in str(data):
-            print(f"🔄 CNPJ já em uso. Sincronizando ID para: {cnpj_limpo}")
-            url_busca = f"{self.base_url}/accounts?cnpj={cnpj_limpo}"
+            print(f"🔄 CNPJ já em uso. Sincronizando ID e API Key para: {cnpj_limpo}")
+            url_busca = f"{self.base_url}/accounts?cpfCnpj={cnpj_limpo}" # Usando cpfCnpj como filtro de busca
             res_busca = requests.get(url_busca, headers=headers)
             dados_busca = self.safe_json(res_busca)
             
             if res_busca.status_code == 200 and dados_busca.get('data'):
                 conta_existente = dados_busca['data'][0]
-                # Salva apenas o ID que é o que precisamos para o certificado
+                
+                # Atualizamos o objeto profile com os dados encontrados
                 profile.asaas_subaccount_id = conta_existente.get('id')
+                
+                # Se o Asaas retornar a API Key na busca, salvamos. 
+                # Se não retornar, o próximo passo (fiscal) usará a Master Key se necessário.
+                if conta_existente.get('apiKey'):
+                    profile.asaas_api_key = conta_existente.get('apiKey')
+                
                 profile.save()
-                return {"success": True, "id": conta_existente.get('id')}
+                
+                return {
+                    "success": True, 
+                    "id": conta_existente.get('id'), 
+                    "apiKey": profile.asaas_api_key,
+                    "sincronizado": True
+                }
 
         # 3. SE CRIAR NOVA COM SUCESSO
         if response.status_code == 200 and not data.get("non_json_error"):
@@ -77,7 +90,7 @@ class AsaasMarketplaceService:
             profile.save()
             return {"success": True, "id": data.get("id"), "apiKey": data.get("apiKey")}
         
-        # Se cair aqui, é um erro real de validação
+        # 4. Erro real de validação
         erro_msg = data.get("errors", [{}])[0].get('description', "Erro desconhecido")
         return {"success": False, "error": erro_msg}
 

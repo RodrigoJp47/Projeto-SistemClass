@@ -322,39 +322,42 @@ def company_profile_view(request):
                 from .services_asaas import AsaasMarketplaceService
                 asaas_service = AsaasMarketplaceService()
 
-                # PASSO 1: Criar Subconta
-                if profile.cnpj and not profile.asaas_subaccount_id:
-                    print(f"🚀 [DEBUG] Criando subconta para CNPJ: {profile.cnpj}")
-                    resultado = asaas_service.criar_subconta(profile)
-                    if resultado["success"]:
-                        profile.asaas_subaccount_id = resultado["id"]
-                        profile.asaas_api_key = resultado.get("apiKey")
-                        profile.save()
-                        messages.success(request, 'Conta Asaas sincronizada!')
+                # PASSO 1: Criar ou Sincronizar Subconta
+                if profile.cnpj:
+                    # Se não tem ID, cria/busca. Se já tem ID mas não tem API Key, 
+                    # precisamos rodar para tentar recuperar a Key.
+                    if not profile.asaas_subaccount_id or not profile.asaas_api_key:
+                        print(f"🚀 [DEBUG] Verificando subconta para CNPJ: {profile.cnpj}")
+                        resultado = asaas_service.criar_subconta(profile)
+                        if resultado["success"]:
+                            # Atualizamos a instância local com os dados novos
+                            profile.asaas_subaccount_id = resultado["id"]
+                            profile.asaas_api_key = resultado.get("apiKey")
+                            profile.save()
+                            print(f"✅ [DEBUG] ID/Key sincronizados: {profile.asaas_subaccount_id}")
 
-                # PASSO 2: Enviar Certificado (CORRIGIDO)
-                # Pegamos o arquivo diretamente do formulário validado
+                # PASSO 2: Enviar Certificado
                 arquivo_cert = profile_form.cleaned_data.get('certificado_digital')
                 
+                # IMPORTANTE: Removi o "not profile.asaas_subaccount_id" da trava acima 
+                # para garantir que este bloco abaixo sempre tenha um ID válido.
                 if profile.asaas_subaccount_id and arquivo_cert:
-                    print(f"📦 [DEBUG] Certificado detectado no formulário.")
+                    print(f"📦 [DEBUG] Certificado detectado. Iniciando envio fiscal...")
                     try:
-                        # Resetar o ponteiro e ler os bytes
                         arquivo_cert.seek(0)
                         conteudo_binario = arquivo_cert.read()
                         
                         if len(conteudo_binario) > 0:
-                            print(f"📊 [DEBUG] Enviando {len(conteudo_binario)} bytes para o serviço...")
+                            # TENTATIVA DE ENVIO
                             res_fiscal = asaas_service.configurar_dados_fiscais(profile, conteudo_binario)
                             
                             if res_fiscal["success"]:
-                                messages.success(request, 'Certificado configurado no Asaas!')
+                                messages.success(request, 'Certificado configurado com sucesso no Asaas!')
                             else:
-                                messages.warning(request, f'Asaas Fiscal: {res_fiscal.get("error")}')
-                        else:
-                            print("❌ [DEBUG] Arquivo lido resultou em 0 bytes.")
+                                # Aqui ele vai te dizer o erro real (ex: senha errada)
+                                messages.error(request, f'Erro no Asaas Fiscal: {res_fiscal.get("error")}')
                     except Exception as e:
-                        print(f"💥 [DEBUG] Erro no processamento do arquivo: {str(e)}")
+                        print(f"💥 [DEBUG] Erro ao ler arquivo: {str(e)}")
 
                 messages.success(request, 'Perfil atualizado com sucesso!')
                 return redirect('company_profile')
