@@ -1602,7 +1602,7 @@ def importar_ofx_view(request):
                         ).exists()
 
                         if not existe:
-                            cat_prevista, dre_prevista, _, _ = prever_classificacao(request.user, descricao_origem, 'PAYABLE')
+                            cat_prevista, dre_prevista, _, cc_previsto = prever_classificacao(request.user, descricao_origem, 'PAYABLE')
                             
                             categoria_padrao, _ = Category.objects.get_or_create(
                                 user=request.user, name='Taxas Bancárias', category_type='PAYABLE'
@@ -1615,6 +1615,7 @@ def importar_ofx_view(request):
                                 due_date=data_movimento,
                                 amount=valor,
                                 category=cat_prevista or categoria_padrao,
+                                centro_custo=cc_previsto,
                                 dre_area=dre_prevista or 'DESPESAS_OPERACIONAIS',
                                 payment_method='DEBITO_CONTA',
                                 cost_type='VARIAVEL',
