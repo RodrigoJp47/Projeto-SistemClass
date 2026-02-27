@@ -2224,9 +2224,9 @@ def contas_pagar(request):
         if end_date: accounts = accounts.filter(due_date__lte=parse_date(end_date))
 
         if request.GET.get('export_pdf'):
-            return gerar_pdf_generic(accounts, 'pagar')
+            return gerar_pdf_generic(accounts, 'pagar', data_inicio=start_date, data_fim=end_date)
         elif request.GET.get('export_excel'):
-            return gerar_excel_generic(accounts, 'pagar')
+            return gerar_excel_generic(accounts, 'pagar', data_inicio=start_date, data_fim=end_date)
 
 
     if request.method == 'POST':
@@ -2760,10 +2760,10 @@ def contas_receber(request):
     # Em accounts/views.py, dentro da função contas_receber
 
     if 'export_pdf' in request.GET:
-        return gerar_pdf_generic(accounts_for_export, 'receber')
+        return gerar_pdf_generic(accounts_for_export, 'receber', data_inicio=start_date_str, data_fim=end_date_str)
 
     if 'export_excel' in request.GET:
-        return gerar_excel_generic(accounts_for_export, 'receber')
+        return gerar_excel_generic(accounts_for_export, 'receber', data_inicio=start_date_str, data_fim=end_date_str)
 
     # --- 3. LÓGICA DE AÇÕES (POST) ---
     if request.method == 'POST':

@@ -8,8 +8,9 @@ from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, 
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet
 from django.utils import timezone
+from datetime import datetime
 
-def gerar_excel_generic(queryset, tipo_relatorio):
+def gerar_excel_generic(queryset, tipo_relatorio, data_inicio=None, data_fim=None):
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     filename = f"relatorio_{tipo_relatorio}_{timezone.now().strftime('%d_%m_%Y')}.xlsx"
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
@@ -26,6 +27,14 @@ def gerar_excel_generic(queryset, tipo_relatorio):
     ws.merge_cells('A1:D1')
     ws['A1'] = f"Empresa: {nome_exibir}"
     ws['A1'].font = Font(bold=True, size=12)
+    if data_inicio and data_fim:
+        try:
+            d_ini = datetime.strptime(data_inicio, '%Y-%m-%d').strftime('%d/%m/%Y')
+            d_fim = datetime.strptime(data_fim, '%Y-%m-%d').strftime('%d/%m/%Y')
+            ws.merge_cells('A2:D2')
+            ws['A2'] = f"Período: {d_ini} à {d_fim}"
+        except:
+            pass
     ws.append([]) # Linha em branco para separar do cabeçalho
     
 
@@ -68,11 +77,15 @@ def gerar_excel_generic(queryset, tipo_relatorio):
 
         row.extend([banco, forma_pag])
         ws.append(row)
+        # Formata a coluna 'Valor' (coluna D, índice 4) para padrão contábil brasileiro
+        cell_valor = ws.cell(row=ws.max_row, column=4)
+        cell_valor.number_format = '#,##0.00' 
+        # ------------------------------------------------
 
     wb.save(response)
     return response
 
-def gerar_pdf_generic(queryset, tipo_relatorio):
+def gerar_pdf_generic(queryset, tipo_relatorio, data_inicio=None, data_fim=None):
     response = HttpResponse(content_type='application/pdf')
     filename = f"relatorio_{tipo_relatorio}_{timezone.now().strftime('%d_%m_%Y')}.pdf"
     response['Content-Disposition'] = f'inline; filename="{filename}"' 
@@ -86,17 +99,35 @@ def gerar_pdf_generic(queryset, tipo_relatorio):
     )
     
     elements = []
-    styles = getSampleStyleSheet()
-    # Tenta buscar o nome da empresa
+    # AJUSTE VITAL: Definir os estilos antes de qualquer uso
+    styles = getSampleStyleSheet() 
+
+    # Criamos um estilo exclusivo para o cabeçalho (Alinhado à esquerda, Fonte 12, com Espaçamento)
+    estilo_info = styles['Normal'].__class__('EstiloCabecalho', styles['Normal'])
+    estilo_info.fontSize = 12
+    estilo_info.leading = 16  # Espaçamento entre linhas para evitar sobreposição
+    estilo_info.alignment = 0 # 0 = Alinhado à Esquerda
+
+    # Busca o perfil da empresa
     perfil = queryset.first().user.company_profile if queryset.exists() else None
     nome_exibir = perfil.nome_empresa if perfil else "Relatório Financeiro"
     
-    elements.append(Paragraph(f"<b>Empresa:</b> {nome_exibir}", styles['Normal']))
-    elements.append(Spacer(1, 5))
+    # 1. Nome da Empresa (Negrito)
+    elements.append(Paragraph(f"<b>Empresa:</b> {nome_exibir}", estilo_info))
     
+    # 2. Período (Negrito)
+    if data_inicio and data_fim:
+        try:
+            d_ini = datetime.strptime(data_inicio, '%Y-%m-%d').strftime('%d/%m/%Y')
+            d_fim = datetime.strptime(data_fim, '%Y-%m-%d').strftime('%d/%m/%Y')
+            elements.append(Paragraph(f"<b>Período:</b> {d_ini} à {d_fim}", estilo_info))
+        except Exception:
+            elements.append(Paragraph(f"<b>Período:</b> {data_inicio} à {data_fim}", estilo_info))
+    
+    # 3. Título do Relatório (Negrito)
+    elements.append(Paragraph(f"<b>Relatório:</b> {titulo_texto}", estilo_info))
 
-    elements.append(Paragraph(f"Relatório de {titulo_texto}", styles['Title']))
-    elements.append(Spacer(1, 12))
+    elements.append(Spacer(1, 20)) # Espaço generoso antes da tabela
 
     # AJUSTE CIRÚRGICO: Cabeçalhos e Larguras condicionais
     if tipo_relatorio == 'receber':
@@ -132,7 +163,7 @@ def gerar_pdf_generic(queryset, tipo_relatorio):
             nome_paragrafo,
             desc_curta,
             conta.due_date.strftime('%d/%m/%Y'),
-            f"R$ {conta.amount:,.2f}",
+            f"R$ {conta.amount:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.'),
             status_text,
             categoria[:12],
             dre_area[:12],
@@ -148,9 +179,9 @@ def gerar_pdf_generic(queryset, tipo_relatorio):
 
     # AJUSTE CIRÚRGICO: Linha de Total com número de colunas correto
     if tipo_relatorio == 'receber':
-        data.append(['', '', 'TOTAL:', f"R$ {total:,.2f}", '', '', '', '', '']) # 9 colunas
+        data.append(['', '', 'TOTAL:', f"R$ {total:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.'), '', '', '', '', '']) # 9 colunas
     else:
-        data.append(['', '', 'TOTAL:', f"R$ {total:,.2f}", '', '', '', '', '', '']) # 10 colunas
+        data.append(['', '', 'TOTAL:', f"R$ {total:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.'), '', '', '', '', '', '']) # 10 colunas
 
     table = Table(data, colWidths=col_widths)
     
