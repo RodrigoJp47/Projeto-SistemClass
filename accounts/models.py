@@ -1053,6 +1053,25 @@ class CoraCredentials(models.Model):
         env = "Sandbox" if self.is_sandbox else "Produção"
         return f"Cora ({env}) - {self.user.username}"   
 
+class SicrediCredentials(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='sicredi_creds')
+    
+    # Chaves principais do Sicredi
+    client_id = models.CharField(max_length=255)
+    client_secret = models.CharField(max_length=255)
+    partner_id = models.CharField(max_length=255, null=True, blank=True, help_text="Chave do Parceiro fornecida pelo Sicredi")
+    
+    # Tokens de Acesso
+    access_token = models.TextField(null=True, blank=True)
+    refresh_token = models.TextField(null=True, blank=True)
+    expires_at = models.DateTimeField(null=True, blank=True)
+    
+    # Controle de Ambiente
+    is_sandbox = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
+    def __str__(self):
+        return f"Sicredi Creds - {self.user.username}"
 
 

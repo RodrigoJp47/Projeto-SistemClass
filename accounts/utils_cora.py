@@ -4,68 +4,6 @@ from django.utils import timezone
 from decimal import Decimal
 from .models import CoraCredentials
 import os
-
-# def get_cora_config(user):
-#     """
-#     Recupera credenciais e Configura Autenticação mTLS (Certificado).
-#     """
-#     try:
-#         creds = user.cora_creds
-#     except CoraCredentials.DoesNotExist:
-#         return {'erro': 'Credenciais não encontradas.'}
-
-#     if not creds.certificado or not creds.chave_privada:
-#         return {'erro': 'Arquivos de certificado (PEM/KEY) não encontrados.'}
-
-#     try:
-#         cert_file = creds.certificado.path
-#         key_file = creds.chave_privada.path
-#     except Exception:
-#         return {'erro': 'Erro ao ler arquivos no servidor.'}
-    
-#     # Tupla do Certificado
-#     cora_ssl_cert = (cert_file, key_file)
-
-#     # URL DE PRODUÇÃO (INTEGRAÇÃO DIRETA)
-#     base_url = "https://matls-clients.api.cora.com.br"
-#     token_url = f"{base_url}/token" 
-
-#     agora = timezone.now()
-
-#     # --- AUTENTICAÇÃO (Renovação de Token) ---
-#     if not creds.access_token or (creds.expires_at and agora >= creds.expires_at):
-#         try:
-#             payload = {
-#                 'grant_type': 'client_credentials',
-#                 'client_id': creds.client_id
-#             }
-#             # Sem client_secret pois é certificado
-            
-#             print(f"--- CORA: Autenticando em {token_url} ---")
-            
-#             response = requests.post(token_url, data=payload, cert=cora_ssl_cert, timeout=30)
-            
-#             if response.status_code != 200:
-#                 return {'erro': f"Falha Login Cora ({response.status_code}): {response.text}"}
-
-#             token_data = response.json()
-            
-#             creds.access_token = token_data.get('access_token')
-#             expires_in = int(token_data.get('expires_in', 3600))
-#             creds.expires_at = agora + timedelta(seconds=expires_in)
-#             creds.save()
-            
-#         except Exception as e:
-#             return {'erro': f"Erro na Conexão: {str(e)}"}
-
-#     headers = {
-#         'Authorization': f'Bearer {creds.access_token}',
-#         'Content-Type': 'application/json',
-#         'User-Agent': 'SistemClass/1.0'
-#     }
-
-#     return {'headers': headers, 'base_url': base_url, 'ssl_cert': cora_ssl_cert}
-
 import tempfile
 import os
 

@@ -67,6 +67,8 @@ from .views import (
     deletar_categoria_json,
     configurar_cora_view,
     cora_webhook,
+    configurar_sicredi_view,
+    baixar_guia_sicredi_view,
 )
 
 urlpatterns = [
@@ -90,7 +92,8 @@ urlpatterns = [
     
     path('configuracoes/relatorios/', relatorios_view, name='relatorios_central'),
     path('assinatura/cancelar/', cancelar_assinatura_manual, name='cancelar_assinatura_manual'),
-
+    path('configuracoes/sicredi/', configurar_sicredi_view, name='configurar_sicredi'),
+    path('configuracoes/sicredi/guia-pdf/', baixar_guia_sicredi_view, name='baixar_guia_sicredi'),
     # --- Dashboards ---
     path('dashboards/', dashboards, name='dashboards'),
 

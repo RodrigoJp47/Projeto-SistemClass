@@ -68,7 +68,7 @@ from .forms import (
     PayableAccountForm, ReceivableAccountForm, OFXImportForm,
     MetaFaturamentoForm, CustomUserCreationForm, ContractForm,
     EmployeeCreationForm, CompanyProfileForm, CompanyDocumentForm,
-    ProdutoServicoForm, VendedorForm, ClienteForm, OrcamentoForm
+    ProdutoServicoForm, VendedorForm, ClienteForm, OrcamentoForm, SicrediCredentialsForm
 )
 from .models import (
     PayableAccount, ReceivableAccount, Category, DRE_AREAS, BankAccount,
@@ -77,7 +77,7 @@ from .models import (
     CompanyProfile, CompanyDocument, Venda, ItemVenda, ProdutoServico,
     Vendedor, PagamentoVenda, PAYMENT_METHODS, Cidade,
     ContaAzulCredentials, Precificacao, Orcamento, OrcamentoVenda,
-    ItemOrcamento, ClassificacaoAutomatica
+    ItemOrcamento, ClassificacaoAutomatica, SicrediCredentials
 )
 from .utils_exports import gerar_pdf_generic, gerar_excel_generic
 from .utils_inter import buscar_extrato_inter, buscar_saldo_inter 
@@ -97,6 +97,7 @@ from .forms import CoraCredentialsForm
 from .forms import NiboCredentialsForm
 from .models import NiboCredentials
 from .utils_nibo import sincronizar_nibo_completo
+from .utils_sicredi import buscar_extrato_sicredi, buscar_saldo_sicredi, testar_conexao_sicredi
 
 from .forms import TinyCredentialsForm
 from .models import TinyCredentials
@@ -1793,6 +1794,129 @@ def importar_ofx_view(request):
             return redirect('importar_ofx')
         # ▲▲▲ [FIM] BLOCO CORA ▲▲▲
 
+        # ▼▼▼ [INÍCIO] NOVO BLOCO SICREDI ▼▼▼
+        elif 'sync_sicredi' in request.POST:
+            end_date = datetime.now().date()
+            start_date = end_date - timedelta(days=7)
+            
+            # Chama o utils (seguindo o padrão de retorno que definimos)
+            from .utils_sicredi import buscar_extrato_sicredi
+            resultado = buscar_extrato_sicredi(request.user, start_date, end_date)
+            
+            if 'erro' in resultado:
+                messages.error(request, f"Erro na integração Sicredi: {resultado['erro']}")
+            else:
+                transacoes = resultado.get('transacoes', [])
+                
+                banco_sicredi = BankAccount.objects.filter(user=request.user, bank_name__icontains='Sicredi').first()
+                if not banco_sicredi:
+                    banco_sicredi = BankAccount.objects.create(user=request.user, bank_name='Sicredi', agency='0001', account_number='DIGITAL', initial_balance=0)
+
+                count_importados = 0
+                count_duplicados = 0
+                reconciled_count = 0
+                DATE_WINDOW_DAYS = 3 
+
+                for transacao in transacoes:
+                    id_extrato = transacao.get('id_sicredi') # ID único da transação no Sicredi
+                    valor = Decimal(str(transacao.get('valor', 0)))
+                    nome_parte = transacao.get('nome_parte')
+                    descricao_tec = transacao.get('descricao')
+                    tipo_op = transacao.get('tipo') # 'C' ou 'D'
+                    data_movimento = datetime.strptime(transacao.get('data'), '%Y-%m-%d').date()
+
+                    descricao_final = f"{nome_parte} (Sicredi: {descricao_tec})"
+                    
+                    # Janela para Smart-Matching
+                    date_window_start = data_movimento - timedelta(days=DATE_WINDOW_DAYS)
+                    date_window_end = data_movimento + timedelta(days=DATE_WINDOW_DAYS)
+
+                    # --- LÓGICA DE DÉBITO (PAYABLE) ---
+                    if tipo_op == 'D':
+                        if not PayableAccount.objects.filter(user=request.user, external_id=id_extrato).exists():
+                            match = PayableAccount.objects.filter(
+                                user=request.user, is_paid=False, amount=valor, due_date__range=[date_window_start, date_window_end]
+                            ).first()
+
+                            if match:
+                                match.is_paid = True
+                                match.payment_date = data_movimento
+                                match.bank_account = banco_sicredi
+                                match.external_id = id_extrato
+                                match.description += " (Conciliado Sicredi)"
+                                # [IA] Se a conta manual não tinha centro de custo, tenta prever agora
+                                _, _, _, centro_previsto_match = prever_classificacao(request.user, nome_parte, 'PAYABLE')
+                                if not match.centro_custo:
+                                    match.centro_custo = centro_previsto_match
+                                match.save()
+                                reconciled_count += 1
+                            else:
+                                # [IA] Captura os 4 valores retornados pela sua nova prever_classificacao
+                                cat_prevista, dre_prevista, banco_previsto, centro_previsto = prever_classificacao(request.user, nome_parte, 'PAYABLE')
+                                
+                                PayableAccount.objects.create(
+                                    user=request.user, 
+                                    name=nome_parte[:200], 
+                                    description=descricao_final,
+                                    due_date=data_movimento, 
+                                    amount=valor, 
+                                    category=cat_prevista or payable_category, # Fallback para não dar erro
+                                    dre_area=dre_prevista or 'OPERACIONAL', 
+                                    centro_custo=centro_previsto, # Respeita seu novo campo
+                                    payment_method='DEBITO_CONTA', 
+                                    is_paid=True, 
+                                    payment_date=data_movimento,
+                                    bank_account=banco_previsto or banco_sicredi, # Prioriza banco da regra de IA
+                                    external_id=id_extrato
+                                )
+                                count_importados += 1
+                        else:
+                            count_duplicados += 1
+
+                    # --- LÓGICA DE CRÉDITO (RECEIVABLE) ---
+                    else: 
+                        if not ReceivableAccount.objects.filter(user=request.user, external_id=id_extrato).exists():
+                            match = ReceivableAccount.objects.filter(
+                                user=request.user, is_received=False, amount=valor, due_date__range=[date_window_start, date_window_end]
+                            ).first()
+
+                            if match:
+                                match.is_received = True
+                                match.payment_date = data_movimento
+                                match.bank_account = banco_sicredi
+                                match.external_id = id_extrato
+                                match.description += " (Conciliado Sicredi)"
+                                match.save()
+                                reconciled_count += 1
+                            else:
+                                # [IA] Captura os 4 valores
+                                cat_prevista, dre_prevista, banco_previsto, _ = prever_classificacao(request.user, nome_parte, 'RECEIVABLE')
+                                
+                                ReceivableAccount.objects.create(
+                                    user=request.user, 
+                                    name=nome_parte[:200], 
+                                    description=descricao_final,
+                                    due_date=data_movimento, 
+                                    amount=valor, 
+                                    category=cat_prevista or receivable_category, # Fallback para não dar erro
+                                    dre_area=dre_prevista or 'BRUTA', 
+                                    payment_method='PIX',
+                                    is_received=True, 
+                                    payment_date=data_movimento,
+                                    bank_account=banco_previsto or banco_sicredi, # Prioriza banco da regra de IA
+                                    external_id=id_extrato
+                                )
+                                count_importados += 1
+                        else:
+                            count_duplicados += 1
+
+                if count_importados > 0: messages.success(request, f"Sicredi: {count_importados} importados.")
+                if reconciled_count > 0: messages.info(request, f"Sicredi: {reconciled_count} conciliados.")
+                if count_importados == 0 and reconciled_count == 0: messages.info(request, "Sicredi: Nada novo.")
+
+            return redirect('importar_ofx')
+        # ▲▲▲ [FIM] NOVO BLOCO SICREDI ▲▲▲
+
         # ▼▼▼ [INÍCIO] NOVO BLOCO OMIE ▼▼▼
         elif 'sync_omie' in request.POST:
             resultado = sincronizar_omie_completo(request.user)
@@ -1976,64 +2100,67 @@ def importar_ofx_view(request):
                 DATE_WINDOW_DAYS = 3
 
                 for transaction in ofx.account.statement.transactions:
-                    
+                    # 1. Definição única das variáveis base
                     fitid = transaction.id
-                    
-                    # Passo 1: Lógica anti-duplicação (que já tínhamos)
-                    if fitid in existing_fitids:
-                        skipped_transactions_count += 1
-                        continue 
-
                     amount = Decimal(str(transaction.amount))
-                    date = transaction.date.date() # Data real da transação
+                    date = transaction.date.date()
+                    
+                    # 2. Lógica anti-duplicação CIRÚRGICA (ID + VALOR)
+                    if fitid in existing_fitids:
+                        # Verifica se o ID + VALOR exato já existe para permitir estornos com mesmo ID
+                        ja_existe_no_banco = (
+                            PayableAccount.objects.filter(user=request.user, fitid=fitid, amount=abs(amount)).exists() or
+                            ReceivableAccount.objects.filter(user=request.user, fitid=fitid, amount=amount).exists()
+                        )
+                        if ja_existe_no_banco:
+                            skipped_transactions_count += 1
+                            continue
+
+                    # 3. Preparação dos dados
                     name = (transaction.memo or f"Transação OFX {transaction.id}").encode('ascii', errors='ignore').decode('ascii')
                     description = f"Transação OFX {transaction.id}"
-                    cat_prevista_match, dre_prevista_match, _, centro_previsto_match = prever_classificacao(request.user, name, 'PAYABLE')
                     
-                    # Define a janela de datas para a busca
+                    # Chamada única da IA para o loop inteiro
+                    cat_prevista, dre_prevista, _, centro_previsto = prever_classificacao(
+                        request.user, name, 'PAYABLE' if amount < 0 else 'RECEIVABLE'
+                    )
+                    
                     date_window_start = date - timedelta(days=DATE_WINDOW_DAYS)
                     date_window_end = date + timedelta(days=DATE_WINDOW_DAYS)
-
+                    
                     match_found = False
 
                     # Passo 2: Lógica de "Smart-Matching"
-                    if amount < 0: # É um DÉBITO (Contas a Pagar)
-                        # Procura uma conta a pagar correspondente
+                    if amount < 0: # É um DÉBITO
                         match = PayableAccount.objects.filter(
-                            Q(bank_account=bank_account) | Q(bank_account__isnull=True), # Do banco certo OU sem banco
+                            Q(bank_account=bank_account) | Q(bank_account__isnull=True),
                             user=request.user,
-                            is_paid=False,                     # Que esteja em aberto
-                            fitid__isnull=True,                # Que não tenha sido conciliada ainda
-                            amount=abs(amount),                # Com o valor EXATO
-                            due_date__range=[date_window_start, date_window_end] # E na janela de data
-                        ).order_by('due_date').first() # Pega a mais próxima
+                            is_paid=False,
+                            fitid__isnull=True,
+                            amount=abs(amount),
+                            due_date__range=[date_window_start, date_window_end]
+                        ).order_by('due_date').first()
 
                         if match:
                             match.is_paid = True
-                            match.payment_date = date  # Data real do pagamento (do OFX)
-                            match.fitid = fitid        # Vincula o ID do OFX
+                            match.payment_date = date
+                            match.fitid = fitid
                             match.bank_account = bank_account
                             match.ofx_import = ofx_import
-
-                            # >>> NOVO: se a conta existente não tem centro de custo e a IA previu, preenche agora
-                            if hasattr(match, 'centro_custo'):
-                                if not match.centro_custo and centro_previsto_match:
-                                    match.centro_custo = centro_previsto_match
-
+                            if hasattr(match, 'centro_custo') and not match.centro_custo:
+                                match.centro_custo = centro_previsto
                             match.save()
-                            
                             reconciled_count += 1
                             match_found = True
-                            existing_fitids.add(fitid) # Adiciona para não ser processado de novo
+                            existing_fitids.add(fitid)
 
-                    else: # É um CRÉDITO (Contas a Receber)
-                        # Procura uma conta a receber correspondente
+                    else: # É um CRÉDITO
                         match = ReceivableAccount.objects.filter(
                             Q(bank_account=bank_account) | Q(bank_account__isnull=True),
                             user=request.user,
                             is_received=False,
                             fitid__isnull=True,
-                            amount=amount, # Valor exato
+                            amount=amount,
                             due_date__range=[date_window_start, date_window_end]
                         ).order_by('due_date').first()
 
@@ -2044,67 +2171,35 @@ def importar_ofx_view(request):
                             match.bank_account = bank_account
                             match.ofx_import = ofx_import
                             match.save()
-                            
                             reconciled_count += 1
                             match_found = True
                             existing_fitids.add(fitid)
                     
-                    # Passo 3: Se não encontrou match, cria um novo lançamento
+                    # Passo 3: Criação (Usa as variáveis já definidas no topo)
                     if not match_found:
                         new_transactions_count += 1
                         existing_fitids.add(fitid)
 
                         if amount < 0:
-                            # --- LÓGICA INTELIGENTE PARA PAGAR ---
-                            # 1. Tenta prever com base no dicionário
-                            cat_prevista, dre_prevista, _, centro_previsto = prever_classificacao(request.user, name, 'PAYABLE')
-                            
-                            # 2. Define os valores finais (usa o previsto ou o padrão)
                             categoria_final = cat_prevista if cat_prevista else payable_category
                             dre_final = dre_prevista if dre_prevista else 'OPERACIONAL'
                             
                             PayableAccount.objects.create(
-                                user=request.user, 
-                                name=name, 
-                                description=description, 
-                                due_date=date,
-                                amount=abs(amount), 
-                                category=categoria_final, # <--- USA A PREVISÃO
-                                dre_area=dre_final,       # <--- USA A PREVISÃO
-                                centro_custo=centro_previsto,
-                                payment_method='PIX', 
-                                occurrence='AVULSO', 
-                                
-                                is_paid=True,       # Antes era False
-                                payment_date=date,  # Adicionado: Data da baixa = Data do extrato
-                                
-                                cost_type='VARIAVEL', 
-                                bank_account=bank_account,
-                                ofx_import=ofx_import, 
-                                fitid=fitid
+                                user=request.user, name=name, description=description, due_date=date,
+                                amount=abs(amount), category=categoria_final, dre_area=dre_final,
+                                centro_custo=centro_previsto, payment_method='PIX', occurrence='AVULSO', 
+                                is_paid=True, payment_date=date, cost_type='VARIAVEL', 
+                                bank_account=bank_account, ofx_import=ofx_import, fitid=fitid
                             )
                         else:
-                            # --- LÓGICA INTELIGENTE PARA RECEBER ---
-                            cat_prevista, dre_prevista, _, _ = prever_classificacao(request.user, name, 'RECEIVABLE')
-                            
                             categoria_final = cat_prevista if cat_prevista else receivable_category
                             dre_final = dre_prevista if dre_prevista else 'BRUTA'
 
                             ReceivableAccount.objects.create(
-                                user=request.user, 
-                                name=name, 
-                                description=description, 
-                                due_date=date,
-                                amount=amount, 
-                                category=categoria_final, # <--- USA A PREVISÃO
-                                dre_area=dre_final,       # <--- USA A PREVISÃO
-                                payment_method='PIX', 
-                                occurrence='AVULSO', 
-                                is_received=True, 
-                                payment_date=date,  # Adicionado: Data da baixa = Data do extrato
-                                bank_account=bank_account,
-                                ofx_import=ofx_import, 
-                                fitid=fitid
+                                user=request.user, name=name, description=description, due_date=date,
+                                amount=amount, category=categoria_final, dre_area=dre_final,
+                                payment_method='PIX', occurrence='AVULSO', is_received=True, 
+                                payment_date=date, bank_account=bank_account, ofx_import=ofx_import, fitid=fitid
                             )
                 
                 # --- MENSAGENS DE SUCESSO MELHORADAS ---
@@ -2180,6 +2275,17 @@ def importar_ofx_view(request):
         except Exception as e:
             print(f"Erro saldo Cora: {e}")
     # ▲▲▲ [FIM] SALDO BANCO CORA ▲▲▲
+    # ▼▼▼ [INÍCIO] SALDO SICREDI ▼▼▼
+    saldo_sicredi = None
+    if hasattr(request.user, 'sicredi_creds'):
+        try:
+            from .utils_sicredi import buscar_saldo_sicredi
+            resp_saldo = buscar_saldo_sicredi(request.user)
+            if 'disponivel' in resp_saldo:
+                saldo_sicredi = resp_saldo['disponivel']
+        except Exception as e:
+            print(f"Erro saldo Sicredi: {e}")
+    # ▲▲▲ [FIM] SALDO SICREDI ▲▲▲
 
     context = {
         'ofx_form': form,
@@ -2187,6 +2293,7 @@ def importar_ofx_view(request):
         'saldo_mp': saldo_mp,
         'saldo_asaas': saldo_asaas,
         'saldo_cora': saldo_cora,
+        'saldo_sicredi': saldo_sicredi,
     }
 
     return render(request, 'accounts/importar_ofx.html', context)
@@ -7916,56 +8023,7 @@ def configurar_omie_view(request):
 
     return render(request, 'accounts/configurar_omie.html', {'form': form})
 
-# @login_required
-# @owner_required
-# def configurar_cora_view(request):
-#     try:
-#         instance = request.user.cora_creds
-#     except CoraCredentials.DoesNotExist:
-#         instance = None
 
-#     if request.method == 'POST':
-#         # --- A CORREÇÃO ESTÁ AQUI EMBAIXO ---
-#         # Adicionei 'request.FILES' para o Django processar o upload do certificado e da chave
-#         form = CoraCredentialsForm(request.POST, request.FILES, instance=instance)
-        
-#         if form.is_valid():
-#             creds = form.save(commit=False)
-#             creds.user = request.user
-
-#             # --- TRAVA DE SEGURANÇA ---
-#             # Como tiramos o checkbox do HTML, forçamos aqui para NUNCA ser Sandbox
-#             creds.is_sandbox = False 
-#             # --------------------------
-            
-#             # Precisamos salvar DE VERDADE agora para o arquivo ir para a pasta do servidor
-#             # Se não salvar, o 'utils_cora' não acha o arquivo no disco para testar
-#             creds.save() 
-            
-#             # --- VALIDAÇÃO EM TEMPO REAL ---
-#             from .utils_cora import buscar_saldo_cora
-            
-#             # Testamos a conexão buscando o saldo
-#             teste_conexao = buscar_saldo_cora(request.user)
-            
-#             if 'erro' in teste_conexao:
-#                 # LÓGICA DE SEGURANÇA:
-#                 # Só deletamos se for uma credencial NOVA que deu errado.
-#                 # Se for uma atualização (instance existe) e deu erro, mantemos a antiga (ou o estado atual)
-#                 # para você não perder o registro, mas avisamos do erro.
-#                 if instance is None:
-#                     creds.delete()
-                
-#                 messages.error(request, f"As chaves ou arquivos parecem inválidos: {teste_conexao['erro']}")
-#             else:
-#                 messages.success(request, "Conexão com a Cora validada e configurada com sucesso!")
-#                 return redirect('importar_ofx') # Ou 'dashboard'
-#         else:
-#             messages.error(request, "Erro no formulário. Verifique se anexou os arquivos .pem e .key corretamente.")
-#     else:
-#         form = CoraCredentialsForm(instance=instance)
-
-#     return render(request, 'accounts/configurar_cora.html', {'form': form})
 
 @login_required
 @owner_required
@@ -8367,3 +8425,48 @@ def cora_webhook(request):
             return HttpResponse(status=500)
             
     return HttpResponse(status=405)
+
+
+@login_required
+@owner_required
+def configurar_sicredi_view(request):
+    try:
+        instance = request.user.sicredi_creds
+    except SicrediCredentials.DoesNotExist:
+        instance = None
+
+    if request.method == 'POST':
+        form = SicrediCredentialsForm(request.POST, instance=instance)
+        if form.is_valid():
+            creds = form.save(commit=False)
+            creds.user = request.user
+            creds.save()
+            
+            # Validação em tempo real (igual você faz na Cora)
+            from .utils_sicredi import testar_conexao_sicredi
+            teste = testar_conexao_sicredi(request.user)
+            
+            if 'erro' in teste:
+                messages.error(request, f"Credenciais salvas, mas o teste falhou: {teste['erro']}")
+            else:
+                messages.success(request, 'Conexão com o Sicredi validada com sucesso!')
+                return redirect('importar_ofx')
+        else:
+            messages.error(request, 'Erro no formulário. Verifique os campos.')
+    else:
+        form = SicrediCredentialsForm(instance=instance)
+
+    return render(request, 'accounts/configurar_sicredi.html', {'form': form})
+
+from django.http import HttpResponse
+from .utils_sicredi import gerar_pdf_instrucoes_sicredi
+
+@login_required
+def baixar_guia_sicredi_view(request):
+    pdf_content = gerar_pdf_instrucoes_sicredi()
+    response = HttpResponse(pdf_content, content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment; filename="Guia_Integracao_Sicredi.pdf"'
+    return response
+
+
+    

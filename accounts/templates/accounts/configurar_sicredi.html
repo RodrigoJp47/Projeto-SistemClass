@@ -1,0 +1,82 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configurar Integração Sicredi</title>
+    <link rel="stylesheet" href="{% static 'css/global.css' %}">
+    <link rel="stylesheet" href="{% static 'css/themes.css' %}">
+    
+    <style>
+        body { background-color: #f4f6f9; font-family: sans-serif; }
+        .config-container { max-width: 800px; margin: 40px auto; background: #fff; padding: 40px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .form-group { margin-bottom: 25px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: bold; color: #333; }
+        .btn-save { background-color: #006b3f; color: white; border: none; padding: 15px 30px; border-radius: 6px; cursor: pointer; width: 100%; font-weight: bold; font-size: 1.1rem; transition: background 0.3s;}
+        .btn-save:hover { background-color: #004d2e; }
+        .instructions-box { background-color: #e8f5e9; border-left: 5px solid #006b3f; padding: 20px; margin-bottom: 30px; border-radius: 4px; color: #1b5e20; }
+        .instructions-box h3 { margin-top: 0; margin-bottom: 10px; font-size: 1.1rem; }
+        /* Garante que os inputs do Django herdem o estilo */
+        input[type="text"], input[type="password"] { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
+    </style>
+</head>
+<body>
+    <div style="padding: 20px;">
+        {% if messages %}
+            {% for message in messages %}
+                <div style="padding: 15px; margin-bottom: 20px; background: {% if message.tags == 'success' %}#d4edda{% else %}#f8d7da{% endif %}; color: {% if message.tags == 'success' %}#155724{% else %}#721c24{% endif %}; border: 1px solid {% if message.tags == 'success' %}#c3e6cb{% else %}#f5c6cb{% endif %}; border-radius: 5px;">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <div class="config-container">
+            <h1 style="color: #333; margin-bottom: 20px; border-bottom: 2px solid #006b3f; padding-bottom: 10px;">
+                Conectar Conta Sicredi
+            </h1>
+
+            <div class="instructions-box">
+                <h3>📌 Como ativar sua integração:</h3>
+                <p>Siga o passo a passo com seu gerente de conta.</p>
+                <a href="{% url 'baixar_guia_sicredi' %}" class="btn-download" style="display: inline-block; margin-top: 10px; color: #006b3f; font-weight: bold; text-decoration: underline;">
+                    <i class="fas fa-file-pdf"></i> Baixar Manual em PDF para enviar ao Gerente
+                </a>
+            </div>
+
+            {% comment %} Adicionamos autocomplete="off" para evitar que o navegador preencha seus dados {% endcomment %}
+            <form method="post" autocomplete="off">
+                {% csrf_token %}
+                
+                <div class="form-group">
+                    <label>Client ID</label>
+                    {% comment %} Forçamos o autocomplete off também no campo individual {% endcomment %}
+                    {{ form.client_id }}
+                </div>
+
+                <div class="form-group">
+                    <label>Client Secret</label>
+                    {{ form.client_secret }}
+                </div>
+
+                <div class="form-group">
+                    <label>Partner ID / Chave do Parceiro</label>
+                    {{ form.partner_id }}
+                </div>
+
+                <div class="form-group" style="display: flex; align-items: center; gap: 10px;">
+                    {{ form.is_sandbox }}
+                    <label for="{{ form.is_sandbox.id_for_label }}" style="margin-bottom: 0; font-size: 0.9rem; color: #666;">
+                        Utilizar ambiente de homologação (apenas testes)
+                    </label>
+                </div>
+
+                <button type="submit" class="btn-save">SALVAR E VALIDAR CONEXÃO</button>
+            </form>
+            
+            <br>
+            <center><a href="{% url 'importar_ofx' %}" style="color: #666; text-decoration: none;">&larr; Voltar para Integrações</a></center>
+        </div>
+    </div>
+</body>
+</html>

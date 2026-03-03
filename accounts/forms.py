@@ -5,7 +5,7 @@ from django.contrib.auth.forms import ReadOnlyPasswordHashField
 from django.contrib.auth.forms import PasswordChangeForm
 from .models import (
     PayableAccount, ReceivableAccount, Category, BankAccount, OFXImport, CentroCusto,
-    Vendedor, ProdutoServico, Cliente, Contract, CompanyProfile, CompanyDocument 
+    Vendedor, ProdutoServico, Cliente, Contract, CompanyProfile, CompanyDocument, SicrediCredentials 
 )
 import datetime
 from decimal import Decimal, InvalidOperation # Adicione esta importação
@@ -1015,4 +1015,38 @@ class EmployeePermissionsForm(forms.ModelForm):
             'can_access_precificacao': 'Precificação',
         }
 
+class SicrediCredentialsForm(forms.ModelForm):
+    # Sobrescrevemos o campo para garantir que 'required=False' seja aplicado
+    partner_id = forms.CharField(
+        required=False, # Remove a obrigatoriedade no formulário
+        label='Partner ID / Chave do Parceiro',
+        widget=forms.TextInput(attrs={
+            'class': 'form-control', 
+            'placeholder': 'Digite o Partner ID (Opcional para teste)',
+            'autocomplete': 'off'
+        })
+    )
 
+    class Meta:
+        model = SicrediCredentials
+        fields = ['client_id', 'client_secret', 'partner_id', 'is_sandbox']
+        widgets = {
+            'client_id': forms.TextInput(attrs={
+                'class': 'form-control', 
+                'placeholder': 'Digite o Client ID do Sicredi',
+                'autocomplete': 'off'
+            }),
+            'client_secret': forms.PasswordInput(render_value=True, attrs={
+                'class': 'form-control', 
+                'placeholder': 'Digite o Client Secret',
+                'autocomplete': 'new-password'
+            }),
+            'is_sandbox': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
+            }),
+        }
+        labels = {
+            'client_id': 'Client ID',
+            'client_secret': 'Client Secret',
+            'is_sandbox': 'Ambiente de Testes (Sandbox)',
+        }
