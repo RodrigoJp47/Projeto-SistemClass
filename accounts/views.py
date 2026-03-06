@@ -161,6 +161,114 @@ def prever_classificacao(user, descricao, tipo):
             
     return None, None, None, None # AGORA RETORNA 4 NONES
 
+def normalizar_dre_area(valor, tipo='PAYABLE'):
+    """
+    Converte o texto vindo da planilha para o código interno do campo dre_area.
+    Aceita tanto o código puro (ex: OPERACIONAL) quanto o rótulo amigável
+    (ex: Despesas Operacionais (-)).
+    """
+    if valor is None:
+        return None
+
+    valor_str = str(valor).strip()
+    if not valor_str:
+        return None
+
+    valor_upper = valor_str.upper()
+
+    # 1. Se já veio no código interno, retorna direto
+    codigos_validos = {
+        'NAO_CONSTAR',
+        'BRUTA',
+        'DEDUCAO',
+        'CUSTOS',
+        'OPERACIONAL',
+        'DEPRECIACAO',
+        'NAO_OPERACIONAL',
+        'RETIRADA_SOCIOS',
+        'APORTE_SOCIOS',
+        'OUTRAS_RECEITAS',
+        'TRIBUTACAO',
+        'DISTRIBUICAO',
+    }
+    if valor_upper in codigos_validos:
+        return valor_upper
+
+    # 2. Normaliza texto amigável da planilha
+    texto = (
+        valor_upper
+        .replace('Á', 'A')
+        .replace('À', 'A')
+        .replace('Ã', 'A')
+        .replace('Â', 'A')
+        .replace('É', 'E')
+        .replace('Ê', 'E')
+        .replace('Í', 'I')
+        .replace('Ó', 'O')
+        .replace('Ô', 'O')
+        .replace('Õ', 'O')
+        .replace('Ú', 'U')
+        .replace('Ç', 'C')
+    )
+
+    mapa = {
+        'NAO CONSTAR DRE': 'NAO_CONSTAR',
+        'NAO CONSTAR': 'NAO_CONSTAR',
+
+        'RECEITAS BRUTAS (+)': 'BRUTA',
+        'RECEITAS BRUTAS': 'BRUTA',
+        'RECEITA BRUTA': 'BRUTA',
+        'BRUTA': 'BRUTA',
+
+        'DEDUCAO DA RECEITA BRUTA (-)': 'DEDUCAO',
+        'DEDUCAO DA RECEITA BRUTA': 'DEDUCAO',
+        'DEDUCAO': 'DEDUCAO',
+
+        'CUSTOS CSP/CMV (-)': 'CUSTOS',
+        'CUSTOS CSP/CMV': 'CUSTOS',
+        'CUSTOS': 'CUSTOS',
+
+        'DESPESAS OPERACIONAIS (-)': 'OPERACIONAL',
+        'DESPESAS OPERACIONAIS': 'OPERACIONAL',
+        'OPERACIONAL': 'OPERACIONAL',
+
+        'DEPRECIACAO E AMORTIZACAO (-)': 'DEPRECIACAO',
+        'DEPRECIACAO E AMORTIZACAO': 'DEPRECIACAO',
+        'DEPRECIACAO': 'DEPRECIACAO',
+
+        'DESPESAS NAO OPERACIONAIS (-)': 'NAO_OPERACIONAL',
+        'DESPESAS NAO OPERACIONAIS': 'NAO_OPERACIONAL',
+        'NAO OPERACIONAL': 'NAO_OPERACIONAL',
+
+        'RETIRADA DE SOCIOS (-)': 'RETIRADA_SOCIOS',
+        'RETIRADA DE SOCIOS': 'RETIRADA_SOCIOS',
+        'RETIRADA SOCIOS': 'RETIRADA_SOCIOS',
+
+        'APORTE FINANCEIRO (+)': 'APORTE_SOCIOS',
+        'APORTE FINANCEIRO': 'APORTE_SOCIOS',
+        'APORTE SOCIOS': 'APORTE_SOCIOS',
+
+        'OUTRAS RECEITAS (+)': 'OUTRAS_RECEITAS',
+        'OUTRAS RECEITAS': 'OUTRAS_RECEITAS',
+
+        'IRPJ E CSLL (TRIBUTACAO) (-)': 'TRIBUTACAO',
+        'IRPJ E CSLL (TRIBUTACAO)': 'TRIBUTACAO',
+        'TRIBUTACAO': 'TRIBUTACAO',
+
+        'DISTRIBUICAO DE LUCRO SOCIOS (-)': 'DISTRIBUICAO',
+        'DISTRIBUICAO DE LUCRO SOCIOS': 'DISTRIBUICAO',
+        'DISTRIBUICAO': 'DISTRIBUICAO',
+    }
+
+    dre = mapa.get(texto)
+    if dre:
+        return dre
+
+    # 3. Se não reconheceu, aplica padrão seguro por tipo
+    return 'OPERACIONAL' if tipo == 'PAYABLE' else 'BRUTA'
+
+
+
 @login_required
 @subscription_required
 @check_employee_permission('can_access_home')
@@ -2461,17 +2569,10 @@ def contas_pagar(request):
                                 cc_name = str(row.get('centro_custo')).strip()
                                 centro_custo, _ = CentroCusto.objects.get_or_create(nome=cc_name, user=request.user)
 
-                            # [LÓGICA DRE ATUALIZADA]
-                            # 1. Tenta pegar da planilha
-                            # 2. Se não tiver, tenta da inteligência
-                            # 3. Se não tiver, usa padrão
-                            dre_final = 'OPERACIONAL' # Padrão
-                            
-                            if pd.notna(row.get('dre_area')):
-                                # Pega do Excel (ex: "FINANCEIRA", "PESSOAL")
-                                dre_final = str(row.get('dre_area')).strip().upper() 
-                            elif dre_smart:
-                                dre_final = dre_smart
+                            # [LÓGICA DRE CORRIGIDA]
+                            dre_planilha = normalizar_dre_area(row.get('dre_area'), tipo='PAYABLE') if pd.notna(row.get('dre_area')) else None
+                            dre_smart_normalizada = normalizar_dre_area(dre_smart, tipo='PAYABLE') if dre_smart else None
+                            dre_final = dre_planilha or dre_smart_normalizada or 'OPERACIONAL'
 
                             # Banco
                             bank_account = None
@@ -2955,13 +3056,10 @@ def contas_receber(request):
                             elif cat_smart: category = cat_smart
                             else: category, _ = Category.objects.get_or_create(name='Receitas Gerais', category_type='RECEIVABLE', user=request.user)
 
-                            # [LÓGICA DRE ATUALIZADA]
-                            dre_final = 'BRUTA' # Padrão
-                            
-                            if pd.notna(row.get('dre_area')):
-                                dre_final = str(row.get('dre_area')).strip().upper()
-                            elif dre_smart:
-                                dre_final = dre_smart
+                            # [LÓGICA DRE CORRIGIDA]
+                            dre_planilha = normalizar_dre_area(row.get('dre_area'), tipo='RECEIVABLE') if pd.notna(row.get('dre_area')) else None
+                            dre_smart_normalizada = normalizar_dre_area(dre_smart, tipo='RECEIVABLE') if dre_smart else None
+                            dre_final = dre_planilha or dre_smart_normalizada or 'BRUTA'
 
                             # Banco
                             bank_account = None

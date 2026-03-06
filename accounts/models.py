@@ -39,7 +39,7 @@ DRE_AREAS = (
     ('NAO_OPERACIONAL', 'Despesas Não Operacionais (-)'), 
     ('RETIRADA_SOCIOS', 'Retirada de Sócios (-)'),      
     ('APORTE_SOCIOS', 'Aporte Financeiro (+)'),
-    ('OUTRAS_RECEITAS', 'Outras Receitas - Aporte/Financeiro (+)'), # Nova Opção
+    ('OUTRAS_RECEITAS', 'Outras Receitas (+)'),
     # ----------------------
 
     ('TRIBUTACAO', 'IRPJ e CSLL (Tributação) (-)'),
