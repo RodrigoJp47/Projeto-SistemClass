@@ -3653,6 +3653,8 @@ def dashboards(request):
     except ValueError:
         fc_year = today.year
 
+    fc_year_options = [today.year - 1, today.year, today.year + 1]    
+
     # Gera rótulos para todos os 12 meses do ano SELECIONADO
     fc_monthly_labels = [datetime(fc_year, i, 1).strftime('%b/%Y') for i in range(1, 13)]
 
@@ -4300,6 +4302,8 @@ def dashboards(request):
         'pvr_total_realizado': pvr_total_realizado,
         'dfc_analysis_data_json': json.dumps(dfc_analysis_data),
         'fluxo_caixa_tabela_data': fluxo_caixa_tabela_data,
+        'fc_year': fc_year,
+        'fc_year_options': fc_year_options,
         'geracao_caixa_ltm': geracao_caixa_ltm,
         'geracao_caixa_ltm_js': geracao_caixa_ltm_js,
         'pvr_receitas': pvr_receitas,
