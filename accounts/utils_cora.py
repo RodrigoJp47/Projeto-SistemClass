@@ -133,12 +133,12 @@ def buscar_extrato_cora(user, start_date, end_date):
         params = {
             'start': start_date.strftime('%Y-%m-%d'),
             'end': end_date.strftime('%Y-%m-%d'),
-            'perPage': 250,
+            'perPage': 100,
             'page': page
         }
 
         try:
-            response = requests.get(url, headers=config['headers'], params=params, cert=config['ssl_cert'])
+            response = requests.get(url, headers=config['headers'], params=params, cert=config['ssl_cert'], timeout=60)
             response.raise_for_status()
             
             data = response.json()
@@ -180,14 +180,11 @@ def buscar_extrato_cora(user, start_date, end_date):
                 })
 
             page += 1
-            if len(lista_atual) < 250: break
+            if len(lista_atual) < 100: break
                 
         except Exception as e:
             return {'erro': f"Erro Extrato Cora: {str(e)}"}
         
-        finally:
-            # LIMPEZA DOS TEMPORÁRIOS
-            for f in config.get('temp_files', []):
-                if os.path.exists(f): os.remove(f)
+        
 
     return {'transacoes': transacoes_formatadas}

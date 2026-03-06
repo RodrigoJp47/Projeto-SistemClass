@@ -255,25 +255,48 @@
             {% endif %}
             
             <p class="description">
-                Sincronize automaticamente o extrato bancário direto da API do Banco Cora (Últimos 7 dias).
+                Sincronize automaticamente o extrato bancário direto da API do Banco Cora.
             </p>
 
             {% if user.cora_creds %}
-                <form method="post">
+                <form method="post" style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
                     {% csrf_token %}
-                    <button type="submit" name="sync_cora" class="btn-conta-azul" style="background-color: #fe3e6d; border-color: #fe3e6d; color: white;">
+                    
+                    <div style="display: flex; align-items: center; gap: 5px;">
+                        <label for="dias_cora" style="font-size: 13px; color: #666;">Período:</label>
+                        <select name="dias_cora" id="dias_cora" style="padding: 5px; border-radius: 4px; border: 1px solid #fe3e6d; background: white; color: #333; font-weight: bold;">
+                            <option value="1">Hoje</option>
+                            <option value="7" selected>Últimos 7 dias</option>
+                            <option value="15">Últimos 15 dias</option>
+                            <option value="30">Últimos 30 dias</option>
+                            <optgroup label="Fechamentos">
+                                <option value="mes_atual">Mês Atual</option>
+                                <option value="mes_anterior">Mês Anterior Completo</option>
+                            </optgroup>
+                            <optgroup label="Histórico Longo">
+                                <option value="60">Últimos 60 dias</option>
+                                <option value="90">Últimos 90 dias</option>
+                            </optgroup>
+                        </select>
+                    </div>
+
+                    <button type="submit" name="sync_cora" class="btn-conta-azul" style="background-color: #fe3e6d; border-color: #fe3e6d; color: white; padding: 8px 15px; font-weight: bold;">
                         <i class="fas fa-sync"></i> Sincronizar Agora
                     </button>
                 </form>
+                
                 <div style="margin-top: 10px;">
-                    <a href="{% url 'configurar_cora' %}" style="color: #666; text-decoration: underline;">Alterar configurações da Cora</a>
+                    <a href="{% url 'configurar_cora' %}" style="color: #666; text-decoration: underline; font-size: 12px;">Alterar credenciais da Cora</a>
                 </div>
             {% else %}
                 <a href="{% url 'configurar_cora' %}" class="btn-inter" style="border: 1px solid #fe3e6d; color: #fe3e6d;">
                     <i class="fas fa-cog"></i> Configurar Banco Cora
                 </a>
             {% endif %}
-            <p class="mt-2" style="color: #666;"><small>O sistema buscará as transações dos últimos 7 dias.</small></p>
+            
+            <p class="mt-2" style="color: #666;">
+                <small>O sistema buscará as transações conforme o período selecionado acima e aplicará a conciliação inteligente.</small>
+            </p>
         </div>
         {% comment %} --- FIM DA SECÇÃO CORA --- {% endcomment %}
 

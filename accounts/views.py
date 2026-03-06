@@ -1766,17 +1766,37 @@ def importar_ofx_view(request):
             return redirect('importar_ofx')
         
         elif 'sync_cora' in request.POST:
-            end_date = datetime.now().date()
-            start_date = end_date - timedelta(days=7)
+            opcao = request.POST.get('dias_cora')
+            today = datetime.now().date()
+            
+            # === LÓGICA DINÂMICA DE DATAS (RODRIGO ABREU) ===
+            if opcao == 'mes_anterior':
+                primeiro_dia_mes_atual = today.replace(day=1)
+                end_date = primeiro_dia_mes_atual - timedelta(days=1)
+                start_date = end_date.replace(day=1)
+                label_periodo = f"do mês anterior ({start_date.strftime('%d/%m')} a {end_date.strftime('%d/%m')})"
+            elif opcao == 'mes_atual':
+                start_date = today.replace(day=1)
+                end_date = today
+                label_periodo = "do mês atual"
+            else:
+                try:
+                    dias_para_sincronizar = int(opcao)
+                except (ValueError, TypeError):
+                    dias_para_sincronizar = 7
+                end_date = today
+                start_date = end_date - timedelta(days=dias_para_sincronizar)
+                label_periodo = f"dos últimos {dias_para_sincronizar} dias"
             
             try:
+                # Busca de categorias padrão caso a IA falhe
                 payable_category = Category.objects.filter(category_type='PAYABLE', name__icontains='Gerais').first() or Category.objects.filter(category_type='PAYABLE').first()
                 receivable_category = Category.objects.filter(category_type='RECEIVABLE', name__icontains='Vendas').first() or Category.objects.filter(category_type='RECEIVABLE').first()
             except:
                 payable_category = None
                 receivable_category = None
             
-            # Chama o utils (que já busca Tags e Nome Real)
+            # Chama o utils (Passando as datas dinâmicas)
             resultado = buscar_extrato_cora(request.user, start_date, end_date)
             
             if 'erro' in resultado:
@@ -1827,8 +1847,7 @@ def importar_ofx_view(request):
                                 match.save()
                                 reconciled_count += 1
                             else:
-                                # IA: Recebe 4 valores (conforme sua função 'prever_classificacao')
-                                # O '_' ignora o banco sugerido pela IA, pois já sabemos que é Cora
+                                # LÓGICA DE PREVISÃO E CLASSIFICAÇÃO (IA)
                                 cat_prevista, dre_prevista, _, centro_previsto = prever_classificacao(request.user, nome_parte, 'PAYABLE')
                                 
                                 PayableAccount.objects.create(
@@ -1839,10 +1858,7 @@ def importar_ofx_view(request):
                                     amount=valor,
                                     category=cat_prevista or payable_category,
                                     dre_area=dre_prevista or 'OPERACIONAL',
-                                    
-                                    # AQUI SALVAMOS O CENTRO DE CUSTO (Pois PayableAccount tem esse campo)
                                     centro_custo=centro_previsto, 
-                                    
                                     payment_method='DEBITO_CONTA',
                                     occurrence='AVULSO',
                                     is_paid=True,
@@ -1870,7 +1886,7 @@ def importar_ofx_view(request):
                                 match.save()
                                 reconciled_count += 1
                             else:
-                                # IA: Recebe 4 valores, mas ignoramos o centro_previsto aqui
+                                # LÓGICA DE PREVISÃO E CLASSIFICAÇÃO (IA)
                                 cat_prevista, dre_prevista, _, centro_previsto = prever_classificacao(request.user, nome_parte, 'RECEIVABLE')
 
                                 ReceivableAccount.objects.create(
@@ -1881,9 +1897,6 @@ def importar_ofx_view(request):
                                     amount=valor,
                                     category=cat_prevista or receivable_category,
                                     dre_area=dre_prevista or 'BRUTA',
-                                    
-                                    # REMOVIDO 'centro_custo' DAQUI (Pois ReceivableAccount não tem esse campo)
-                                    
                                     payment_method='PIX',
                                     occurrence='AVULSO',
                                     is_received=True,
@@ -1895,12 +1908,22 @@ def importar_ofx_view(request):
                         else:
                             count_duplicados += 1
 
-                if count_importados > 0: messages.success(request, f"Cora: {count_importados} importados.")
-                if reconciled_count > 0: messages.info(request, f"Cora: {reconciled_count} conciliados.")
-                if count_importados == 0 and reconciled_count == 0: messages.info(request, "Cora: Nada novo.")
+                # === BLOCO DE FEEDBACK REFEITO ===
+                if count_importados > 0: 
+                    messages.success(request, f"Cora: {count_importados} novos lançamentos importados {label_periodo}.")
+                
+                if reconciled_count > 0: 
+                    messages.info(request, f"Cora: {reconciled_count} contas existentes foram conciliadas automaticamente.")
+                
+                # NOVO: Aviso de duplicados ignorados
+                if count_duplicados > 0:
+                    messages.warning(request, f"Cora: {count_duplicados} transações foram ignoradas por já existirem no sistema.")
+
+                if count_importados == 0 and reconciled_count == 0: 
+                    messages.info(request, f"Cora: Nenhuma transação nova encontrada {label_periodo}.")
+                # ================================
 
             return redirect('importar_ofx')
-        # ▲▲▲ [FIM] BLOCO CORA ▲▲▲
 
         # ▼▼▼ [INÍCIO] NOVO BLOCO SICREDI ▼▼▼
         elif 'sync_sicredi' in request.POST:
