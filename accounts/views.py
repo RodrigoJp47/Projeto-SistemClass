@@ -2254,19 +2254,20 @@ def importar_ofx_view(request):
                     nome_limpo = name
                     
                     # 1. Remove termos padrões de bancos (adicione outros na lista se precisar)
-                    # 1. Remove termos padrões de bancos (Itaú, Bradesco, BB, Caixa, etc.)
+                    # 1. Remove termos padrões de bancos (Agora separando SICREDI e códigos CX)
                     termos_bancarios = [
                         r'PAGAMENTO PIX', r'PIX_DEB', r'PIX_CRED', r'PIX ENVIADO', r'PIX RECEBIDO', r'PIX',
                         r'TRANSACAO OFX', r'TRANSFERENCIA', r'TRANSF', r'TRF', r'TED', r'DOC', r'TEV',
                         r'PAGAMENTO DE TITULO', r'PAGAMENTO BOLETO', r'PAGAMENTO', r'PGTO', r'PAGTO',
                         r'COMPRA CARTAO', r'COMPRA DEBITO', r'COMPRA CREDITO', 
-                        r'SISPAG', r'INTERNET BANKING', r'AUTOATENDIMENTO', r'MOBILE', r'APP', r'AGENCIA'
+                        r'SISPAG', r'INTERNET BANKING', r'AUTOATENDIMENTO', r'MOBILE', r'APP', r'AGENCIA',
+                        r'SICREDI', r'CX[\-\s]*\d+' 
                     ]
                     for termo in termos_bancarios:
                         nome_limpo = re.sub(termo, '', nome_limpo, flags=re.IGNORECASE)
                     
-                    # 2. Remove sequências de números (CNPJ, CPF, IDs) e caracteres especiais (-, *, _)
-                    nome_limpo = re.sub(r'\b\d{5,}\b', '', nome_limpo) # Remove números com 5+ dígitos
+                    # 2. Remove sequências numéricas longas (CNPJ/CPF/IDs), mesmo se tiverem espaços ou traços (ex: 41 568 113)
+                    nome_limpo = re.sub(r'(?:\d[\s\.\-\/]*){5,}', '', nome_limpo) 
                     nome_limpo = re.sub(r'[^\w\s]', ' ', nome_limpo) # Substitui símbolos por espaço
                     
                     # 3. Remove espaços duplicados e espaços nas pontas
