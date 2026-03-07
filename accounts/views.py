@@ -2250,6 +2250,32 @@ def importar_ofx_view(request):
                     # 3. Preparação dos dados
                     name = (transaction.memo or f"Transação OFX {transaction.id}").encode('ascii', errors='ignore').decode('ascii')
                     description = f"Transação OFX {transaction.id}"
+                    # --- [INÍCIO] LIMPEZA DO NOME (Estilo Cora/Asaas) ---
+                    nome_limpo = name
+                    
+                    # 1. Remove termos padrões de bancos (adicione outros na lista se precisar)
+                    # 1. Remove termos padrões de bancos (Itaú, Bradesco, BB, Caixa, etc.)
+                    termos_bancarios = [
+                        r'PAGAMENTO PIX', r'PIX_DEB', r'PIX_CRED', r'PIX ENVIADO', r'PIX RECEBIDO', r'PIX',
+                        r'TRANSACAO OFX', r'TRANSFERENCIA', r'TRANSF', r'TRF', r'TED', r'DOC', r'TEV',
+                        r'PAGAMENTO DE TITULO', r'PAGAMENTO BOLETO', r'PAGAMENTO', r'PGTO', r'PAGTO',
+                        r'COMPRA CARTAO', r'COMPRA DEBITO', r'COMPRA CREDITO', 
+                        r'SISPAG', r'INTERNET BANKING', r'AUTOATENDIMENTO', r'MOBILE', r'APP', r'AGENCIA'
+                    ]
+                    for termo in termos_bancarios:
+                        nome_limpo = re.sub(termo, '', nome_limpo, flags=re.IGNORECASE)
+                    
+                    # 2. Remove sequências de números (CNPJ, CPF, IDs) e caracteres especiais (-, *, _)
+                    nome_limpo = re.sub(r'\b\d{5,}\b', '', nome_limpo) # Remove números com 5+ dígitos
+                    nome_limpo = re.sub(r'[^\w\s]', ' ', nome_limpo) # Substitui símbolos por espaço
+                    
+                    # 3. Remove espaços duplicados e espaços nas pontas
+                    nome_limpo = re.sub(r'\s+', ' ', nome_limpo).strip()
+                    
+                    # Substitui a variável name pela versão limpa (se não ficar vazia)
+                    if nome_limpo:
+                        name = nome_limpo 
+                    # --- [FIM] LIMPEZA DO NOME ---
                     
                     # Chamada única da IA para o loop inteiro
                     cat_prevista, dre_prevista, _, centro_previsto = prever_classificacao(
