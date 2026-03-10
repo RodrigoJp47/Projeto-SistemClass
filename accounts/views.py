@@ -2523,7 +2523,19 @@ def contas_pagar(request):
                 # Verifica se a função retornou erro interno
                 if dados_extraidos.get('erro'):
                     return JsonResponse({'status': 'error', 'message': dados_extraidos['erro']})
-
+                # --- INTELIGÊNCIA DE CLASSIFICAÇÃO (OFX) ---
+                if 'erro' not in dados_extraidos and dados_extraidos.get('fornecedor'):
+                    cat, dre, banco, centro = prever_classificacao(request.user, dados_extraidos['fornecedor'], 'PAYABLE')
+                    
+                    if cat:
+                        dados_extraidos['categoria_id'] = cat.id
+                        dados_extraidos['categoria_nome'] = cat.name
+                    if dre:
+                        dados_extraidos['dre_area'] = dre
+                    if centro:
+                        dados_extraidos['centro_custo_id'] = centro.id
+                        dados_extraidos['centro_custo_nome'] = centro.nome
+                # -------------------------------------------
                 # Sucesso
                 return JsonResponse({'status': 'success', 'data': dados_extraidos})
             
@@ -8619,6 +8631,36 @@ def baixar_guia_sicredi_view(request):
     response = HttpResponse(pdf_content, content_type='application/pdf')
     response['Content-Disposition'] = 'attachment; filename="Guia_Integracao_Sicredi.pdf"'
     return response
+
+
+
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from django.shortcuts import get_object_or_404
+# Importe seu modelo de CentroCusto se ainda não estiver no topo:
+# from .models import CentroCusto 
+
+@login_required
+def centro_custo_json(request):
+    ccs = CentroCusto.objects.filter(user=request.user).order_by('nome')
+    data = [{'id': c.id, 'nome': c.nome} for c in ccs]
+    return JsonResponse(data, safe=False)
+
+@login_required
+@require_POST
+def centro_custo_criar(request):
+    nome = request.POST.get('nome', '').strip()
+    if nome:
+        cc, created = CentroCusto.objects.get_or_create(user=request.user, nome=nome)
+        return JsonResponse({'status': 'success', 'id': cc.id, 'nome': cc.nome})
+    return JsonResponse({'status': 'error', 'message': 'Nome inválido'})
+
+@login_required
+@require_POST
+def centro_custo_deletar(request, cc_id):
+    cc = get_object_or_404(CentroCusto, id=cc_id, user=request.user)
+    cc.delete()
+    return JsonResponse({'status': 'success'})
 
 
     

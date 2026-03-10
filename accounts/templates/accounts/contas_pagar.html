@@ -93,12 +93,25 @@
                         
                         <option value="NAO_CONSTAR" {% if form.dre_area.value == "NAO_CONSTAR" %}selected{% endif %}>Não constar DRE</option>
                     </select>
-                <div style="margin-top: 10px; margin-bottom: 10px; border-top: 1px dashed #ccc; padding-top: 10px;">
-                    <label for="id_centro_custo">Centro de Custo:</label>
-                    {{ form.centro_custo }}
-                    
-                    <label for="id_new_centro_custo" style="margin-left: 10px;">Novo Centro de Custo:</label>
-                    {{ form.new_centro_custo }}
+                <div class="form-group-custom" style="margin-top: 10px; margin-bottom: 10px; border-top: 1px dashed #ccc; padding-top: 10px; width: 100%;">
+                    <label style="display: block; margin-bottom: 5px;">Centro de Custo:</label>
+                    <div style="display: flex; gap: 8px; align-items: center; width: 100%;">
+                        <input type="text" id="centro-custo-display" class="form-field-category" 
+                            placeholder="Clique para selecionar ou criar..." readonly 
+                            onclick="abrirModalCentroCusto()"
+                            value="{% if form.instance.centro_custo %}{{ form.instance.centro_custo.nome }}{% endif %}"
+                            style="flex: 1; height: 42px; padding: 10px; border-radius: 4px; cursor: pointer; background: #fff; color: #333; border: 1px solid #ccc;">
+                        
+                        <button type="button" class="btn-manage-cat" onclick="abrirModalCentroCusto()" 
+                                style="padding: 0 20px; height: 42px; background-color: #27ae60; color: white; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap; font-weight: bold;">
+                            Gerenciar
+                        </button>
+                    </div>
+
+                    <div style="display:none;">
+                        {{ form.centro_custo }}
+                        {{ form.new_centro_custo }}
+                    </div>
                 </div>    
                 {{ form.payment_method.label_tag }} {{ form.payment_method }}
                 {{ form.occurrence.label_tag }} {{ form.occurrence }}
@@ -362,6 +375,36 @@
             </div>
         </div>
     </div>
+    <div id="centroCustoModal" style="display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8);">
+        <div style="margin: 5% auto; padding: 20px; width: 90%; max-width: 450px; border-radius: 8px; background: #1e1e1e;">
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #444; padding-bottom: 10px;">
+                <h3 style="margin: 0; color: white;">Gerenciar Centro de Custo</h3>
+                <span onclick="fecharModalCentroCusto()" style="cursor: pointer; font-size: 28px; color: white;">&times;</span>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 5px; font-size: 14px; color: white;">Novo Centro de Custo:</label>
+                <div style="display: flex; gap: 5px;">
+                    <input type="text" id="new-cc-input" placeholder="Nome" style="flex: 1; padding: 8px; border-radius: 4px; border: 1px solid #444; background: #2c2c2c; color: white;">
+                    <button type="button" onclick="criarNovoCentroCustoModal()" style="background: #27ae60; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer;">Criar</button>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 10px;">
+                <input type="text" id="modal-search-cc" placeholder="Pesquisar..." onkeyup="filtrarCentroCustoModal()" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #444; background: #2c2c2c; color: white; box-sizing: border-box;">
+            </div>
+
+            <div style="max-height: 200px; overflow-y: auto; background: #2c2c2c; border-radius: 4px; margin-bottom: 15px; border: 1px solid #444;">
+                <ul id="centro-custo-list" style="list-style: none; padding: 0; margin: 0; color: white;"> </ul>
+            </div>
+
+            <div style="display: flex; justify-content: space-between;">
+                <button type="button" onclick="excluirSelecionadosCCModal()" style="background: #e74c3c; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-size: 13px;">Excluir Selecionados</button>
+                <button type="button" onclick="fecharModalCentroCusto()" style="background: #555; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer;">Fechar</button>
+            </div>
+        </div>
+    </div>
     <script>
         // Adicione isso logo no início do seu <script> para facilitar
         const CSRF_TOKEN = document.querySelector('[name=csrfmiddlewaretoken]').value;
@@ -381,6 +424,12 @@
             const fieldPayment = document.getElementById('id_payment_method');
             const fieldOccurrence = document.getElementById('id_occurrence');
             const fieldBank = document.getElementById('id_bank_account');
+            // Campos da Inteligência de Classificação
+            const fieldCategory = document.getElementById('id_category');
+            const fieldCategoryDisplay = document.getElementById('category-display');
+            const fieldDre = document.getElementById('id_dre_area');
+            const fieldCentroCusto = document.getElementById('id_centro_custo');
+            const fieldCentroCustoDisplay = document.getElementById('centro-custo-display'); // <--- NOVA LINHA
 
             if (boletoInput) {
                 boletoInput.addEventListener('change', function() {
@@ -431,7 +480,18 @@
                                 if (descExtra && fieldDesc) {
                                     fieldDesc.value = descExtra;
                                 }
-
+                                // --- PREENCHIMENTO DA INTELIGÊNCIA DE CLASSIFICAÇÃO ---
+                                if (dados.categoria_id && fieldCategory) {
+                                    fieldCategory.value = dados.categoria_id;
+                                    if (fieldCategoryDisplay) fieldCategoryDisplay.value = dados.categoria_nome;
+                                }
+                                if (dados.dre_area && fieldDre) {
+                                    fieldDre.value = dados.dre_area;
+                                }
+                                if (dados.centro_custo_id && fieldCentroCusto) {
+                                    fieldCentroCusto.value = dados.centro_custo_id;
+                                    if (fieldCentroCustoDisplay) fieldCentroCustoDisplay.value = dados.centro_custo_nome; // <--- NOVA LINHA
+                                }
                                 // --- AUTOMAÇÃO DOS CAMPOS PADRÃO (SEU PEDIDO) ---
                                 
                                 // 1. Define "Boleto"
@@ -696,6 +756,92 @@
                         headers: { 'X-CSRFToken': csrf }
                     })
                 )).then(() => carregarCategoriasLista());
+            }
+        }
+        // --- GERENCIAMENTO DE CENTRO DE CUSTO ---
+        let todosCentrosCusto = [];
+
+        function abrirModalCentroCusto() {
+            document.getElementById('centroCustoModal').style.display = 'block';
+            carregarCentroCustoLista();
+        }
+
+        function fecharModalCentroCusto() {
+            document.getElementById('centroCustoModal').style.display = 'none';
+        }
+
+        function carregarCentroCustoLista() {
+            const list = document.getElementById('centro-custo-list');
+            list.innerHTML = '<li style="padding: 10px; color: #aaa;">Carregando...</li>';
+            fetch('/contas-pagar/centro-custo/json/')
+                .then(res => res.json())
+                .then(data => {
+                    todosCentrosCusto = data;
+                    renderizarItensCCModal(data);
+                })
+                .catch(err => {
+                    list.innerHTML = '<li style="padding: 10px; color: #e74c3c;">Nenhum Centro de Custo cadastrado.</li>';
+                });
+        }
+
+        function renderizarItensCCModal(dados) {
+            const list = document.getElementById('centro-custo-list');
+            if (dados.length === 0) {
+                list.innerHTML = '<li style="padding: 10px; color: #aaa;">Nenhum encontrado.</li>';
+                return;
+            }
+            list.innerHTML = dados.map(cc => `
+                <li style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #3d3d3d;">
+                    <span onclick="selecionarCentroCustoModal('${cc.id}', '${cc.nome}')" style="cursor:pointer; color: #fff; flex: 1;">${cc.nome}</span>
+                    <input type="checkbox" class="cc-del-check" value="${cc.id}" style="width: 18px; height: 18px; cursor: pointer;">
+                </li>
+            `).join('');
+        }
+
+        function filtrarCentroCustoModal() {
+            const termo = document.getElementById('modal-search-cc').value.toLowerCase();
+            const filtradas = todosCentrosCusto.filter(c => c.nome.toLowerCase().includes(termo));
+            renderizarItensCCModal(filtradas);
+        }
+
+        function selecionarCentroCustoModal(id, nome) {
+            document.getElementById('id_centro_custo').value = id;
+            document.getElementById('centro-custo-display').value = nome;
+            fecharModalCentroCusto();
+        }
+
+        function criarNovoCentroCustoModal() {
+            const input = document.getElementById('new-cc-input');
+            const nome = input.value.trim();
+            if (!nome) return alert('Digite um nome.');
+
+            document.getElementById('id_centro_custo').value = '';
+            
+            const fieldNewCC = document.getElementById('id_new_centro_custo');
+            if (fieldNewCC) { fieldNewCC.value = nome; }
+            
+            document.getElementById('centro-custo-display').value = nome;
+            fecharModalCentroCusto();
+            
+            // Tenta criar na hora via AJAX
+            const formData = new FormData();
+            formData.append('nome', nome);
+            formData.append('csrfmiddlewaretoken', CSRF_TOKEN);
+            fetch('/contas-pagar/centro-custo/criar/', { method: 'POST', body: formData })
+                .then(res => res.json()).catch(err => {});
+        }
+
+        function excluirSelecionadosCCModal() {
+            const selecionados = Array.from(document.querySelectorAll('.cc-del-check:checked')).map(cb => cb.value);
+            if (selecionados.length === 0) return alert('Selecione para excluir.');
+            if (confirm('Excluir Centros de Custo selecionados?')) {
+                const csrf = document.querySelector('[name=csrfmiddlewaretoken]').value;
+                Promise.all(selecionados.map(id => 
+                    fetch(`/contas-pagar/centro-custo/deletar/${id}/`, {
+                        method: 'POST',
+                        headers: { 'X-CSRFToken': csrf }
+                    })
+                )).then(() => carregarCentroCustoLista());
             }
         }
     </script>

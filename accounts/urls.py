@@ -69,6 +69,9 @@ from .views import (
     cora_webhook,
     configurar_sicredi_view,
     baixar_guia_sicredi_view,
+    centro_custo_json,
+    centro_custo_criar,
+    centro_custo_deletar,
 )
 
 urlpatterns = [
@@ -145,4 +148,7 @@ urlpatterns = [
     path('contas-pagar/categorias/json/', listar_categorias_json, name='listar_categorias_json'),
     path('contas-pagar/categorias/criar/', criar_categoria_json, name='criar_categoria_json'),
     path('contas-pagar/categorias/deletar/<int:id>/', deletar_categoria_json, name='deletar_categoria_json'),
+    path('contas-pagar/centro-custo/json/', centro_custo_json, name='centro_custo_json'),
+    path('contas-pagar/centro-custo/criar/', centro_custo_criar, name='centro_custo_criar'),
+    path('contas-pagar/centro-custo/deletar/<int:cc_id>/', centro_custo_deletar, name='centro_custo_deletar'),
 ]

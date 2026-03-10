@@ -500,6 +500,48 @@ body.theme-white #modal-search::placeholder,
 body.theme-white #new-cat-input::placeholder {
     color: #6c757d !important;
 }
+
+/* ==========================================================================
+   TEMA CLARO: MODAL DE CENTRO DE CUSTO
+   ========================================================================== */
+body.theme-white #centroCustoModal > div {
+    background-color: #ffffff !important;
+    color: #212529 !important;
+    border: 1px solid #ced4da !important;
+}
+
+body.theme-white #centroCustoModal h3,
+body.theme-white #centroCustoModal label,
+body.theme-white #centro-custo-list li span {
+    color: #212529 !important;
+}
+
+/* Fundo da lista (o retângulo de rolagem) */
+body.theme-white #centroCustoModal div[style*="max-height: 200px"] {
+    background-color: #f8f9fa !important;
+    border: 1px solid #dee2e6 !important;
+}
+
+body.theme-white #centro-custo-list {
+    background-color: transparent !important;
+}
+
+body.theme-white #centro-custo-list li {
+    border-bottom: 1px solid #dee2e6 !important;
+}
+
+/* Campos de input e pesquisa */
+body.theme-white #modal-search-cc,
+body.theme-white #new-cc-input {
+    background-color: #ffffff !important;
+    color: #212529 !important;
+    border: 1px solid #ced4da !important;
+}
+
+body.theme-white #modal-search-cc::placeholder,
+body.theme-white #new-cc-input::placeholder {
+    color: #6c757d !important;
+}
 /* ========================================================================== */
 /* ESTILOS RESPONSIVOS (PARA DISPOSITIVOS MÓVEIS)                             */
 /* ========================================================================== */
