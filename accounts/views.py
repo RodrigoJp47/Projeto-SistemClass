@@ -15,7 +15,7 @@ from io import StringIO
 from urllib.parse import urlparse
 import requests
 import time
-
+import unicodedata
 import stripe
 
 from django.views.decorators.csrf import csrf_exempt # Vamos usar depois no webhook
@@ -1372,6 +1372,7 @@ def cadastrar_bancos_view(request):
 @subscription_required
 @module_access_required('financial')
 def importar_ofx_view(request):
+    
     if request.method == 'POST':
         # --- [INÍCIO] COLAR O CÓDIGO AQUI ---
         if 'sync_inter' in request.POST:
@@ -2164,19 +2165,51 @@ def importar_ofx_view(request):
                     return match.group(0)
                 content = re.sub(r'<DTASOF>(.*?)</DTASOF>', corrigir_data_pagbank, content, flags=re.IGNORECASE | re.DOTALL)
 
-                if not content.strip().startswith('<OFX'):
-                     content = re.sub(r'^OFXHEADER:.*?(?=<)', '', content, flags=re.MULTILINE | re.DOTALL)
-                     content = re.sub(r'(<[A-Z/][^>]*>)\s*([^<]+)\s*(?=<|$)', r'\1\2</\1>', content)
-                     content = content.encode('ascii', errors='ignore').decode('ascii')
-                     if not content.strip().startswith('<OFX'):
-                        content = f"<OFX><BANKMSGSRSV1><STMTTRNRS><STMTRS><BANKTRANLIST>{content}</BANKTRANLIST></STMTRS></STMTTRNRS></BANKMSGSRSV1></OFX>"
+                if 'OFXHEADER:' in content[:300]:
+                    content = re.sub(r'^.*?(?=<OFX>)', '', content, flags=re.MULTILINE | re.DOTALL)
 
+                content = content.strip()
+
+                if not content.startswith('<OFX'):
+                    raise ValueError("Arquivo OFX inválido: estrutura <OFX> não encontrada após limpeza do cabeçalho.")
+                content = unicodedata.normalize('NFKD', content).encode('ascii', 'ignore').decode('ascii')
                 ofx_file_content = StringIO(content)
                 ofx = OfxParser.parse(ofx_file_content)
                 if not hasattr(ofx, 'account'):
                     raise ValueError("O arquivo OFX não contém informações de conta válidas.")
                 
                 bank_account = ofx_import.bank_account
+
+                # ================= FUNÇÃO LOCAL (APENAS PARA OFX) =================
+                def prever_classificacao_ofx(user, descricao, tipo, bank_account=None):
+                    """
+                    Versão local da classificação automática usada somente na importação OFX.
+                    Não interfere nas APIs Nibo, Olist, Asaas etc.
+                    """
+                    regras = list(
+                        ClassificacaoAutomatica.objects.filter(user=user, tipo=tipo)
+                        .select_related('categoria', 'bank_account', 'centro_custo')
+                    )
+
+                    descricao_lower = (descricao or '').lower().strip()
+
+                    # Prioriza regra da mesma conta bancária e termos mais específicos
+                    regras.sort(
+                        key=lambda r: (
+                            0 if bank_account and r.bank_account_id == getattr(bank_account, 'id', None)
+                            else 1 if r.bank_account_id is None
+                            else 2,
+                            -len((r.termo or '').strip())
+                        )
+                    )
+
+                    for regra in regras:
+                        termo = (regra.termo or '').lower().strip()
+                        if termo and termo in descricao_lower:
+                            return regra.categoria, regra.dre_area, regra.bank_account, regra.centro_custo
+
+                    return None, None, None, None
+                # ================================================================
                 
                 # --- INÍCIO DA LÓGICA DE RECONCILIAÇÃO ---
 
@@ -2220,16 +2253,91 @@ def importar_ofx_view(request):
                 skipped_transactions_count = 0
                 reconciled_count = 0 # <<< NOVO
 
-                existing_fitids = set(
-                    PayableAccount.objects.filter(user=request.user, fitid__isnull=False).values_list('fitid', flat=True)
+                existing_payable_keys = set(
+                    PayableAccount.objects.filter(
+                        user=request.user,
+                        bank_account=bank_account,
+                        fitid__isnull=False,
+                        payment_date__isnull=False
+                    ).values_list('fitid', 'amount', 'payment_date')
                 )
-                existing_fitids.update(
-                    ReceivableAccount.objects.filter(user=request.user, fitid__isnull=False).values_list('fitid', flat=True)
+
+                existing_receivable_keys = set(
+                    ReceivableAccount.objects.filter(
+                        user=request.user,
+                        bank_account=bank_account,
+                        fitid__isnull=False,
+                        payment_date__isnull=False
+                    ).values_list('fitid', 'amount', 'payment_date')
                 )
                 
                 # Define a "janela" de dias para procurar (ex: 3 dias antes e 3 dias depois)
                 DATE_WINDOW_DAYS = 3
+                
+                def normalizar_nome_match(texto):
+                    texto = (texto or '').upper().strip()
+                    texto = unicodedata.normalize('NFKD', texto).encode('ascii', 'ignore').decode('ascii')
 
+                    termos_bancarios = [
+                        'PAGAMENTO PIX', 'PIX_DEB', 'PIX_CRED', 'PIX ENVIADO', 'PIX RECEBIDO', 'PIX',
+                        'TRANSACAO OFX', 'TRANSFERENCIA', 'TRANSF', 'TRF', 'TED', 'DOC', 'TEV',
+                        'PAGAMENTO DE TITULO', 'PAGAMENTO BOLETO', 'PAGAMENTO', 'PGTO', 'PAGTO',
+                        'COMPRA CARTAO', 'COMPRA DEBITO', 'COMPRA CREDITO',
+                        'SISPAG', 'INTERNET BANKING', 'AUTOATENDIMENTO', 'MOBILE', 'APP', 'AGENCIA',
+                        'SICREDI'
+                    ]
+
+                    for termo in termos_bancarios:
+                        texto = texto.replace(termo, ' ')
+
+                    texto = re.sub(r'CX[\-\s]*\d+', ' ', texto, flags=re.IGNORECASE)
+                    texto = re.sub(r'(?:\d[\s\.\-\/]*){5,}', ' ', texto)
+                    texto = re.sub(r'[^A-Z\s]', ' ', texto)
+                    texto = re.sub(r'\s+', ' ', texto).strip()
+
+                    return texto
+
+
+                def nomes_compativeis(nome_ofx, nome_sistema, descricao_sistema=None):
+                    base = normalizar_nome_match(nome_ofx)
+                    alvo1 = normalizar_nome_match(nome_sistema)
+                    alvo2 = normalizar_nome_match(descricao_sistema)
+
+                    if not base:
+                        return False
+
+                    tokens_base = {t for t in base.split() if len(t) >= 3}
+
+                    palavras_genericas = {
+                        'PAGAMENTO', 'TRANSACAO', 'OFX', 'PIX', 'BANCO',
+                        'COMPRA', 'DEBITO', 'CREDITO', 'COMPANHIA',
+                        'ENERGETICA', 'DISTRIBUICAO', 'TRANSFERENCIA'
+                    }
+
+                    for alvo in [alvo1, alvo2]:
+                        if not alvo:
+                            continue
+
+                        # caso um nome esteja contido no outro
+                        if base in alvo or alvo in base:
+                            return True
+
+                        tokens_alvo = {t for t in alvo.split() if len(t) >= 3}
+
+                        intersecao = tokens_base & tokens_alvo
+                        if not intersecao:
+                            continue
+
+                        # se tiver 2 palavras iguais
+                        if len(intersecao) >= 2:
+                            return True
+
+                        # se tiver 1 palavra forte
+                        token = next(iter(intersecao))
+                        if len(token) >= 5 and token not in palavras_genericas:
+                            return True
+
+                    return False
                 for transaction in ofx.account.statement.transactions:
                     # 1. Definição única das variáveis base
                     fitid = transaction.id
@@ -2237,13 +2345,14 @@ def importar_ofx_view(request):
                     date = transaction.date.date()
                     
                     # 2. Lógica anti-duplicação CIRÚRGICA (ID + VALOR)
-                    if fitid in existing_fitids:
-                        # Verifica se o ID + VALOR exato já existe para permitir estornos com mesmo ID
-                        ja_existe_no_banco = (
-                            PayableAccount.objects.filter(user=request.user, fitid=fitid, amount=abs(amount)).exists() or
-                            ReceivableAccount.objects.filter(user=request.user, fitid=fitid, amount=amount).exists()
-                        )
-                        if ja_existe_no_banco:
+                    if amount < 0:
+                        chave_duplicidade = (fitid, abs(amount), date)
+                        if fitid and chave_duplicidade in existing_payable_keys:
+                            skipped_transactions_count += 1
+                            continue
+                    else:
+                        chave_duplicidade = (fitid, amount, date)
+                        if fitid and chave_duplicidade in existing_receivable_keys:
                             skipped_transactions_count += 1
                             continue
 
@@ -2279,8 +2388,11 @@ def importar_ofx_view(request):
                     # --- [FIM] LIMPEZA DO NOME ---
                     
                     # Chamada única da IA para o loop inteiro
-                    cat_prevista, dre_prevista, _, centro_previsto = prever_classificacao(
-                        request.user, name, 'PAYABLE' if amount < 0 else 'RECEIVABLE'
+                    cat_prevista, dre_prevista, _, centro_previsto = prever_classificacao_ofx(
+                        request.user,
+                        name,
+                        'PAYABLE' if amount < 0 else 'RECEIVABLE',
+                        bank_account=bank_account
                     )
                     
                     date_window_start = date - timedelta(days=DATE_WINDOW_DAYS)
@@ -2290,14 +2402,22 @@ def importar_ofx_view(request):
 
                     # Passo 2: Lógica de "Smart-Matching"
                     if amount < 0: # É um DÉBITO
-                        match = PayableAccount.objects.filter(
+                        candidatos = PayableAccount.objects.filter(
                             Q(bank_account=bank_account) | Q(bank_account__isnull=True),
                             user=request.user,
                             is_paid=False,
                             fitid__isnull=True,
                             amount=abs(amount),
                             due_date__range=[date_window_start, date_window_end]
-                        ).order_by('due_date').first()
+                        ).order_by('due_date')[:20]
+
+                        match = next(
+                            (
+                                item for item in candidatos
+                                if nomes_compativeis(name, item.name, item.description)
+                            ),
+                            None
+                        )
 
                         if match:
                             match.is_paid = True
@@ -2310,17 +2430,25 @@ def importar_ofx_view(request):
                             match.save()
                             reconciled_count += 1
                             match_found = True
-                            existing_fitids.add(fitid)
+                            existing_payable_keys.add((fitid, abs(amount), date))
 
                     else: # É um CRÉDITO
-                        match = ReceivableAccount.objects.filter(
+                        candidatos = ReceivableAccount.objects.filter(
                             Q(bank_account=bank_account) | Q(bank_account__isnull=True),
                             user=request.user,
                             is_received=False,
                             fitid__isnull=True,
                             amount=amount,
                             due_date__range=[date_window_start, date_window_end]
-                        ).order_by('due_date').first()
+                        ).order_by('due_date')[:20]
+
+                        match = next(
+                            (
+                                item for item in candidatos
+                                if nomes_compativeis(name, item.name, item.description)
+                            ),
+                            None
+                        )
 
                         if match:
                             match.is_received = True
@@ -2331,12 +2459,12 @@ def importar_ofx_view(request):
                             match.save()
                             reconciled_count += 1
                             match_found = True
-                            existing_fitids.add(fitid)
+                            existing_receivable_keys.add((fitid, amount, date))
                     
                     # Passo 3: Criação (Usa as variáveis já definidas no topo)
                     if not match_found:
                         new_transactions_count += 1
-                        existing_fitids.add(fitid)
+                        
 
                         if amount < 0:
                             categoria_final = cat_prevista if cat_prevista else payable_category
@@ -2349,6 +2477,7 @@ def importar_ofx_view(request):
                                 is_paid=True, payment_date=date, cost_type='VARIAVEL', 
                                 bank_account=bank_account, ofx_import=ofx_import, fitid=fitid
                             )
+                            existing_payable_keys.add((fitid, abs(amount), date))
                         else:
                             categoria_final = cat_prevista if cat_prevista else receivable_category
                             dre_final = dre_prevista if dre_prevista else 'BRUTA'
@@ -2359,6 +2488,7 @@ def importar_ofx_view(request):
                                 payment_method='PIX', occurrence='AVULSO', is_received=True, 
                                 payment_date=date, bank_account=bank_account, ofx_import=ofx_import, fitid=fitid
                             )
+                            existing_receivable_keys.add((fitid, amount, date))
                 
                 # --- MENSAGENS DE SUCESSO MELHORADAS ---
                 if new_transactions_count > 0:
@@ -2710,50 +2840,13 @@ def contas_pagar(request):
             account_id = request.POST.get('action_undo')
             account = get_object_or_404(PayableAccount, id=account_id, user=request.user)
             
-            original_fitid = account.fitid
-            original_payment_date = account.payment_date # Captura a data antes de limpar
-            
-            # 1. Reseta a conta manual (a conta original)
             account.is_paid = False
             account.payment_date = None
             account.fitid = None
             account.ofx_import = None
             account.save()
-            messages.success(request, f'A baixa da conta manual "{account.name}" foi desfeita.')
 
-            # 2. Se a conta TINHA um fitid, ela foi conciliada por OFX.
-            #    Agora, criamos a "outra ponta" (a transação do OFX)
-            #    como um novo lançamento em aberto.
-            if original_fitid:
-                transaction_date = original_payment_date
-                if not transaction_date:
-                    transaction_date = account.due_date # Fallback
-                
-                # Pega a categoria padrão
-                # Busca a categoria filtrando pelo usuário logado e pelo tipo 'PAYABLE'
-                payable_category, _ = Category.objects.get_or_create(
-                    name="Despesas Administrativas",
-                    user=request.user,
-                    category_type='PAYABLE'
-                )
-
-                PayableAccount.objects.create(
-                    user=request.user,
-                    name=f"Transação OFX ({original_fitid})", # Novo nome
-                    description=f"Lançamento separado da conta '{account.name}'",
-                    due_date=transaction_date, # Data em que ocorreu
-                    amount=account.amount, # O mesmo valor
-                    category=payable_category, # Categoria padrão
-                    dre_area=account.dre_area, # Herda a área DRE
-                    payment_method=account.payment_method, # Herda forma de pgto
-                    occurrence='AVULSO', 
-                    is_paid=False, # <<< Fica em aberto
-                    cost_type=account.cost_type, 
-                    bank_account=account.bank_account, # Herda o banco
-                    ofx_import=None, 
-                    fitid=original_fitid # <<< CRUCIAL: Mantém o fitid
-                )
-                messages.info(request, f'A transação do OFX foi criada como um novo lançamento em aberto.')
+            messages.success(request, f'A baixa da conta "{account.name}" foi desfeita e ela voltou para aberta.')
 
             return redirect(redirect_url)
 
@@ -3215,47 +3308,13 @@ def contas_receber(request):
             account_id = request.POST.get('action_undo')
             account = get_object_or_404(ReceivableAccount, id=account_id, user=request.user)
             
-            original_fitid = account.fitid
-            original_payment_date = account.payment_date # Captura a data
-            
-            # 1. Reseta a conta manual
             account.is_received = False
             account.payment_date = None
             account.fitid = None
             account.ofx_import = None
             account.save()
-            messages.success(request, f'A baixa da conta manual "{account.name}" foi desfeita.')
 
-            # 2. Se a conta TINHA um fitid, cria o lançamento do OFX
-            if original_fitid:
-                transaction_date = original_payment_date
-                if not transaction_date:
-                    transaction_date = account.due_date # Fallback
-                
-                # Pega a categoria padrão
-                # Busca a categoria filtrando pelo usuário logado e pelo tipo 'RECEIVABLE'
-                receivable_category, _ = Category.objects.get_or_create(
-                    name="Receitas sobre Vendas",
-                    user=request.user,
-                    category_type='RECEIVABLE'
-                )
-
-                ReceivableAccount.objects.create(
-                    user=request.user,
-                    name=f"Transação OFX ({original_fitid})", 
-                    description=f"Lançamento separado da conta '{account.name}'",
-                    due_date=transaction_date,
-                    amount=account.amount,
-                    category=receivable_category,
-                    dre_area=account.dre_area,
-                    payment_method=account.payment_method,
-                    occurrence='AVULSO', 
-                    is_received=False, # <<< Fica em aberto
-                    bank_account=account.bank_account,
-                    ofx_import=None, 
-                    fitid=original_fitid # <<< Mantém o fitid
-                )
-                messages.info(request, f'A transação do OFX foi criada como um novo lançamento em aberto.')
+            messages.success(request, f'A baixa da conta "{account.name}" foi desfeita e ela voltou para aberta.')
 
             return redirect(redirect_url)
 
